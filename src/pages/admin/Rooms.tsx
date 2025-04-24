@@ -7,6 +7,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Room {
   id: string;
@@ -19,7 +20,7 @@ interface Room {
 }
 
 const AdminRooms: React.FC = () => {
-  const { data: rooms, isLoading, refetch } = useQuery({
+  const { data: rooms, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["rooms"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,24 +36,25 @@ const AdminRooms: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Tem certeza que deseja excluir esta sala?")) return;
     
-    const { error } = await supabase
-      .from("rooms")
-      .delete()
-      .eq("id", id);
-    
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from("rooms")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sala excluída com sucesso",
+      });
+      refetch();
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Erro ao excluir sala",
-        description: error.message,
+        description: err.message,
       });
-      return;
     }
-    
-    toast({
-      title: "Sala excluída com sucesso",
-    });
-    refetch();
   };
 
   return (
@@ -66,9 +68,18 @@ const AdminRooms: React.FC = () => {
         </Button>
       </div>
       
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <p>Carregando salas...</p>
+      {isError ? (
+        <div className="rounded-lg bg-destructive/10 p-6 text-center">
+          <p className="text-destructive font-medium mb-2">Erro ao carregar salas</p>
+          <p className="text-sm text-muted-foreground mb-4">{(error as Error)?.message || "Ocorreu um erro desconhecido"}</p>
+          <Button onClick={() => refetch()} variant="outline">Tentar novamente</Button>
+        </div>
+      ) : isLoading ? (
+        <div className="space-y-3 py-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
       ) : (
         <div className="border rounded-md">

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Bed, 
@@ -29,15 +29,21 @@ import {
 
 const AdminLayout: React.FC = () => {
   const { signOut, user } = useAuth();
+  const location = useLocation();
+
+  // Rota atual para destacar o item de menu ativo
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
     <SidebarProvider>
       <div className="flex w-full min-h-screen">
         <Sidebar>
           <SidebarHeader className="flex flex-col items-center justify-center p-4 border-b">
-            <h2 className="text-xl font-bold text-roomly-600">Roomly Admin</h2>
+            <h2 className="text-xl font-bold text-primary">Roomly Admin</h2>
             <p className="text-sm text-muted-foreground">
-              {user?.user_metadata.first_name} {user?.user_metadata.last_name}
+              {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
             </p>
           </SidebarHeader>
           
@@ -47,7 +53,7 @@ const AdminLayout: React.FC = () => {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin">
+                    <Link to="/admin" className={isActive("/admin") ? "bg-muted" : ""}>
                       <LayoutDashboard />
                       <span>Dashboard</span>
                     </Link>
@@ -56,7 +62,7 @@ const AdminLayout: React.FC = () => {
                 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/rooms">
+                    <Link to="/admin/rooms" className={isActive("/admin/rooms") ? "bg-muted" : ""}>
                       <Bed />
                       <span>Salas</span>
                     </Link>
@@ -65,7 +71,7 @@ const AdminLayout: React.FC = () => {
                 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/equipment">
+                    <Link to="/admin/equipment" className={isActive("/admin/equipment") ? "bg-muted" : ""}>
                       <Mic />
                       <span>Equipamentos</span>
                     </Link>
@@ -74,7 +80,7 @@ const AdminLayout: React.FC = () => {
                 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/bookings">
+                    <Link to="/admin/bookings" className={isActive("/admin/bookings") ? "bg-muted" : ""}>
                       <BookOpen />
                       <span>Reservas</span>
                     </Link>

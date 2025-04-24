@@ -7,6 +7,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Equipment {
   id: string;
@@ -16,7 +17,7 @@ interface Equipment {
 }
 
 const AdminEquipment: React.FC = () => {
-  const { data: equipment, isLoading, error, refetch } = useQuery({
+  const { data: equipment, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["equipment"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -32,34 +33,26 @@ const AdminEquipment: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Tem certeza que deseja excluir este equipamento?")) return;
     
-    const { error } = await supabase
-      .from("equipment")
-      .delete()
-      .eq("id", id);
-    
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from("equipment")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Equipamento excluído com sucesso",
+      });
+      refetch();
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Erro ao excluir equipamento",
-        description: error.message,
+        description: err.message,
       });
-      return;
     }
-    
-    toast({
-      title: "Equipamento excluído com sucesso",
-    });
-    refetch();
   };
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <p className="text-red-500 mb-4">Erro ao carregar equipamentos</p>
-        <Button onClick={() => refetch()}>Tentar novamente</Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -72,9 +65,17 @@ const AdminEquipment: React.FC = () => {
         </Button>
       </div>
       
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      {isError ? (
+        <div className="rounded-lg bg-destructive/10 p-6 text-center">
+          <p className="text-destructive font-medium mb-2">Erro ao carregar equipamentos</p>
+          <p className="text-sm text-muted-foreground mb-4">{(error as Error)?.message || "Ocorreu um erro desconhecido"}</p>
+          <Button onClick={() => refetch()} variant="outline">Tentar novamente</Button>
+        </div>
+      ) : isLoading ? (
+        <div className="space-y-3 py-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </div>
       ) : (
         <div className="border rounded-md">

@@ -1,6 +1,6 @@
 
-import React from "react";
-import { Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,8 +11,18 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
-  // Aguardar a verificação de autenticação
+  // Debugging para diagnóstico
+  useEffect(() => {
+    if (!loading && user) {
+      console.log("ProtectedRoute - User metadata:", user.user_metadata);
+      console.log("ProtectedRoute - Required role:", requiredRole);
+      console.log("ProtectedRoute - Current path:", location.pathname);
+    }
+  }, [user, loading, requiredRole, location]);
+
+  // Mostrar spinner durante o carregamento
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -28,14 +38,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       title: "Acesso negado",
       description: "Você precisa estar logado para acessar esta página",
     });
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Verificar role, se necessário
+  // Verificar a role, se necessário
   if (requiredRole) {
+    // Tentar obter a role do user_metadata ou do objeto user diretamente
     const userRole = user.user_metadata?.role;
     
     if (userRole !== requiredRole) {
+      console.error(`Acesso negado: Usuário tem role ${userRole}, mas a página requer ${requiredRole}`);
+      
       toast({
         variant: "destructive",
         title: "Acesso restrito",
