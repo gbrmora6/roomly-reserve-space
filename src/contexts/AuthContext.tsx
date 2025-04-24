@@ -25,17 +25,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log("Auth state changed:", event);
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Log user metadata for debugging
+        if (session?.user) {
+          console.log("User metadata from session:", session.user.user_metadata);
+          
+          // Se o usuário não tiver a role definida nas user_metadata, vamos verificar os dados do perfil
+          if (!session.user.user_metadata?.role) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (profile?.role) {
+                console.log("Role from profile:", profile.role);
+                // Atualizar os metadados do usuário com a role do perfil
+                const updatedUser = {
+                  ...session.user,
+                  user_metadata: {
+                    ...session.user.user_metadata,
+                    role: profile.role
+                  }
+                };
+                setUser(updatedUser);
+              }
+            } catch (error) {
+              console.error("Error fetching user profile:", error);
+            }
+          }
+        }
+        
         setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Log user metadata for debugging
+        console.log("Initial user metadata:", session.user.user_metadata);
+        
+        // Se o usuário não tiver a role definida nas user_metadata, vamos verificar os dados do perfil
+        if (!session.user.user_metadata?.role) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.role) {
+              console.log("Initial role from profile:", profile.role);
+              // Atualizar os metadados do usuário com a role do perfil
+              const updatedUser = {
+                ...session.user,
+                user_metadata: {
+                  ...session.user.user_metadata,
+                  role: profile.role
+                }
+              };
+              setUser(updatedUser);
+            } else {
+              setUser(session.user);
+            }
+          } catch (error) {
+            console.error("Error fetching initial user profile:", error);
+            setUser(session.user);
+          }
+        } else {
+          setUser(session.user);
+        }
+      } else {
+        setUser(null);
+      }
+      
       setLoading(false);
     });
 
@@ -74,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
+            role: "client", // Definir role padrão como "client"
           },
         },
       });

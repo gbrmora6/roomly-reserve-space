@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -14,6 +14,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole 
 }) => {
   const { user, loading } = useAuth();
+
+  // Debug logs para identificar o problema
+  useEffect(() => {
+    if (user) {
+      console.log("User authenticated:", user);
+      console.log("User metadata:", user.user_metadata);
+      console.log("Required role:", requiredRole);
+    }
+  }, [user, requiredRole]);
 
   // Aguardar a verificação de autenticação
   if (loading) {
@@ -31,13 +40,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Verificar role, se necessário
-  if (requiredRole && user.user_metadata?.role !== requiredRole) {
-    toast({
-      variant: "destructive",
-      title: "Acesso restrito",
-      description: `Você não tem permissão para acessar esta área. Acesso restrito para ${requiredRole}.`,
-    });
-    return <Navigate to="/" replace />;
+  if (requiredRole) {
+    // Verificar a role nas user_metadata ou outros locais possíveis
+    const userRole = user.user_metadata?.role || user.app_metadata?.role || null;
+    
+    console.log("User role detected:", userRole);
+    
+    if (userRole !== requiredRole) {
+      toast({
+        variant: "destructive",
+        title: "Acesso restrito",
+        description: `Você não tem permissão para acessar esta área. Acesso restrito para ${requiredRole}.`,
+      });
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;
