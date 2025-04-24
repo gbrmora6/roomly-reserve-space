@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -9,24 +9,16 @@ interface ProtectedRouteProps {
   requiredRole?: "admin" | "client";
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
-}) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
-
-  // Debug logs para identificar o problema
-  useEffect(() => {
-    if (user) {
-      console.log("User authenticated:", user);
-      console.log("User metadata:", user.user_metadata);
-      console.log("Required role:", requiredRole);
-    }
-  }, [user, requiredRole]);
 
   // Aguardar a verificação de autenticação
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      </div>
+    );
   }
 
   // Verificar se o usuário está autenticado
@@ -41,10 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar role, se necessário
   if (requiredRole) {
-    // Verificar a role nas user_metadata ou outros locais possíveis
-    const userRole = user.user_metadata?.role || user.app_metadata?.role || null;
-    
-    console.log("User role detected:", userRole);
+    const userRole = user.user_metadata?.role;
     
     if (userRole !== requiredRole) {
       toast({

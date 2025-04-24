@@ -16,7 +16,7 @@ interface Equipment {
 }
 
 const AdminEquipment: React.FC = () => {
-  const { data: equipment, isLoading, refetch } = useQuery({
+  const { data: equipment, isLoading, error, refetch } = useQuery({
     queryKey: ["equipment"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,6 +52,15 @@ const AdminEquipment: React.FC = () => {
     refetch();
   };
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-500 mb-4">Erro ao carregar equipamentos</p>
+        <Button onClick={() => refetch()}>Tentar novamente</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -65,7 +74,7 @@ const AdminEquipment: React.FC = () => {
       
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <p>Carregando equipamentos...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
         </div>
       ) : (
         <div className="border rounded-md">
@@ -93,7 +102,7 @@ const AdminEquipment: React.FC = () => {
                       </Button>
                       <Button 
                         variant="ghost" 
-                        size="icon" 
+                        size="icon"
                         onClick={() => handleDelete(item.id)}
                       >
                         <Trash className="h-4 w-4" />

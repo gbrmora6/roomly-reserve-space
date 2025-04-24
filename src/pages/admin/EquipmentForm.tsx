@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -30,8 +29,7 @@ const EquipmentForm: React.FC = () => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Carregar dados do equipamento se estiver editando
-  useQuery({
+  const { isLoading } = useQuery({
     queryKey: ["equipment", id],
     enabled: isEditing,
     queryFn: async () => {
@@ -47,7 +45,7 @@ const EquipmentForm: React.FC = () => {
       return data;
     },
   });
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEquipment((prev) => ({ ...prev, [name]: name === "quantity" ? parseInt(value) : value }));
@@ -58,17 +56,14 @@ const EquipmentForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Verificar se o nome está preenchido
       if (!equipment.name) {
         throw new Error("O nome do equipamento é obrigatório");
       }
       
-      // Validar quantidade
       if (equipment.quantity !== undefined && equipment.quantity < 1) {
         throw new Error("A quantidade deve ser maior que zero");
       }
       
-      // Criar/atualizar equipamento
       if (isEditing) {
         const { error } = await supabase
           .from("equipment")
@@ -108,6 +103,14 @@ const EquipmentForm: React.FC = () => {
     }
   };
   
+  if (isEditing && isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -119,7 +122,7 @@ const EquipmentForm: React.FC = () => {
         </h1>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome do Equipamento</Label>
