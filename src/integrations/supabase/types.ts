@@ -9,6 +9,113 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      booking_equipment: {
+        Row: {
+          booking_id: string
+          created_at: string
+          equipment_id: string
+          id: string
+          quantity: number
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          equipment_id: string
+          id?: string
+          quantity?: number
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_equipment_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          room_id: string
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          room_id: string
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          room_id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -36,6 +143,103 @@ export type Database = {
         }
         Relationships: []
       }
+      room_availability: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          room_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          room_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          room_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_availability_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_photos: {
+        Row: {
+          created_at: string
+          id: string
+          room_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_photos_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          description: string | null
+          has_ac: boolean | null
+          has_chairs: boolean | null
+          has_tables: boolean | null
+          has_wifi: boolean | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          has_ac?: boolean | null
+          has_chairs?: boolean | null
+          has_tables?: boolean | null
+          has_wifi?: boolean | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          has_ac?: boolean | null
+          has_chairs?: boolean | null
+          has_tables?: boolean | null
+          has_wifi?: boolean | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -44,6 +248,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      booking_status: "pending" | "confirmed" | "cancelled"
       user_role: "admin" | "client"
     }
     CompositeTypes: {
@@ -160,6 +365,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      booking_status: ["pending", "confirmed", "cancelled"],
       user_role: ["admin", "client"],
     },
   },

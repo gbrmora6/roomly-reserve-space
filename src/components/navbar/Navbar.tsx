@@ -22,6 +22,13 @@ const Navbar: React.FC = () => {
               <Link to="/rooms">
                 <Button variant="ghost">Salas</Button>
               </Link>
+              
+              {user.user_metadata?.role === "admin" && (
+                <Link to="/admin">
+                  <Button variant="ghost">Painel Admin</Button>
+                </Link>
+              )}
+              
               <Button variant="outline" onClick={() => signOut()}>
                 Sair
               </Button>
