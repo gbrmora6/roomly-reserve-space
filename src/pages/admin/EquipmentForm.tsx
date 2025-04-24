@@ -58,6 +58,11 @@ const EquipmentForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      // Verificar se o nome está preenchido
+      if (!equipment.name) {
+        throw new Error("O nome do equipamento é obrigatório");
+      }
+      
       // Validar quantidade
       if (equipment.quantity !== undefined && equipment.quantity < 1) {
         throw new Error("A quantidade deve ser maior que zero");
@@ -67,14 +72,22 @@ const EquipmentForm: React.FC = () => {
       if (isEditing) {
         const { error } = await supabase
           .from("equipment")
-          .update(equipment)
+          .update({
+            name: equipment.name,
+            description: equipment.description,
+            quantity: equipment.quantity
+          })
           .eq("id", id);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("equipment")
-          .insert(equipment);
+          .insert({
+            name: equipment.name,
+            description: equipment.description,
+            quantity: equipment.quantity
+          });
         
         if (error) throw error;
       }

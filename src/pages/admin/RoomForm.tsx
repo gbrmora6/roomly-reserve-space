@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, X } from "lucide-react";
-import { v4 as uuidv4 } from "@supabase/supabase-js/dist/module/lib/helpers";
+import { v4 as uuidv4 } from "uuid";
 
 interface Room {
   id: string;
@@ -124,18 +124,37 @@ const RoomForm: React.FC = () => {
     try {
       let roomId = id;
       
+      // Verificar se o nome está preenchido
+      if (!room.name) {
+        throw new Error("O nome da sala é obrigatório");
+      }
+      
       // Criar/atualizar sala
       if (isEditing) {
         const { error } = await supabase
           .from("rooms")
-          .update(room)
+          .update({
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables
+          })
           .eq("id", id);
         
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("rooms")
-          .insert(room)
+          .insert({
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables
+          })
           .select("id")
           .single();
         
