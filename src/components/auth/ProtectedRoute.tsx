@@ -13,25 +13,33 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Debugging para diagnóstico
+  // Enhanced debugging
   useEffect(() => {
-    if (!loading && user) {
-      console.log("ProtectedRoute - User metadata:", user.user_metadata);
-      console.log("ProtectedRoute - Required role:", requiredRole);
-      console.log("ProtectedRoute - Current path:", location.pathname);
+    if (!loading) {
+      console.log("ProtectedRoute - Auth state:", { authenticated: !!user, loading });
+      if (user) {
+        console.log("ProtectedRoute - User data:", { 
+          id: user.id, 
+          email: user.email,
+          metadata: user.user_metadata,
+          role: user.user_metadata?.role || "not set" 
+        });
+        console.log("ProtectedRoute - Required role:", requiredRole);
+      }
     }
-  }, [user, loading, requiredRole, location]);
+  }, [user, loading, requiredRole]);
 
-  // Mostrar spinner durante o carregamento
+  // Show improved loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+        <p className="text-muted-foreground text-sm">Verificando autenticação...</p>
       </div>
     );
   }
 
-  // Verificar se o usuário está autenticado
+  // Check if user is authenticated
   if (!user) {
     toast({
       variant: "destructive",
@@ -41,13 +49,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Verificar a role, se necessário
+  // Check role requirements
   if (requiredRole) {
-    // Tentar obter a role do user_metadata ou do objeto user diretamente
     const userRole = user.user_metadata?.role;
     
     if (userRole !== requiredRole) {
-      console.error(`Acesso negado: Usuário tem role ${userRole}, mas a página requer ${requiredRole}`);
+      console.error(`Access denied: User has role ${userRole}, but page requires ${requiredRole}`);
       
       toast({
         variant: "destructive",

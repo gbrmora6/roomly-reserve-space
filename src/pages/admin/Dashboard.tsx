@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,12 +7,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard, BookOpen, Mic, Bed as BedIcon } from "lucide-react";
 
 const AdminDashboard: React.FC = () => {
+  // Add debugging for component mounting
+  useEffect(() => {
+    console.log("AdminDashboard component mounted");
+  }, []);
+
   const { data: roomsCount, isLoading: roomsLoading } = useQuery({
     queryKey: ["roomsCount"],
     queryFn: async () => {
-      const { count } = await supabase
+      console.log("Fetching rooms count");
+      const { count, error } = await supabase
         .from("rooms")
         .select("*", { count: "exact", head: true });
+      
+      if (error) {
+        console.error("Error fetching rooms count:", error);
+        throw error;
+      }
+      
+      console.log("Rooms count received:", count);
       return count || 0;
     },
   });
@@ -20,9 +33,17 @@ const AdminDashboard: React.FC = () => {
   const { data: equipmentCount, isLoading: equipmentLoading } = useQuery({
     queryKey: ["equipmentCount"],
     queryFn: async () => {
-      const { count } = await supabase
+      console.log("Fetching equipment count");
+      const { count, error } = await supabase
         .from("equipment")
         .select("*", { count: "exact", head: true });
+      
+      if (error) {
+        console.error("Error fetching equipment count:", error);
+        throw error;
+      }
+      
+      console.log("Equipment count received:", count);
       return count || 0;
     },
   });
@@ -30,12 +51,22 @@ const AdminDashboard: React.FC = () => {
   const { data: bookingsCount, isLoading: bookingsLoading } = useQuery({
     queryKey: ["bookingsCount"],
     queryFn: async () => {
-      const { count } = await supabase
+      console.log("Fetching bookings count");
+      const { count, error } = await supabase
         .from("bookings")
         .select("*", { count: "exact", head: true });
+      
+      if (error) {
+        console.error("Error fetching bookings count:", error);
+        throw error;
+      }
+      
+      console.log("Bookings count received:", count);
       return count || 0;
     },
   });
+
+  console.log("AdminDashboard render state:", { roomsLoading, equipmentLoading, bookingsLoading });
 
   return (
     <div className="space-y-6">

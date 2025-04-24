@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,15 +17,26 @@ interface Equipment {
 }
 
 const AdminEquipment: React.FC = () => {
+  // Add debugging for component mounting
+  useEffect(() => {
+    console.log("AdminEquipment component mounted");
+  }, []);
+
   const { data: equipment, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["equipment"],
     queryFn: async () => {
+      console.log("Fetching equipment data");
       const { data, error } = await supabase
         .from("equipment")
         .select("*")
         .order("name");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching equipment:", error);
+        throw error;
+      }
+      
+      console.log("Equipment data received:", data);
       return data as Equipment[];
     },
   });
@@ -53,6 +64,8 @@ const AdminEquipment: React.FC = () => {
       });
     }
   };
+
+  console.log("AdminEquipment render state:", { isLoading, isError, equipmentCount: equipment?.length });
 
   return (
     <div className="space-y-6">

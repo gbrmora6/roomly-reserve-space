@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,26 @@ interface Room {
 }
 
 const AdminRooms: React.FC = () => {
+  // Add debugging for component mounting
+  useEffect(() => {
+    console.log("AdminRooms component mounted");
+  }, []);
+
   const { data: rooms, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["rooms"],
     queryFn: async () => {
+      console.log("Fetching rooms data");
       const { data, error } = await supabase
         .from("rooms")
         .select("*")
         .order("name");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching rooms:", error);
+        throw error;
+      }
+      
+      console.log("Rooms data received:", data);
       return data as Room[];
     },
   });
@@ -56,6 +67,8 @@ const AdminRooms: React.FC = () => {
       });
     }
   };
+
+  console.log("AdminRooms render state:", { isLoading, isError, roomsCount: rooms?.length });
 
   return (
     <div className="space-y-6">
