@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LayoutDashboard, BookOpen, Mic } from "lucide-react";
+import { LayoutDashboard, BookOpen, Mic, Bed as BedIcon } from "lucide-react";
 
 const AdminDashboard: React.FC = () => {
   const { data: roomsCount, isLoading: roomsLoading } = useQuery({
@@ -45,7 +45,7 @@ const AdminDashboard: React.FC = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-              <Bed className="mr-2 h-4 w-4" /> Salas
+              <BedIcon className="mr-2 h-4 w-4" /> Salas
             </CardTitle>
           </CardHeader>
           <CardContent>
