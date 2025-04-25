@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -51,6 +52,19 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				roomly: {
+					50: '#eef5ff',
+					100: '#d9e9ff',
+					200: '#bcd8ff',
+					300: '#8dc0ff',
+					400: '#589dff',
+					500: '#3174f6',
+					600: '#1a63e8',
+					700: '#1352d0',
+					800: '#1645ab',
+					900: '#183d85',
+					950: '#14275a',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
