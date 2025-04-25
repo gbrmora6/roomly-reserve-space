@@ -168,8 +168,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear user data from state
+      setUser(null);
+      setSession(null);
       
       navigate("/login");
       toast({
@@ -181,6 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Erro ao fazer logout",
         description: error.message,
       });
+    } finally {
+      setLoading(false);
     }
   };
 

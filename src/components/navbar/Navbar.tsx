@@ -7,6 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 const Navbar: React.FC = () => {
   const { user, signOut } = useAuth();
 
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await signOut();
+  };
+
   return (
     <header className="border-b bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -29,7 +34,7 @@ const Navbar: React.FC = () => {
                 </Link>
               )}
               
-              <Button variant="outline" onClick={() => signOut()}>
+              <Button variant="outline" onClick={handleSignOut}>
                 Sair
               </Button>
             </>
