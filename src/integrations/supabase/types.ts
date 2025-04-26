@@ -204,6 +204,44 @@ export type Database = {
           },
         ]
       }
+      room_schedules: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          room_id: string
+          start_time: string
+          updated_at: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          room_id: string
+          start_time: string
+          updated_at?: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          room_id?: string
+          start_time?: string
+          updated_at?: string
+          weekday?: Database["public"]["Enums"]["weekday"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_schedules_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           created_at: string
@@ -250,6 +288,14 @@ export type Database = {
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled"
       user_role: "admin" | "client"
+      weekday:
+        | "monday"
+        | "tuesday"
+        | "wednesday"
+        | "thursday"
+        | "friday"
+        | "saturday"
+        | "sunday"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -367,6 +413,15 @@ export const Constants = {
     Enums: {
       booking_status: ["pending", "confirmed", "cancelled"],
       user_role: ["admin", "client"],
+      weekday: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
     },
   },
 } as const

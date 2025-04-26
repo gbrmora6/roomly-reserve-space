@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -11,6 +10,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface Room {
   id: string;
@@ -28,6 +34,16 @@ interface RoomPhoto {
   url: string;
 }
 
+interface RoomSchedule {
+  weekday: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+  start_time: string;
+  end_time: string;
+}
+
+const WEEKDAYS = [
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+] as const;
+
 const RoomForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -44,36 +60,62 @@ const RoomForm: React.FC = () => {
   
   const [photos, setPhotos] = useState<RoomPhoto[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [schedules, setSchedules] = useState<RoomSchedule[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Carregar dados da sala se estiver editando
-  useQuery({
+  const { data: roomData } = useQuery({
     queryKey: ["room", id],
     enabled: isEditing,
     queryFn: async () => {
-      // Buscar dados da sala
-      const { data: roomData, error: roomError } = await supabase
+      const { data: roomInfo, error: roomError } = await supabase
         .from("rooms")
         .select("*")
         .eq("id", id)
         .single();
       
-      if (roomError) throw roomError;
-      
-      // Buscar fotos da sala
-      const { data: photoData, error: photoError } = await supabase
+      const { data: photoData } = await supabase
         .from("room_photos")
         .select("*")
         .eq("room_id", id);
       
-      if (photoError) throw photoError;
+      const { data: scheduleData } = await supabase
+        .from("room_schedules")
+        .select("*")
+        .eq("room_id", id);
       
-      setRoom(roomData);
+      setRoom(roomInfo || {});
       setPhotos(photoData || []);
+      setSchedules(scheduleData || []);
       
-      return { room: roomData, photos: photoData };
+      return { room: roomInfo, photos: photoData, schedules: scheduleData };
     },
   });
+  
+  const handleAddSchedule = () => {
+    setSchedules([...schedules, {
+      weekday: 'monday',
+      start_time: '08:00',
+      end_time: '17:00'
+    }]);
+  };
+  
+  const handleRemoveSchedule = (index: number) => {
+    const newSchedules = schedules.filter((_, i) => i !== index);
+    setSchedules(newSchedules);
+  };
+  
+  const handleScheduleChange = (
+    index: number, 
+    field: keyof RoomSchedule, 
+    value: string
+  ) => {
+    const newSchedules = [...schedules];
+    newSchedules[index] = {
+      ...newSchedules[index],
+      [field]: value
+    };
+    setSchedules(newSchedules);
+  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -122,47 +164,55 @@ const RoomForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      let roomId = id;
-      
-      // Verificar se o nome está preenchido
+      // Validate room data
       if (!room.name) {
         throw new Error("O nome da sala é obrigatório");
       }
       
-      // Criar/atualizar sala
+      // Create or update room
+      const { data: roomData, error: roomError } = await supabase
+        .from("rooms")
+        .upsert({
+          id: isEditing ? id : undefined,
+          name: room.name,
+          description: room.description,
+          has_wifi: room.has_wifi,
+          has_ac: room.has_ac,
+          has_chairs: room.has_chairs,
+          has_tables: room.has_tables
+        })
+        .select("id")
+        .single();
+      
+      if (roomError) throw roomError;
+      
+      const roomId = roomData.id;
+      
+      // Delete existing schedules if editing
       if (isEditing) {
-        const { error } = await supabase
-          .from("rooms")
-          .update({
-            name: room.name,
-            description: room.description,
-            has_wifi: room.has_wifi,
-            has_ac: room.has_ac,
-            has_chairs: room.has_chairs,
-            has_tables: room.has_tables
-          })
-          .eq("id", id);
-        
-        if (error) throw error;
-      } else {
-        const { data, error } = await supabase
-          .from("rooms")
-          .insert({
-            name: room.name,
-            description: room.description,
-            has_wifi: room.has_wifi,
-            has_ac: room.has_ac,
-            has_chairs: room.has_chairs,
-            has_tables: room.has_tables
-          })
-          .select("id")
-          .single();
-        
-        if (error) throw error;
-        roomId = data.id;
+        await supabase
+          .from("room_schedules")
+          .delete()
+          .eq("room_id", roomId);
       }
       
-      // Fazer upload das fotos
+      // Insert new schedules
+      if (schedules.length > 0) {
+        const schedulesToInsert = schedules.map(schedule => ({
+          room_id: roomId,
+          weekday: schedule.weekday,
+          start_time: schedule.start_time,
+          end_time: schedule.end_time
+        }));
+        
+        const { error: scheduleError } = await supabase
+          .from("room_schedules")
+          .insert(schedulesToInsert);
+        
+        if (scheduleError) throw scheduleError;
+      }
+      
+      // Handle photos upload logic
       if (files.length > 0) {
         for (const file of files) {
           const fileExt = file.name.split('.').pop();
@@ -367,6 +417,65 @@ const RoomForm: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+        
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold">Horários de Disponibilidade</h2>
+          {schedules.map((schedule, index) => (
+            <div key={index} className="grid grid-cols-4 gap-4 items-center">
+              <Select 
+                value={schedule.weekday}
+                onValueChange={(value) => 
+                  handleScheduleChange(index, 'weekday', value as RoomSchedule['weekday'])
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Dia da semana" />
+                </SelectTrigger>
+                <SelectContent>
+                  {WEEKDAYS.map(day => (
+                    <SelectItem key={day} value={day}>
+                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Input 
+                type="time" 
+                value={schedule.start_time}
+                onChange={(e) => 
+                  handleScheduleChange(index, 'start_time', e.target.value)
+                }
+                placeholder="Início" 
+              />
+              
+              <Input 
+                type="time" 
+                value={schedule.end_time}
+                onChange={(e) => 
+                  handleScheduleChange(index, 'end_time', e.target.value)
+                }
+                placeholder="Término" 
+              />
+              
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => handleRemoveSchedule(index)}
+              >
+                Remover
+              </Button>
+            </div>
+          ))}
+          
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={handleAddSchedule}
+          >
+            Adicionar Horário
+          </Button>
         </div>
         
         <div className="flex justify-end">
