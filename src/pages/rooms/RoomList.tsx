@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Calendar } from "lucide-react";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
