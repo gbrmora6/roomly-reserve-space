@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { format, setHours, setMinutes, subHours } from "date-fns";
+import { format, setHours, setMinutes, subHours , addHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 const RoomList: React.FC = () => {
@@ -46,63 +46,53 @@ const RoomList: React.FC = () => {
   }, []);
 
   const handleFilter = async () => {
-    if (!selectedDate || !selectedStartHour || !selectedEndHour) {
-      setFilteredRooms(rooms);
-      return;
-    }
-
-    const startHour = parseInt(selectedStartHour.split(":")[0], 10);
-    const endHour = parseInt(selectedEndHour.split(":")[0], 10);
-
-    if (endHour <= startHour) {
-      alert("O horário final deve ser depois do horário inicial.");
-      return;
-    }
-
-    // Corrigir fuso horário (-3 horas)
-    let startTime = subHours(setMinutes(setHours(selectedDate, startHour), 0), 3);
-    let endTime = subHours(setMinutes(setHours(selectedDate, endHour), 0), 3);
-
-    try {
-      const { data: bookings, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("room_id, start_time, end_time")
-        .gte("start_time", startTime.toISOString())
-        .lt("end_time", endTime.toISOString());
-
-      if (bookingsError) {
-        console.error(bookingsError);
-        return;
-      }
-
-      const bookedRoomIds = bookings?.map(b => b.room_id) || [];
-
-      const available = rooms.filter(room => !bookedRoomIds.includes(room.id));
-      setFilteredRooms(available);
-    } catch (error) {
-      console.error("Erro ao filtrar salas:", error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p>Carregando salas...</p>
-        </div>
-      </MainLayout>
-    );
+  if (!filterDate || !filterStartTime || !filterEndTime) {
+    alert("Por favor, selecione data e horários para filtrar.");
+    return;
   }
+
+  const startHour = parseInt(filterStartTime.split(":")[0]);
+  const endHour = parseInt(filterEndTime.split(":")[0]);
+
+  let startTime = new Date(filterDate);
+  let endTime = new Date(filterDate);
+
+  startTime.setHours(startHour, 0, 0, 0);
+  endTime.setHours(endHour, 0, 0, 0);
+
+  // 👇 Aqui é o ajuste importante para o horário UTC
+  const utcStart = addHours(startTime, 3);
+  const utcEnd = addHours(endTime, 3);
+
+  const { data: bookings, error } = await supabase
+    .from("bookings")
+    .select("room_id, start_time, end_time")
+    .gte("start_time", utcStart.toISOString())
+    .lt("end_time", utcEnd.toISOString());
 
   if (error) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </MainLayout>
-    );
+    console.error("Erro ao buscar reservas:", error);
+    return;
   }
+
+  const unavailableRoomIds = bookings?.map((b) => b.room_id) || [];
+
+  const { data: allRooms, error: roomsError } = await supabase
+    .from("rooms")
+    .select("*, room_photos(id, url)")
+    .order("created_at", { ascending: false });
+
+  if (roomsError) {
+    console.error("Erro ao buscar salas:", roomsError);
+    return;
+  }
+
+  const filteredRooms = (allRooms || []).filter(
+    (room) => !unavailableRoomIds.includes(room.id)
+  );
+
+  setRooms(filteredRooms);
+};
 
   return (
     <MainLayout>
