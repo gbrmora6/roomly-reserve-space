@@ -1,3 +1,7 @@
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/navigation";
+import { Navigation } from "swiper/modules";
 import React, { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,11 +66,31 @@ const RoomList: React.FC = () => {
               <CardHeader>
                 <CardTitle>{room.name}</CardTitle>
               </CardHeader>
-              <CardContent>
+             <CardContent>
+                {room.room_photos && room.room_photos.length > 0 && (
+                  <Swiper
+                    navigation
+                    modules={[Navigation]}
+                    className="w-full h-48 rounded-md mb-4"
+                  >
+                    {room.room_photos.map((photo) => (
+                      <SwiperSlide key={photo.id}>
+                        <img
+                          src={photo.url}
+                          alt="Foto da sala"
+                          className="w-full h-48 object-cover rounded-md"
+                        />
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                )}
                 <p className="mb-2">{room.description}</p>
-                <p className="text-sm text-gray-500 mb-4">Capacidade: {room.capacity} pessoas</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Capacidade: {room.capacity || "?"} pessoas
+                </p>
                 <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
               </CardContent>
+
             </Card>
           ))
         ) : (
