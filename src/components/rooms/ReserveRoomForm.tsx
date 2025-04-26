@@ -16,24 +16,34 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!room) return;
-
-    const openHour = parseInt(room.open_time.split(":")[0], 10);
-    const closeHour = parseInt(room.close_time.split(":")[0], 10);
-
-    const hours = [];
-    for (let hour = openHour; hour < closeHour; hour++) {
-      hours.push(`${hour.toString().padStart(2, "0")}:00`);
+    if (!room || !room.open_time || !room.close_time) {
+      setAvailableHours([]);
+      return;
     }
 
-    setAvailableHours(hours);
+    try {
+      const openHour = parseInt((room.open_time ?? "08:00").split(":")[0], 10);
+      const closeHour = parseInt((room.close_time ?? "18:00").split(":")[0], 10);
+
+      const hours: string[] = [];
+      for (let hour = openHour; hour < closeHour; hour++) {
+        hours.push(`${hour.toString().padStart(2, "0")}:00`);
+      }
+
+      setAvailableHours(hours);
+    } catch (error) {
+      console.error("Erro ao calcular horários disponíveis:", error);
+      setAvailableHours([]);
+    }
   }, [room]);
 
   const handleReserve = async () => {
     if (!selectedDate || !selectedHour) return;
 
     setLoading(true);
-    const user = (await supabase.auth.getUser()).data.user;
+
+    const { data, error: userError } = await supabase.auth.getUser();
+    const user = data?.user;
 
     if (!user) {
       alert("Usuário não autenticado.");
@@ -66,13 +76,13 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Reservar {room.name}</h2>
+      <h2 className="text-xl font-semibold mb-4">Reservar {room?.name ?? "Sala"}</h2>
 
       <div className="mb-6">
-        <Calendar mode="single" selected={selectedDate!} onSelect={setSelectedDate} className="rounded-md border" />
+        <Calendar mode="single" selected={selectedDate || undefined} onSelect={setSelectedDate} className="rounded-md border" />
       </div>
 
-      {selectedDate && (
+      {selectedDate && availableHours.length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg mb-2">Selecione o horário:</h3>
           <div className="grid grid-cols-3 gap-2">
