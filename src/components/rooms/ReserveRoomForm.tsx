@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addHours, setHours, setMinutes } from "date-fns";
+import { format, addHours, setHours, setMinutes, subHours } from "date-fns";
 
 interface ReserveRoomFormProps {
   room: any;
@@ -125,11 +125,12 @@ const handleReserve = async () => {
   endTime = subHours(endTime, 3);
 
   const { data: existingBookings, error: fetchError } = await supabase
-    .from("bookings")
-    .select("*")
-    .eq("room_id", room.id)
-    .gte("start_time", startTime.toISOString())
-    .lt("end_time", endTime.toISOString());
+  .from("bookings")
+  .select("*")
+  .eq("room_id", room.id)
+  .or(
+    `and(start_time.lte.${endTime.toISOString()},end_time.gte.${startTime.toISOString()})`
+  );
 
   if (fetchError) {
     console.error(fetchError);
