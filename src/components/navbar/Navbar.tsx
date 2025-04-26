@@ -9,7 +9,11 @@ const Navbar: React.FC = () => {
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
-    await signOut();
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
   };
 
   return (
