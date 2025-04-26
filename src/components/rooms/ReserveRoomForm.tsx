@@ -54,7 +54,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         }
 
         const blocked: string[] = [];
-
         bookingsData?.forEach((booking: any) => {
           const start = parseInt(booking.start_time.split("T")[1].split(":"[0]));
           const end = parseInt(booking.end_time.split("T")[1].split(":"[0]));
@@ -62,23 +61,11 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             blocked.push(`${i.toString().padStart(2, "0")}:00`);
           }
         });
-
         setBlockedHours(blocked);
 
-        // Verificar se todos os horários disponíveis foram bloqueados
-        const weekday = format(selectedDate, "eeee").toLowerCase();
-        const schedule = schedulesData?.find((sch: any) => sch.weekday === weekday);
-
-        if (schedule) {
-          const startHour = parseInt(schedule.start_time.split(":"[0]));
-          const endHour = parseInt(schedule.end_time.split(":"[0]));
-          const hours: string[] = [];
-          for (let hour = startHour; hour < endHour; hour++) {
-            hours.push(`${hour.toString().padStart(2, "0")}:00`);
-          }
-          const allBlocked = hours.every((hour) => blocked.includes(hour));
-          if (allBlocked) {
-            setFullyBookedDates((prev) => [...prev, selectedDate]);
+        if (availableHours.length > 0 && blocked.length >= availableHours.length) {
+          if (!fullyBookedDates.some(d => format(d, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd"))) {
+            setFullyBookedDates(prev => [...prev, selectedDate]);
           }
         }
       }
@@ -94,7 +81,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     }
 
     const weekday = format(selectedDate, "eeee").toLowerCase();
-    const schedule = schedules.find((sch) => sch.weekday === weekday);
+    const schedule = schedules.find(sch => sch.weekday === weekday);
 
     if (!schedule) {
       setAvailableHours([]);
@@ -185,9 +172,13 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         <Calendar
           mode="single"
           selected={selectedDate!}
-          onSelect={setSelectedDate}
+          onSelect={(date) => {
+            if (date && !fullyBookedDates.some((d) => format(d, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"))) {
+              setSelectedDate(date);
+            }
+          }}
+          disabled={(date) => fullyBookedDates.some((d) => format(d, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"))}
           className="rounded-md border"
-          disabled={(date) => fullyBookedDates.some(d => format(d, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"))}
         />
       </div>
 
