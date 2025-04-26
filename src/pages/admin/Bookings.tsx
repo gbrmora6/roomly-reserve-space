@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +31,7 @@ interface Booking {
 
 const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
-  
+
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
@@ -49,15 +48,15 @@ const AdminBookings: React.FC = () => {
           )
         `)
         .order("start_time", { ascending: false });
-      
+
       if (filter !== "all") {
         query = query.eq("status", filter);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) throw error;
-      
+
       return data as unknown as Booking[];
     },
   });
@@ -68,13 +67,13 @@ const AdminBookings: React.FC = () => {
         .from("bookings")
         .update({ status })
         .eq("id", id);
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Status da reserva atualizado com sucesso",
       });
-      
+
       refetch();
     } catch (error: any) {
       toast({
