@@ -17,6 +17,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { format, setHours, setMinutes, subHours , addHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
+const [filterDate, setFilterDate] = useState<Date | null>(null);
+const [filterStartTime, setFilterStartTime] = useState<string>("");
+const [filterEndTime, setFilterEndTime] = useState<string>("");
+
+
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
