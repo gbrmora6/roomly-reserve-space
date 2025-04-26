@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { format, setHours, setMinutes, subHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
-
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +29,7 @@ const RoomList: React.FC = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
+        setLoading(true);
         const data = await roomService.getAllRooms();
         setRooms(data || []);
       } catch (err) {
@@ -39,63 +39,60 @@ const RoomList: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchRooms();
   }, []);
 
   const handleFilter = async () => {
-  if (!filterDate || !filterStartHour || !filterEndHour) {
-    alert("Selecione a data, horário de início e horário de fim!");
-    return;
-  }
-
-  const adjustedDate = subHours(new Date(filterDate), 3);
-
-  const startHour = parseInt(filterStartHour.split(":")[0], 10);
-  const endHour = parseInt(filterEndHour.split(":")[0], 10);
-
-  const startTime = setMinutes(setHours(adjustedDate, startHour), 0);
-  const endTime = setMinutes(setHours(adjustedDate, endHour), 0);
-
-  try {
-    setLoading(true);
-
-    const { data: allRooms, error: roomsError } = await roomService.getAllRooms();
-
-    if (roomsError) {
-      console.error(roomsError);
-      setError("Erro ao buscar salas.");
+    if (!filterDate || !filterStartTime || !filterEndTime) {
+      alert("Selecione a data, horário de início e horário de fim!");
       return;
     }
 
-    const availableRooms: Room[] = [];
+    const adjustedDate = subHours(new Date(filterDate), 3);
 
-    for (const room of allRooms || []) {
-      const { data: bookings, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("start_time, end_time")
-        .eq("room_id", room.id)
-        .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+    const startHour = parseInt(filterStartTime.split(":")[0], 10);
+    const endHour = parseInt(filterEndTime.split(":")[0], 10);
 
-      if (bookingsError) {
-        console.error(bookingsError);
-        continue;
+    const startTime = setMinutes(setHours(adjustedDate, startHour), 0);
+    const endTime = setMinutes(setHours(adjustedDate, endHour), 0);
+
+    try {
+      setLoading(true);
+      const { data: allRooms, error: roomsError } = await roomService.getAllRooms();
+
+      if (roomsError) {
+        console.error(roomsError);
+        setError("Erro ao buscar salas.");
+        return;
       }
 
-      if (bookings && bookings.length === 0) {
-        availableRooms.push(room);
+      const availableRooms: Room[] = [];
+
+      for (const room of allRooms || []) {
+        const { data: bookings, error: bookingsError } = await supabase
+          .from("bookings")
+          .select("start_time, end_time")
+          .eq("room_id", room.id)
+          .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+
+        if (bookingsError) {
+          console.error(bookingsError);
+          continue;
+        }
+
+        if (bookings && bookings.length === 0) {
+          availableRooms.push(room);
+        }
       }
+
+      setRooms(availableRooms);
+    } catch (err) {
+      console.error("Erro ao filtrar salas:", err);
+      setError("Não foi possível filtrar as salas.");
+    } finally {
+      setLoading(false);
     }
-
-    setRooms(availableRooms);
-  } catch (err) {
-    console.error("Erro ao filtrar salas:", err);
-    setError("Não foi possível filtrar as salas.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <MainLayout>
@@ -150,11 +147,7 @@ const RoomList: React.FC = () => {
               </CardHeader>
               <CardContent>
                 {room.room_photos && room.room_photos.length > 0 && (
-                  <Swiper
-                    navigation
-                    modules={[Navigation]}
-                    className="w-full h-48 rounded-md mb-4"
-                  >
+                  <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-4">
                     {room.room_photos.map((photo) => (
                       <SwiperSlide key={photo.id}>
                         <img
