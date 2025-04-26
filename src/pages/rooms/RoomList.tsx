@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "lucide-react";
+import { roomService } from "@/services/roomService";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
