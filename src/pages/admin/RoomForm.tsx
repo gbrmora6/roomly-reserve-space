@@ -165,109 +165,116 @@ const RoomForm: React.FC = () => {
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      // Validate room data
-      if (!room.name) {
-        throw new Error("O nome da sala é obrigatório");
-      }
-      
-      // Create or update room
-      const { data: roomData, error: roomError } = await supabase
-          .from("rooms")
-          .upsert({
-            id: isEditing ? id : undefined,
-            name: room.name,
-            description: room.description,
-            has_wifi: room.has_wifi,
-            has_ac: room.has_ac,
-            has_chairs: room.has_chairs,
-            has_tables: room.has_tables,
-            open_time: room.open_time,
-            close_time: room.close_time,
-          })
-          .select("id")
-          .single();
+  e.preventDefault();
+  setIsSubmitting(true);
 
-      
-      if (roomError) throw roomError;
-      
-      const roomId = roomData.id;
-      
-      // Delete existing schedules if editing
-      if (isEditing) {
-        await supabase
-          .from("room_schedules")
-          .delete()
-          .eq("room_id", roomId);
+  try {
+    if (!room.name) {
+      throw new Error("O nome da sala é obrigatório");
+    }
+
+    // Criação ou atualização da sala
+    const { data: roomData, error: errorRoom } = await supabase
+      .from("rooms")
+      .upsert({
+        id: isEditing ? id : undefined,
+        name: room.name,
+        description: room.description,
+        has_wifi: room.has_wifi,
+        has_ac: room.has_ac,
+        has_chairs: room.has_chairs,
+        has_tables: room.has_tables,
+      })
+      .select("id")
+      .single();
+
+    if (errorRoom) {
+      throw new Error(errorRoom.message || "Erro desconhecido ao criar/atualizar sala");
+    }
+
+    const roomId = roomData.id;
+
+    // Se for edição, limpa horários antigos
+    if (isEditing) {
+      const { error: errorDeleteSchedules } = await supabase
+        .from("room_schedules")
+        .delete()
+        .eq("room_id", roomId);
+
+      if (errorDeleteSchedules) {
+        throw new Error(errorDeleteSchedules.message || "Erro ao limpar horários antigos");
       }
-      
-      // Insert new schedules
-      if (schedules.length > 0) {
-        const schedulesToInsert = schedules.map(schedule => ({
-          room_id: roomId,
-          weekday: schedule.weekday,
-          start_time: schedule.start_time,
-          end_time: schedule.end_time
-        }));
-        
-        const { error: scheduleError } = await supabase
-          .from("room_schedules")
-          .insert(schedulesToInsert);
-        
-        if (scheduleError) throw scheduleError;
+    }
+
+    // Insere novos horários
+    if (schedules.length > 0) {
+      const schedulesToInsert = schedules.map(schedule => ({
+        room_id: roomId,
+        weekday: schedule.weekday,
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+      }));
+
+      const { error: errorInsertSchedules } = await supabase
+        .from("room_schedules")
+        .insert(schedulesToInsert);
+
+      if (errorInsertSchedules) {
+        throw new Error(errorInsertSchedules.message || "Erro ao inserir horários");
       }
-      
-      // Handle photos upload logic
-      if (files.length > 0) {
-        for (const file of files) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${uuidv4()}.${fileExt}`;
-          const filePath = `${roomId}/${fileName}`;
-          
-          // Upload para o storage
-          const { error: uploadError } = await supabase
-            .storage
-            .from('room-photos')
-            .upload(filePath, file);
-          
-          if (uploadError) throw uploadError;
-          
-          // Obter URL pública
-          const { data: publicURL } = supabase
-            .storage
-            .from('room-photos')
-            .getPublicUrl(filePath);
-          
-          // Salvar referência na tabela room_photos
-          const { error: photoError } = await supabase
-            .from('room_photos')
-            .insert({
-              room_id: roomId,
-              url: publicURL.publicUrl
-            });
-          
-          if (photoError) throw photoError;
+    }
+
+    // Upload das fotos
+    if (files.length > 0) {
+      for (const file of files) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const filePath = `${roomId}/${fileName}`;
+
+        const { error: uploadError } = await supabase
+          .storage
+          .from("room-photos")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
+        }
+
+        const { data: publicURLData } = supabase
+          .storage
+          .from("room-photos")
+          .getPublicUrl(filePath);
+
+        const { error: photoInsertError } = await supabase
+          .from("room_photos")
+          .insert({
+            room_id: roomId,
+            url: publicURLData.publicUrl,
+          });
+
+        if (photoInsertError) {
+          throw new Error(photoInsertError.message || "Erro ao salvar imagem da sala");
         }
       }
-      
-      toast({
-        title: isEditing ? "Sala atualizada com sucesso" : "Sala criada com sucesso",
-      });
-      
-      navigate("/admin/rooms");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: isEditing ? "Erro ao atualizar sala" : "Erro ao criar sala",
-        description: error.message,
-      });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    toast({
+      title: isEditing ? "Sala atualizada com sucesso" : "Sala criada com sucesso",
+    });
+
+    navigate("/admin/rooms");
+
+  } catch (error: any) {
+    toast({
+      variant: "destructive",
+      title: isEditing ? "Erro ao atualizar sala" : "Erro ao criar sala",
+      description: error.message || "Erro inesperado",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
   
   return (
     <div className="space-y-6">
