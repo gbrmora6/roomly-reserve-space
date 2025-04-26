@@ -300,29 +300,7 @@ const RoomForm: React.FC = () => {
                 required
               />
             </div>
-            <div className="space-y-2">
-                  <Label htmlFor="open_time">Horário de Abertura</Label>
-                  <Input
-                    id="open_time"
-                    name="open_time"
-                    type="time"
-                    value={room.open_time || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="close_time">Horário de Fechamento</Label>
-                  <Input
-                    id="close_time"
-                    name="close_time"
-                    type="time"
-                    value={room.close_time || ""}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+            
             <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>
               <Textarea
