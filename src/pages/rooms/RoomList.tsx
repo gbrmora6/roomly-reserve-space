@@ -1,59 +1,150 @@
-import React, { useEffect, useState } from "react";
+
+import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { roomService } from "@/services/roomService"; // Importa o serviço que fala com o Supabase
-import { Room } from "@/integrations/supabase/types"; // Tipo da sala (opcional mas deixa mais bonito)
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Calendar } from "lucide-react";
 
 const RoomList: React.FC = () => {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchRooms = async () => {
-      const { data, error } = await roomService.getAllRooms(); // Buscar todas as salas
-      if (error) {
-        console.error("Erro ao buscar salas:", error.message);
-      } else {
-        setRooms(data || []);
-      }
-      setLoading(false);
-    };
-
-    fetchRooms();
-  }, []);
-
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p>Carregando salas...</p>
-        </div>
-      </MainLayout>
-    );
-  }
+  // Mock data de salas
+  const rooms = [
+    {
+      id: 1,
+      name: "Sala de Reunião Grande",
+      description: "Espaço amplo para reuniões com equipes maiores",
+      capacity: 20,
+      features: ["Wi-Fi", "Ar-condicionado", "Projetor", "Quadro branco"],
+      image: "/placeholder.svg",
+      pricePerHour: 150,
+    },
+    {
+      id: 2,
+      name: "Sala de Treinamento",
+      description: "Sala equipada para treinamentos e workshops",
+      capacity: 15,
+      features: ["Wi-Fi", "Ar-condicionado", "Smart TV", "Flipchart"],
+      image: "/placeholder.svg",
+      pricePerHour: 120,
+    },
+    {
+      id: 3,
+      name: "Sala Pequena",
+      description: "Sala ideal para reuniões menores e entrevistas",
+      capacity: 6,
+      features: ["Wi-Fi", "Ar-condicionado", "TV"],
+      image: "/placeholder.svg",
+      pricePerHour: 80,
+    },
+  ];
 
   return (
     <MainLayout>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
-        {rooms.length > 0 ? (
-          rooms.map((room) => (
-            <Card key={room.id}>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold text-gray-900">Salas disponíveis</h1>
+        
+        {/* Filtros */}
+        <div className="mt-8 rounded-lg border bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Filtros</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="date">Data</Label>
+              <div className="relative">
+                <Input id="date" type="date" className="pl-10" />
+                <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Capacidade</Label>
+              <Select>
+                <SelectTrigger id="capacity">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Qualquer</SelectItem>
+                  <SelectItem value="1-5">1-5 pessoas</SelectItem>
+                  <SelectItem value="6-10">6-10 pessoas</SelectItem>
+                  <SelectItem value="11-20">11-20 pessoas</SelectItem>
+                  <SelectItem value="20+">Mais de 20 pessoas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="features">Recursos</Label>
+              <Select>
+                <SelectTrigger id="features">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="wifi">Wi-Fi</SelectItem>
+                  <SelectItem value="projector">Projetor</SelectItem>
+                  <SelectItem value="ac">Ar-condicionado</SelectItem>
+                  <SelectItem value="whiteboard">Quadro branco</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-end">
+            <Button className="bg-roomly-600 hover:bg-roomly-700">
+              Aplicar filtros
+            </Button>
+          </div>
+        </div>
+        
+        {/* Lista de salas */}
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {rooms.map((room) => (
+            <Card key={room.id} className="overflow-hidden">
+              <div className="relative h-48 w-full overflow-hidden">
+                <img
+                  src={room.image}
+                  alt={room.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              
               <CardHeader>
                 <CardTitle>{room.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="mb-2">{room.description}</p>
-                <p className="text-sm text-gray-500 mb-4">Capacidade: {room.capacity} pessoas</p>
-                <Button>Reservar</Button>
+              
+              <CardContent className="space-y-4">
+                <p className="text-gray-600">{room.description}</p>
+                <div>
+                  <p className="font-medium text-gray-900">Capacidade: {room.capacity} pessoas</p>
+                  <p className="text-roomly-600 font-bold">R$ {room.pricePerHour}/hora</p>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h4 className="mb-2 font-medium text-gray-900">Recursos:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {room.features.map((feature, index) => (
+                      <span
+                        key={index}
+                        className="rounded-full bg-roomly-100 px-3 py-1 text-xs text-roomly-800"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
+              
+              <CardFooter>
+                <Button className="w-full bg-roomly-600 hover:bg-roomly-700">
+                  Reservar agora
+                </Button>
+              </CardFooter>
             </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center text-gray-500">
-            Nenhuma sala disponível no momento.
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </MainLayout>
   );
