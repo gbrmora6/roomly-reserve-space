@@ -181,17 +181,28 @@ const handleReserve = async () => {
         <>
           <h3 className="text-lg mb-2">Selecione o horário de início:</h3>
           <div className="grid grid-cols-3 gap-2 mb-6">
-            {availableHours.map((hour) => (
-              <Button
-                key={hour}
-                variant={startHour === hour ? "default" : blockedHours.includes(hour) ? "destructive" : "outline"}
-                onClick={() => !blockedHours.includes(hour) && setStartHour(hour)}
-                disabled={blockedHours.includes(hour)}
-              >
-                {hour}
-              </Button>
-            ))}
-          </div>
+                {availableHours.map((hour, index) => {
+                  const isBlocked = blockedHours.includes(hour);
+                  const isLastHour = index === availableHours.length - 1;
+              
+                  return (
+                    <Button
+                      key={hour}
+                      variant={startHour === hour ? "default" : (isBlocked || isLastHour) ? "destructive" : "outline"}
+                      onClick={() => {
+                        if (!isBlocked && !isLastHour) {
+                          setStartHour(hour);
+                          setEndHour(""); // reseta o fim quando escolhe o início
+                        }
+                      }}
+                      disabled={isBlocked || isLastHour}
+                    >
+                      {hour}
+                    </Button>
+                  );
+                })}
+              </div>
+
 
           {startHour && (
             <>
