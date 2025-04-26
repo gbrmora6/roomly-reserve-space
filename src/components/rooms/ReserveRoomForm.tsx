@@ -96,7 +96,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     setAvailableHours(hours);
   }, [selectedDate, schedules]);
 
-  const handleReserve = async () => {
+const handleReserve = async () => {
   if (!selectedDate || !startHour || !endHour) return;
 
   const start = parseInt(startHour.split(":")[0]);
@@ -117,10 +117,13 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     return;
   }
 
-  const startTime = setMinutes(setHours(selectedDate, start), 0);
-  const endTime = setMinutes(setHours(selectedDate, end), 0);
+  let startTime = setMinutes(setHours(selectedDate, start), 0);
+  let endTime = setMinutes(setHours(selectedDate, end), 0);
 
-  // 👇 Verificar se já existe reserva no mesmo horário
+  // 👇 CORREÇÃO AQUI: ajustar para UTC
+  startTime = subHours(startTime, 3);
+  endTime = subHours(endTime, 3);
+
   const { data: existingBookings, error: fetchError } = await supabase
     .from("bookings")
     .select("*")
@@ -141,7 +144,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     return;
   }
 
-  // Se passou pela verificação, pode inserir
   const { error } = await supabase.from("bookings").insert({
     user_id: user.id,
     room_id: room.id,
