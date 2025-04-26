@@ -10,36 +10,22 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "lucide-react";
 
 const RoomList: React.FC = () => {
-  // Mock data de salas
-  const rooms = [
-    {
-      id: 1,
-      name: "Sala de Reunião Grande",
-      description: "Espaço amplo para reuniões com equipes maiores",
-      capacity: 20,
-      features: ["Wi-Fi", "Ar-condicionado", "Projetor", "Quadro branco"],
-      image: "/placeholder.svg",
-      pricePerHour: 150,
-    },
-    {
-      id: 2,
-      name: "Sala de Treinamento",
-      description: "Sala equipada para treinamentos e workshops",
-      capacity: 15,
-      features: ["Wi-Fi", "Ar-condicionado", "Smart TV", "Flipchart"],
-      image: "/placeholder.svg",
-      pricePerHour: 120,
-    },
-    {
-      id: 3,
-      name: "Sala Pequena",
-      description: "Sala ideal para reuniões menores e entrevistas",
-      capacity: 6,
-      features: ["Wi-Fi", "Ar-condicionado", "TV"],
-      image: "/placeholder.svg",
-      pricePerHour: 80,
-    },
-  ];
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const data = await roomService.getAllRooms(); // Aqui já tratamos sem esperar erro
+        setRooms(data || []);
+      } catch (err) {
+        console.error("Erro ao carregar salas:", err);
+        setError("Não foi possível carregar as salas. Tente novamente mais tarde.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   return (
     <MainLayout>
