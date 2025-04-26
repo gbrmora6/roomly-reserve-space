@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { roomService } from "@/services/roomService";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addHours, setHours, setMinutes } from "date-fns";
+import { format, addHours, setHours, setMinutes, isAfter } from "date-fns";
 
 interface ReserveRoomFormProps {
   room: any;
@@ -18,8 +19,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   useEffect(() => {
     if (!room) return;
 
-    const openHour = parseInt(room.open_time.split(":")[0], 10);
-    const closeHour = parseInt(room.close_time.split(":")[0], 10);
+    const openHour = parseInt(room.open_time.split(":"[0]), 10);
+    const closeHour = parseInt(room.close_time.split(":"[0]), 10);
 
     const hours = [];
     for (let hour = openHour; hour < closeHour; hour++) {
@@ -65,8 +66,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Reservar {room.name}</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold mb-4">Reservar {room.name}</h2>
 
       <div className="mb-6">
         <Calendar mode="single" selected={selectedDate!} onSelect={setSelectedDate} className="rounded-md border" />
@@ -90,9 +91,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
+        <Button variant="outline" onClick={onClose}>Cancelar</Button>
         <Button onClick={handleReserve} disabled={!selectedDate || !selectedHour || loading}>
           {loading ? "Reservando..." : "Confirmar Reserva"}
         </Button>
