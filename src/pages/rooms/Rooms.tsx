@@ -1,4 +1,4 @@
-// src/pages/rooms.tsx
+// src/pages/rooms/rooms.tsx
 import { useEffect, useState } from "react";
 import { roomService } from "@/services/roomService";
 import { Card, CardContent } from "@/components/ui/card";
