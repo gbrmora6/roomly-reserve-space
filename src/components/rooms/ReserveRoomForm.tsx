@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addHours, setHours, setMinutes, subHours } from "date-fns";
+import { format, addHours, setHours, setMinutes, subHours , isSameDay } from "date-fns";
+
 
 interface ReserveRoomFormProps {
   room: any;
@@ -201,12 +202,17 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
       <div className="mb-6">
         <Calendar
-          mode="single"
-          selected={selectedDate!}
-          onSelect={setSelectedDate}
-          className="rounded-md border"
-          disabled={(date) => fullyBookedDates.some(d => format(d, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"))}
-        />
+            mode="single"
+            selected={selectedDate!}
+            onSelect={(date) => {
+              if (!fullyBookedDates.some((d) => isSameDay(d, date!))) {
+                setSelectedDate(date);
+              }
+            }}
+            className="rounded-md border"
+            disabled={(date) => fullyBookedDates.some((d) => isSameDay(d, date))}
+          />
+
       </div>
 
       {selectedDate && availableHours.length > 0 ? (
