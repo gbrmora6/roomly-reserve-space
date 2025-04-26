@@ -97,41 +97,70 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   }, [selectedDate, schedules]);
 
   const handleReserve = async () => {
-    if (!selectedDate || !startHour || !endHour) return;
+  if (!selectedDate || !startHour || !endHour) return;
 
-    setLoading(true);
-    const user = (await supabase.auth.getUser()).data.user;
+  const start = parseInt(startHour.split(":")[0]);
+  const end = parseInt(endHour.split(":")[0]);
 
-    if (!user) {
-      alert("Usuário não autenticado.");
-      setLoading(false);
-      return;
-    }
+  if (end <= start) {
+    alert("O horário final deve ser depois do horário inicial.");
+    return;
+  }
 
-    const [startH, startM] = startHour.split(":").map(Number);
-    const [endH, endM] = endHour.split(":").map(Number);
+  setLoading(true);
 
-    const startTime = setMinutes(setHours(selectedDate, startH), startM);
-    const endTime = setMinutes(setHours(selectedDate, endH), endM);
+  const user = (await supabase.auth.getUser()).data.user;
 
-    const { error } = await supabase.from("bookings").insert({
-      user_id: user.id,
-      room_id: room.id,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
-      status: "pending",
-    });
-
-    if (error) {
-      console.error(error);
-      alert("Erro ao reservar a sala.");
-    } else {
-      alert("Reserva realizada com sucesso!");
-      onClose();
-    }
-
+  if (!user) {
+    alert("Usuário não autenticado.");
     setLoading(false);
-  };
+    return;
+  }
+
+  const startTime = setMinutes(setHours(selectedDate, start), 0);
+  const endTime = setMinutes(setHours(selectedDate, end), 0);
+
+  // 👇 Verificar se já existe reserva no mesmo horário
+  const { data: existingBookings, error: fetchError } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("room_id", room.id)
+    .gte("start_time", startTime.toISOString())
+    .lt("end_time", endTime.toISOString());
+
+  if (fetchError) {
+    console.error(fetchError);
+    alert("Erro ao verificar disponibilidade.");
+    setLoading(false);
+    return;
+  }
+
+  if (existingBookings && existingBookings.length > 0) {
+    alert("Horário já reservado! Escolha outro horário.");
+    setLoading(false);
+    return;
+  }
+
+  // Se passou pela verificação, pode inserir
+  const { error } = await supabase.from("bookings").insert({
+    user_id: user.id,
+    room_id: room.id,
+    start_time: startTime.toISOString(),
+    end_time: endTime.toISOString(),
+    status: "pending",
+  });
+
+  if (error) {
+    console.error(error);
+    alert("Erro ao reservar a sala.");
+  } else {
+    alert("Reserva realizada com sucesso!");
+    onClose();
+  }
+
+  setLoading(false);
+};
+
 
   return (
     <div className="p-4">
