@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -75,13 +75,17 @@ const RoomList: React.FC = () => {
           </div>
         )}
       </div>
-      {selectedRoom && (
-        <Dialog open={!!selectedRoom} onOpenChange={() => setSelectedRoom(null)}>
-          <DialogContent>
+      <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reservar Sala</DialogTitle>
+          </DialogHeader>
+          {selectedRoom && (
             <ReserveRoomForm room={selectedRoom} onClose={() => setSelectedRoom(null)} />
-          </DialogContent>
-        </Dialog>
-      )}
+          )}
+          <DialogClose />
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
