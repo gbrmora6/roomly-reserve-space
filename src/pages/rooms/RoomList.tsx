@@ -7,17 +7,19 @@ import { Room } from "@/integrations/supabase/types";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Calendar } from "lucide-react";
+import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const data = await roomService.getAllRooms(); // Aqui já tratamos sem esperar erro
+        const data = await roomService.getAllRooms();
         setRooms(data || []);
       } catch (err) {
         console.error("Erro ao carregar salas:", err);
@@ -62,7 +64,7 @@ const RoomList: React.FC = () => {
               <CardContent>
                 <p className="mb-2">{room.description}</p>
                 <p className="text-sm text-gray-500 mb-4">Capacidade: {room.capacity} pessoas</p>
-                <Button>Reservar</Button>
+                <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
               </CardContent>
             </Card>
           ))
@@ -72,6 +74,13 @@ const RoomList: React.FC = () => {
           </div>
         )}
       </div>
+      {selectedRoom && (
+        <Dialog open={!!selectedRoom} onOpenChange={() => setSelectedRoom(null)}>
+          <DialogContent>
+            <ReserveRoomForm room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+          </DialogContent>
+        </Dialog>
+      )}
     </MainLayout>
   );
 };
