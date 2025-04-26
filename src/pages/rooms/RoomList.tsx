@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Tables } from "@/integrations/supabase/types"
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
