@@ -26,6 +26,8 @@ interface Room {
   has_ac: boolean | null;
   has_chairs: boolean | null;
   has_tables: boolean | null;
+  open_time: string | null; // <--- ADICIONAR
+  close_time: string | null; // <--- ADICIONAR
 }
 
 interface RoomPhoto {
@@ -50,13 +52,16 @@ const RoomForm: React.FC = () => {
   const isEditing = !!id;
   
   const [room, setRoom] = useState<Partial<Room>>({
-    name: "",
-    description: "",
-    has_wifi: false,
-    has_ac: false,
-    has_chairs: false,
-    has_tables: false,
-  });
+  name: "",
+  description: "",
+  has_wifi: false,
+  has_ac: false,
+  has_chairs: false,
+  has_tables: false,
+  open_time: "08:00", // <--- ADICIONAR valor padrão
+  close_time: "18:00", // <--- ADICIONAR valor padrão
+});
+
   
   const [photos, setPhotos] = useState<RoomPhoto[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -171,18 +176,21 @@ const RoomForm: React.FC = () => {
       
       // Create or update room
       const { data: roomData, error: roomError } = await supabase
-        .from("rooms")
-        .upsert({
-          id: isEditing ? id : undefined,
-          name: room.name,
-          description: room.description,
-          has_wifi: room.has_wifi,
-          has_ac: room.has_ac,
-          has_chairs: room.has_chairs,
-          has_tables: room.has_tables
-        })
-        .select("id")
-        .single();
+          .from("rooms")
+          .upsert({
+            id: isEditing ? id : undefined,
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables,
+            open_time: room.open_time,
+            close_time: room.close_time,
+          })
+          .select("id")
+          .single();
+
       
       if (roomError) throw roomError;
       
@@ -285,7 +293,29 @@ const RoomForm: React.FC = () => {
                 required
               />
             </div>
-            
+            <div className="space-y-2">
+                  <Label htmlFor="open_time">Horário de Abertura</Label>
+                  <Input
+                    id="open_time"
+                    name="open_time"
+                    type="time"
+                    value={room.open_time || ""}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="close_time">Horário de Fechamento</Label>
+                  <Input
+                    id="close_time"
+                    name="close_time"
+                    type="time"
+                    value={room.close_time || ""}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
             <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>
               <Textarea
