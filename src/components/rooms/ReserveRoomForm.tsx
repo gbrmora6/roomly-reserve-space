@@ -128,9 +128,8 @@ const handleReserve = async () => {
   .from("bookings")
   .select("*")
   .eq("room_id", room.id)
-  .or(
-    `and(start_time.lte.${endTime.toISOString()},end_time.gte.${startTime.toISOString()})`
-  );
+  .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+
 
   if (fetchError) {
     console.error(fetchError);
