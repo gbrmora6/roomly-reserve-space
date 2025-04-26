@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { format, setHours, setMinutes, subHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
+
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,58 +44,58 @@ const RoomList: React.FC = () => {
   }, []);
 
   const handleFilter = async () => {
-    if (!filterDate || !filterStartTime || !filterEndTime) return;
+  if (!filterDate || !filterStartHour || !filterEndHour) {
+    alert("Selecione a data, horário de início e horário de fim!");
+    return;
+  }
 
-    const startHour = parseInt(filterStartTime.split(":"))[0];
-    const endHour = parseInt(filterEndTime.split(":"))[0];
+  const adjustedDate = subHours(new Date(filterDate), 3);
 
-    let startTime = setMinutes(setHours(filterDate, startHour), 0);
-    let endTime = setMinutes(setHours(filterDate, endHour), 0);
+  const startHour = parseInt(filterStartHour.split(":")[0], 10);
+  const endHour = parseInt(filterEndHour.split(":")[0], 10);
 
-    startTime = subHours(startTime, 3);
-    endTime = subHours(endTime, 3);
+  const startTime = setMinutes(setHours(adjustedDate, startHour), 0);
+  const endTime = setMinutes(setHours(adjustedDate, endHour), 0);
 
-    const { data: bookingsData, error: bookingsError } = await supabase
-      .from("bookings")
-      .select("room_id, start_time, end_time")
-      .gte("start_time", startTime.toISOString())
-      .lt("end_time", endTime.toISOString());
+  try {
+    setLoading(true);
 
-    if (bookingsError) {
-      console.error("Erro ao buscar reservas:", bookingsError);
+    const { data: allRooms, error: roomsError } = await roomService.getAllRooms();
+
+    if (roomsError) {
+      console.error(roomsError);
+      setError("Erro ao buscar salas.");
       return;
     }
 
-    const bookedRoomIds = bookingsData?.map((b) => b.room_id) || [];
+    const availableRooms: Room[] = [];
 
-    try {
-      const allRooms = await roomService.getAllRooms();
-      const availableRooms = allRooms.filter((room) => !bookedRoomIds.includes(room.id));
-      setRooms(availableRooms);
-    } catch (err) {
-      console.error("Erro ao filtrar salas:", err);
+    for (const room of allRooms || []) {
+      const { data: bookings, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("start_time, end_time")
+        .eq("room_id", room.id)
+        .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+
+      if (bookingsError) {
+        console.error(bookingsError);
+        continue;
+      }
+
+      if (bookings && bookings.length === 0) {
+        availableRooms.push(room);
+      }
     }
-  };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p>Carregando salas...</p>
-        </div>
-      </MainLayout>
-    );
+    setRooms(availableRooms);
+  } catch (err) {
+    console.error("Erro ao filtrar salas:", err);
+    setError("Não foi possível filtrar as salas.");
+  } finally {
+    setLoading(false);
   }
+};
 
-  if (error) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
