@@ -4,9 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const roomService = {
   async getAllRooms() {
     const { data, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .order("created_at", { ascending: false });
+        .from("rooms")
+        .select(`
+          *,
+          room_photos (
+            id,
+            url
+          )
+        `)
+        .order("created_at", { ascending: false });
+
 
     if (error) {
       console.error("Erro ao buscar salas:", error);
