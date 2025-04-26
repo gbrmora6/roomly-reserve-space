@@ -2,11 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
-import { addHours, setHours, setMinutes } from "date-fns";
+import { format, addHours, setHours, setMinutes } from "date-fns";
 
 interface ReserveRoomFormProps {
   room: any;
   onClose: () => void;
+}
+
+interface RoomSchedule {
+  weekday: string;
+  start_time: string;
+  end_time: string;
 }
 
 const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
@@ -14,35 +20,57 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedHour, setSelectedHour] = useState<string>("");
   const [availableHours, setAvailableHours] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [schedules, setSchedules] = useState<RoomSchedule[]>([]);
 
   useEffect(() => {
-    if (!room || !room.open_time || !room.close_time) {
+    const fetchSchedules = async () => {
+      if (!room?.id) return;
+      const { data, error } = await supabase
+        .from("room_schedules")
+        .select("*")
+        .eq("room_id", room.id);
+
+      if (error) {
+        console.error("Erro ao buscar horários da sala:", error);
+      } else {
+        setSchedules(data || []);
+      }
+    };
+
+    fetchSchedules();
+  }, [room]);
+
+  useEffect(() => {
+    if (!selectedDate || schedules.length === 0) {
       setAvailableHours([]);
       return;
     }
 
-    try {
-      const openHour = parseInt(room.open_time.split(":")[0], 10);
-      const closeHour = parseInt(room.close_time.split(":")[0], 10);
+    const weekday = format(selectedDate, "eeee").toLowerCase(); // ex: monday, tuesday, etc.
 
-      const hours: string[] = [];
-      for (let hour = openHour; hour < closeHour; hour++) {
-        hours.push(`${hour.toString().padStart(2, "0")}:00`);
-      }
+    const schedule = schedules.find(sch => sch.weekday === weekday);
 
-      setAvailableHours(hours);
-    } catch (error) {
-      console.error("Erro ao gerar horários:", error);
+    if (!schedule) {
       setAvailableHours([]);
+      return;
     }
-  }, [room]);
+
+    const startHour = parseInt(schedule.start_time.split(":")[0], 10);
+    const endHour = parseInt(schedule.end_time.split(":")[0], 10);
+
+    const hours: string[] = [];
+    for (let hour = startHour; hour < endHour; hour++) {
+      hours.push(`${hour.toString().padStart(2, "0")}:00`);
+    }
+
+    setAvailableHours(hours);
+  }, [selectedDate, schedules]);
 
   const handleReserve = async () => {
     if (!selectedDate || !selectedHour) return;
 
     setLoading(true);
-    const { data, error: userError } = await supabase.auth.getUser();
-    const user = data?.user;
+    const user = (await supabase.auth.getUser()).data.user;
 
     if (!user) {
       alert("Usuário não autenticado.");
@@ -75,18 +103,18 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Reservar {room?.name ?? "Sala"}</h2>
+      <h2 className="text-xl font-semibold mb-4">Reservar {room.name}</h2>
 
       <div className="mb-6">
         <Calendar
           mode="single"
-          selected={selectedDate || undefined}
+          selected={selectedDate!}
           onSelect={setSelectedDate}
           className="rounded-md border"
         />
       </div>
 
-      {selectedDate && availableHours.length > 0 && (
+      {selectedDate && availableHours.length > 0 ? (
         <div className="mb-6">
           <h3 className="text-lg mb-2">Selecione o horário:</h3>
           <div className="grid grid-cols-3 gap-2">
@@ -101,22 +129,15 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             ))}
           </div>
         </div>
-      )}
-
-      {selectedDate && availableHours.length === 0 && (
-        <div className="mb-6 text-center text-red-500">
-          Nenhum horário disponível para esta sala.
-        </div>
-      )}
+      ) : selectedDate ? (
+        <p className="text-red-500 text-center mb-6">Nenhum horário disponível para esta sala.</p>
+      ) : null}
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button
-          onClick={handleReserve}
-          disabled={!selectedDate || !selectedHour || loading || availableHours.length === 0}
-        >
+        <Button onClick={handleReserve} disabled={!selectedDate || !selectedHour || loading}>
           {loading ? "Reservando..." : "Confirmar Reserva"}
         </Button>
       </div>
