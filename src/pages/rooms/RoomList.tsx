@@ -9,36 +9,28 @@ import { Button } from "@/components/ui/button";
 import { roomService } from "@/services/roomService";
 import { Room } from "@/integrations/supabase/types";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
-import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { format, setHours, setMinutes, subHours , addHours } from "date-fns";
+import { format, setHours, setMinutes, subHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
-const [filterDate, setFilterDate] = useState<Date | null>(null);
-const [filterStartTime, setFilterStartTime] = useState<string>("");
-const [filterEndTime, setFilterEndTime] = useState<string>("");
-
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedStartHour, setSelectedStartHour] = useState<string>("");
-  const [selectedEndHour, setSelectedEndHour] = useState<string>("");
+  const [filterDate, setFilterDate] = useState<Date | null>(null);
+  const [filterStartTime, setFilterStartTime] = useState<string>("");
+  const [filterEndTime, setFilterEndTime] = useState<string>("");
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         const data = await roomService.getAllRooms();
         setRooms(data || []);
-        setFilteredRooms(data || []);
       } catch (err) {
         console.error("Erro ao carregar salas:", err);
         setError("Não foi possível carregar as salas. Tente novamente mais tarde.");
@@ -51,124 +43,154 @@ const RoomList: React.FC = () => {
   }, []);
 
   const handleFilter = async () => {
-  if (!filterDate || !filterStartTime || !filterEndTime) {
-    alert("Por favor, selecione data e horários para filtrar.");
-    return;
+    if (!filterDate || !filterStartTime || !filterEndTime) return;
+
+    const startHour = parseInt(filterStartTime.split(":"))[0];
+    const endHour = parseInt(filterEndTime.split(":"))[0];
+
+    let startTime = setMinutes(setHours(filterDate, startHour), 0);
+    let endTime = setMinutes(setHours(filterDate, endHour), 0);
+
+    startTime = subHours(startTime, 3);
+    endTime = subHours(endTime, 3);
+
+    const { data: bookingsData, error: bookingsError } = await supabase
+      .from("bookings")
+      .select("room_id, start_time, end_time")
+      .gte("start_time", startTime.toISOString())
+      .lt("end_time", endTime.toISOString());
+
+    if (bookingsError) {
+      console.error("Erro ao buscar reservas:", bookingsError);
+      return;
+    }
+
+    const bookedRoomIds = bookingsData?.map((b) => b.room_id) || [];
+
+    try {
+      const allRooms = await roomService.getAllRooms();
+      const availableRooms = allRooms.filter((room) => !bookedRoomIds.includes(room.id));
+      setRooms(availableRooms);
+    } catch (err) {
+      console.error("Erro ao filtrar salas:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-96">
+          <p>Carregando salas...</p>
+        </div>
+      </MainLayout>
+    );
   }
-
-  const startHour = parseInt(filterStartTime.split(":")[0]);
-  const endHour = parseInt(filterEndTime.split(":")[0]);
-
-  let startTime = new Date(filterDate);
-  let endTime = new Date(filterDate);
-
-  startTime.setHours(startHour, 0, 0, 0);
-  endTime.setHours(endHour, 0, 0, 0);
-
-  // 👇 Aqui é o ajuste importante para o horário UTC
-  const utcStart = addHours(startTime, 3);
-  const utcEnd = addHours(endTime, 3);
-
-  const { data: bookings, error } = await supabase
-    .from("bookings")
-    .select("room_id, start_time, end_time")
-    .gte("start_time", utcStart.toISOString())
-    .lt("end_time", utcEnd.toISOString());
 
   if (error) {
-    console.error("Erro ao buscar reservas:", error);
-    return;
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-96">
+          <p className="text-red-500">{error}</p>
+        </div>
+      </MainLayout>
+    );
   }
-
-  const unavailableRoomIds = bookings?.map((b) => b.room_id) || [];
-
-  const { data: allRooms, error: roomsError } = await supabase
-    .from("rooms")
-    .select("*, room_photos(id, url)")
-    .order("created_at", { ascending: false });
-
-  if (roomsError) {
-    console.error("Erro ao buscar salas:", roomsError);
-    return;
-  }
-
-  const filteredRooms = (allRooms || []).filter(
-    (room) => !unavailableRoomIds.includes(room.id)
-  );
-
-  setRooms(filteredRooms);
-};
 
   return (
     <MainLayout>
-      <div className="p-4 space-y-6">
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <Label>Data</Label>
-            <Input
-              type="date"
-              onChange={(e) => setSelectedDate(new Date(e.target.value + "T00:00:00"))}
-            />
-          </div>
-          <div>
-            <Label>Início</Label>
-            <Input
-              type="time"
-              onChange={(e) => setSelectedStartHour(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label>Fim</Label>
-            <Input
-              type="time"
-              onChange={(e) => setSelectedEndHour(e.target.value)}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button onClick={handleFilter}>Filtrar</Button>
-          </div>
+      <div className="flex flex-wrap gap-4 items-center p-4">
+        <div>
+          <Label>Data</Label>
+          <input
+            type="date"
+            value={filterDate ? format(filterDate, "yyyy-MM-dd") : ""}
+            onChange={(e) => setFilterDate(e.target.value ? new Date(e.target.value) : null)}
+            className="border rounded px-2 py-1"
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRooms.length > 0 ? (
-            filteredRooms.map((room) => (
-              <Card key={room.id}>
-                <CardHeader>
-                  <CardTitle>{room.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {room.room_photos && room.room_photos.length > 0 && (
-                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-4">
-                      {room.room_photos.map((photo) => (
-                        <SwiperSlide key={photo.id}>
-                          <img src={photo.url} alt="Foto da sala" className="w-full h-48 object-cover rounded-md" />
-                        </SwiperSlide>
-                      ))}
-                    </Swiper>
-                  )}
-                  <p className="mb-2">{room.description}</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Capacidade: {room.capacity || "?"} pessoas
-                  </p>
-                  <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full text-center text-gray-500">Nenhuma sala disponível nesse horário.</div>
-          )}
+        <div>
+          <Label>Início</Label>
+          <Select onValueChange={setFilterStartTime} value={filterStartTime}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Início" />
+            </SelectTrigger>
+            <SelectContent>
+              {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"].map((hour) => (
+                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reservar Sala</DialogTitle>
-            </DialogHeader>
-            {selectedRoom && <ReserveRoomForm room={selectedRoom} onClose={() => setSelectedRoom(null)} />}
-            <DialogClose />
-          </DialogContent>
-        </Dialog>
+        <div>
+          <Label>Fim</Label>
+          <Select onValueChange={setFilterEndTime} value={filterEndTime}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Fim" />
+            </SelectTrigger>
+            <SelectContent>
+              {["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"].map((hour) => (
+                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button onClick={handleFilter}>Filtrar</Button>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+        {rooms.length > 0 ? (
+          rooms.map((room) => (
+            <Card key={room.id}>
+              <CardHeader>
+                <CardTitle>{room.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {room.room_photos && room.room_photos.length > 0 && (
+                  <Swiper
+                    navigation
+                    modules={[Navigation]}
+                    className="w-full h-48 rounded-md mb-4"
+                  >
+                    {room.room_photos.map((photo) => (
+                      <SwiperSlide key={photo.id}>
+                        <img
+                          src={photo.url}
+                          alt="Foto da sala"
+                          className="w-full h-48 object-cover rounded-md"
+                        />
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                )}
+                <p className="mb-2">{room.description}</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Capacidade: {room.capacity || "?"} pessoas
+                </p>
+                <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="col-span-full text-center text-gray-500">
+            Nenhuma sala disponível no momento.
+          </div>
+        )}
+      </div>
+
+      <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reservar Sala</DialogTitle>
+          </DialogHeader>
+          {selectedRoom && (
+            <ReserveRoomForm room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+          )}
+          <DialogClose />
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
