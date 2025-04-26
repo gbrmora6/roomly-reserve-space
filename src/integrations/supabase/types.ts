@@ -6,6 +6,13 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type Room = Tables<"rooms"> & {
+  room_photos?: {
+    id: string;
+    url: string;
+  }[];
+};
+
 export type Database = {
   public: {
     Tables: {
