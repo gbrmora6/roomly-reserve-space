@@ -30,7 +30,7 @@ interface Booking {
 }
 
 const AdminBookings: React.FC = () => {
-  const [filter, setFilter] = useState<BookingStatus | "all">("all");
+  const [filter, setFilter] = useState<string | "all">("all"); // troquei BookingStatus para string
 
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
@@ -50,7 +50,7 @@ const AdminBookings: React.FC = () => {
         .order("start_time", { ascending: false });
 
       if (filter !== "all") {
-        query = query.eq("status", filter);
+        query = query.eq("status", filter); // agora vai procurar "pendente", "confirmada", "cancelada"
       }
 
       const { data, error } = await query;
@@ -61,7 +61,7 @@ const AdminBookings: React.FC = () => {
     },
   });
 
-  const handleUpdateStatus = async (id: string, status: BookingStatus) => {
+  const handleUpdateStatus = async (id: string, status: string) => {
     try {
       const { error } = await supabase
         .from("bookings")
@@ -84,18 +84,34 @@ const AdminBookings: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: BookingStatus) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case "pendente":
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendente</Badge>;
-      case "confirmed":
+      case "confirmada":
         return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Confirmada</Badge>;
-      case "cancelled":
+      case "cancelada":
         return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Cancelada</Badge>;
       default:
         return null;
     }
   };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
+
+      <div className="flex gap-2 mb-4">
+        <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>Todas</Button>
+        <Button variant={filter === "pendente" ? "default" : "outline"} onClick={() => setFilter("pendente")}>Pendentes</Button>
+        <Button variant={filter === "confirmada" ? "default" : "outline"} onClick={() => setFilter("confirmada")}>Confirmadas</Button>
+        <Button variant={filter === "cancelada" ? "default" : "outline"} onClick={() => setFilter("cancelada")}>Canceladas</Button>
+      </div>
+
+      {/* resto da tabela como já estava */}
+    </div>
+  );
+};
 
   return (
     <div className="space-y-6">
