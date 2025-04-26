@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from "react";
+
+import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { roomService } from "@/services/roomService"; // Importa o serviço que fala com o Supabase
-import { Room } from "@/integrations/supabase/types"; // Tipo da sala (opcional mas deixa mais bonito)
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Calendar } from "lucide-react";
+
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
