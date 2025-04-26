@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addHours, setHours, setMinutes } from "date-fns";
+import { addHours, setHours, setMinutes } from "date-fns";
 
 interface ReserveRoomFormProps {
   room: any;
@@ -22,8 +22,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     }
 
     try {
-      const openHour = parseInt((room.open_time ?? "08:00").split(":")[0], 10);
-      const closeHour = parseInt((room.close_time ?? "18:00").split(":")[0], 10);
+      const openHour = parseInt(room.open_time.split(":")[0], 10);
+      const closeHour = parseInt(room.close_time.split(":")[0], 10);
 
       const hours: string[] = [];
       for (let hour = openHour; hour < closeHour; hour++) {
@@ -32,7 +32,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
       setAvailableHours(hours);
     } catch (error) {
-      console.error("Erro ao calcular horários disponíveis:", error);
+      console.error("Erro ao gerar horários:", error);
       setAvailableHours([]);
     }
   }, [room]);
@@ -41,7 +41,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     if (!selectedDate || !selectedHour) return;
 
     setLoading(true);
-
     const { data, error: userError } = await supabase.auth.getUser();
     const user = data?.user;
 
@@ -79,7 +78,12 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       <h2 className="text-xl font-semibold mb-4">Reservar {room?.name ?? "Sala"}</h2>
 
       <div className="mb-6">
-        <Calendar mode="single" selected={selectedDate || undefined} onSelect={setSelectedDate} className="rounded-md border" />
+        <Calendar
+          mode="single"
+          selected={selectedDate || undefined}
+          onSelect={setSelectedDate}
+          className="rounded-md border"
+        />
       </div>
 
       {selectedDate && availableHours.length > 0 && (
@@ -99,11 +103,20 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         </div>
       )}
 
+      {selectedDate && availableHours.length === 0 && (
+        <div className="mb-6 text-center text-red-500">
+          Nenhum horário disponível para esta sala.
+        </div>
+      )}
+
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button onClick={handleReserve} disabled={!selectedDate || !selectedHour || loading}>
+        <Button
+          onClick={handleReserve}
+          disabled={!selectedDate || !selectedHour || loading || availableHours.length === 0}
+        >
           {loading ? "Reservando..." : "Confirmar Reserva"}
         </Button>
       </div>
