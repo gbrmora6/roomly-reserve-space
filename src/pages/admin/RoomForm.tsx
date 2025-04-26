@@ -72,11 +72,14 @@ const RoomForm: React.FC = () => {
     queryKey: ["room", id],
     enabled: isEditing,
     queryFn: async () => {
-      const { data: roomInfo, error: roomError } = await supabase
+     const { data: roomData, error: errorRoom } = await supabase
         .from("rooms")
-        .select("*")
-        .eq("id", id)
+        .upsert({...})
+        .select("id")
         .single();
+      
+      if (errorRoom) throw new Error(errorRoom.message);
+
       
       const { data: photoData } = await supabase
         .from("room_photos")
