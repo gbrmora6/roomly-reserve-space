@@ -116,12 +116,14 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   setAvailableHours(hours);
 
   const { data: bookingsData } = await supabase
-    .from("bookings")
-    .select("start_time, end_time")
-    .eq("room_id", room.id)
-    .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
-    .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`)
-    .neq("status", "cancelled");  // aqui!
+  .from("bookings")
+  .select("start_time, end_time", { head: false })
+  .eq("room_id", room.id)
+  .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
+  .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`)
+  .neq("status", "cancelled")
+  .throwOnError();  // opcional: para dar erro se falhar a busca
+
 
   const blocked: string[] = [];
 
