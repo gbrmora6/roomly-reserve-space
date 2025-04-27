@@ -184,7 +184,10 @@ const RoomList: React.FC = () => {
 
                   {/* Valor */}
                   <div className="text-primary text-lg font-bold">
-                    {room.price ? `R$ ${room.price.toFixed(2).replace('.', ',')}` : "Preço sob consulta"}
+                    {room.price !== undefined && room.price !== null
+                    ? `R$ ${Number(room.price).toFixed(2).replace('.', ',')}`
+                    : "Preço sob consulta"}
+
                   </div>
 
                   <Button onClick={() => setSelectedRoom(room)} className="mt-2">
