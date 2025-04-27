@@ -71,29 +71,37 @@ const AdminBookings: React.FC = () => {
   });
 
     const handleUpdateStatus = async (id: string, status: BookingStatus) => {
-    try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({ title: "Status da reserva atualizado com sucesso" });
--     refetch();
-+     // primeiro refetch pra atualizar os dados
-+     await refetch();
-+     // depois muda o filtro pra "confirmed" ou "cancelled"
-+     setFilter(status);
-
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar status",
-        description: error.message,
-      });
+  try {
+    let rpc;
+    if (status === "cancelada") {
+      // apaga a reserva de fato
+      rpc = supabase.from("bookings").delete().eq("id", id);
+    } else {
+      // só marca como confirmada
+      rpc = supabase.from("bookings").update({ status }).eq("id", id);
     }
-  };
+
+    const { error } = await rpc;
+    if (error) throw error;
+
+    toast({ title: 
+      status === "cancelada"
+        ? "Reserva cancelada e horário liberado"
+        : "Reserva confirmada com sucesso"
+    });
+
+    // primeiro troco de aba para já refazer a query com o filtro
+    setFilter(status);
+    // aí sim peço pra recarregar
+    await refetch();
+  } catch (error: any) {
+    toast({
+      variant: "destructive",
+      title: "Erro ao atualizar reserva",
+      description: error.message,
+    });
+  }
+};
 
 
   const getStatusBadge = (status: BookingStatus) => {
