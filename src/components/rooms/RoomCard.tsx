@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -52,7 +53,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onReserve }) => {
               <Wifi size={16} /> Wifi
             </div>
           )}
-          {room.has_air_conditioning && (
+          {room.has_ac && (
             <div className="flex items-center gap-1">
               <Snowflake size={16} /> Ar-Condicionado
             </div>

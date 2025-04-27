@@ -23,9 +23,19 @@ const Clients: React.FC = () => {
   useEffect(() => {
     supabase
       .from('profiles')
-      .select('first_name,last_name,phone,email,crp,cpf,cnpj,specialty')
-      .then(({ data }) => {
-        setClients(data as Client[] || []);
+      .select('first_name,last_name,phone,crp,cpf,cnpj,specialty')
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching clients:", error);
+          return;
+        }
+        // Add a dummy email field as it's required by the Client interface
+        // but apparently doesn't exist in the profiles table
+        const clientsWithEmail = (data || []).map(client => ({
+          ...client,
+          email: '' // Add empty email since it's not in the profiles table
+        }));
+        setClients(clientsWithEmail as Client[]);
         setLoading(false);
       });
   }, []);
@@ -48,7 +58,7 @@ const Clients: React.FC = () => {
       <table className="w-full table-auto">
         <thead>
           <tr>
-            {['Nome','Sobrenome','Telefone','Email','CRP','CPF/CNPJ','Especialidade']
+            {['Nome','Sobrenome','Telefone','CRP','CPF/CNPJ','Especialidade']
               .map(h => <th key={h}>{h}</th>)}
           </tr>
         </thead>
@@ -58,7 +68,6 @@ const Clients: React.FC = () => {
               <td>{c.first_name}</td>
               <td>{c.last_name}</td>
               <td>{c.phone}</td>
-              <td>{c.email}</td>
               <td>{c.crp}</td>
               <td>{c.cpf || c.cnpj}</td>
               <td>{c.specialty}</td>

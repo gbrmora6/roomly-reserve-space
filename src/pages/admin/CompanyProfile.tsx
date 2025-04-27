@@ -1,13 +1,14 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Profile {
   id: string;
   name: string;
-  street: string;
-  number: string;
-  neighborhood: string;
-  city: string;
+  street: string | null;
+  number: string | null;
+  neighborhood: string | null;
+  city: string | null;
 }
 
 const CompanyProfile: React.FC = () => {
@@ -16,11 +17,15 @@ const CompanyProfile: React.FC = () => {
 
   useEffect(() => {
     supabase
-      .from<Profile>('company_profile')
+      .from('company_profile')
       .select('*')
       .single()
       .then(({ data, error }) => {
-        if (!error && data) setProfile(data);
+        if (!error && data) {
+          setProfile(data as Profile);
+        } else {
+          console.error("Error fetching company profile:", error);
+        }
         setLoading(false);
       });
   }, []);
@@ -39,13 +44,13 @@ const CompanyProfile: React.FC = () => {
     <div className="p-6 bg-white rounded shadow">
       <h2 className="text-xl mb-4">Perfil da Empresa</h2>
       <form className="space-y-3">
-        {(['name','street','number','neighborhood','city'] as (keyof Profile)[]).map(f => (
+        {profile && (['name','street','number','neighborhood','city'] as (keyof Profile)[]).map(f => (
           <div key={f}>
             <label className="block capitalize">{f.replace('_',' ')}</label>
             <input
               className="w-full border px-2 py-1"
               value={profile[f] || ''}
-              onChange={e => setProfile({ ...profile, [f]: e.target.value })}
+              onChange={e => profile && setProfile({ ...profile, [f]: e.target.value })}
             />
           </div>
         ))}

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +32,7 @@ interface Booking {
 const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
-  const { data: bookings = [], isLoading, refetch, isError } = useQuery<Booking[]>({
+  const { data: bookings = [], isLoading, refetch, isError } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
       let query = supabase
@@ -67,12 +68,14 @@ const AdminBookings: React.FC = () => {
         end_time: addHours(new Date(booking.end_time), 3).toISOString(),
       }));
     },
-    onError: (err: any) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar reservas",
-        description: err.message,
-      });
+    meta: {
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar reservas",
+          description: err.message,
+        });
+      }
     },
   });
 
@@ -125,7 +128,7 @@ const AdminBookings: React.FC = () => {
           <p>Erro ao carregar reservas.</p>
         </div>
       ) : (
-        <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
+        <BookingsTable bookings={bookings as Booking[]} onUpdateStatus={handleUpdateStatus} />
       )}
     </div>
   );

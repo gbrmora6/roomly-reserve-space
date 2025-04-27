@@ -10,7 +10,7 @@ export interface Room {
   name: string;
   description: string | null;
   has_wifi: boolean | null;
-  has_ac: boolean | null;
+  has_ac: boolean | null; 
   has_tv: boolean | null;
   has_private_bathroom: boolean | null;
   has_chairs: boolean | null;
