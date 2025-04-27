@@ -18,6 +18,22 @@ interface BookingChatProps {
   bookingId: string;
 }
 
+// Define the sender profile type
+interface SenderProfile {
+  first_name: string;
+  last_name: string;
+}
+
+// Define the message type
+interface Message {
+  id: string;
+  booking_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender?: SenderProfile;
+}
+
 export const BookingChat: React.FC<BookingChatProps> = ({ bookingId }) => {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
@@ -26,17 +42,41 @@ export const BookingChat: React.FC<BookingChatProps> = ({ bookingId }) => {
   const { data: messages, refetch } = useQuery({
     queryKey: ["booking-messages", bookingId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the messages
+      const { data: messageData, error: messageError } = await supabase
         .from("messages")
-        .select(`
-          *,
-          sender:profiles(first_name, last_name)
-        `)
+        .select("*")
         .eq("booking_id", bookingId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
-      return data;
+      if (messageError) throw messageError;
+      
+      // Then get the sender profiles separately and create a map
+      const senderIds = [...new Set(messageData.map((msg) => msg.sender_id))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", senderIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Create a profiles map for quick lookup
+      const profilesMap: Record<string, SenderProfile> = {};
+      profilesData.forEach((profile) => {
+        profilesMap[profile.id] = {
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+        };
+      });
+      
+      // Attach sender information to each message
+      const messagesWithSenders = messageData.map((msg) => ({
+        ...msg,
+        sender: profilesMap[msg.sender_id],
+      }));
+      
+      return messagesWithSenders as Message[];
     },
     enabled: open,
   });
@@ -91,7 +131,7 @@ export const BookingChat: React.FC<BookingChatProps> = ({ bookingId }) => {
                   }`}
                 >
                   <p className="text-sm font-medium mb-1">
-                    {msg.sender?.first_name} {msg.sender?.last_name}
+                    {msg.sender?.first_name || "Usuário"} {msg.sender?.last_name || ""}
                   </p>
                   <p className="text-sm">{msg.content}</p>
                 </div>
