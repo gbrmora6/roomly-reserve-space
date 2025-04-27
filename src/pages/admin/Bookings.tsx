@@ -68,7 +68,7 @@ const AdminBookings: React.FC = () => {
       // renomeia booking_status → status para uso no React
       return (data as any[]).map((r) => ({
         ...r,
-        status: r.booking_status as BookingStatus,
+        status: r.status as BookingStatus,
       })) as Booking[];
     },
   });
