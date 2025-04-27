@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { FileImport, Database } from "lucide-react";
+import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Client {
@@ -85,7 +85,7 @@ const Clients: React.FC = () => {
           variant="outline"
           className="flex items-center gap-2"
         >
-          <FileImport className="h-4 w-4" />
+          <Download className="h-4 w-4" />
           Exportar Excel
         </Button>
       </CardHeader>
