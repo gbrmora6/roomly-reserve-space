@@ -32,10 +32,19 @@ const Navbar: React.FC = () => {
                 <Button variant="ghost">Salas</Button>
               </Link>
               
-              {user.user_metadata?.role === "admin" && (
+              {user.user_metadata?.role === "admin" ? (
                 <Link to="/admin">
                   <Button variant="ghost">Painel Admin</Button>
                 </Link>
+              ) : (
+                <>
+                  <Link to="/my-bookings">
+                    <Button variant="ghost">Minhas Reservas</Button>
+                  </Link>
+                  <Link to="/my-account">
+                    <Button variant="ghost">Minha Conta</Button>
+                  </Link>
+                </>
               )}
               
               <Button variant="outline" onClick={handleSignOut}>

@@ -20,6 +20,8 @@ import CompanyProfile from "./pages/admin/CompanyProfile";
 import Clients from "./pages/admin/Clients";
 import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import MyAccount from "./pages/client/MyAccount";
+import MyBookings from "./pages/client/MyBookings";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +39,19 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/rooms" element={<RoomList />} />
               
-              {/* Rotas do Administrador */}
+              {/* Client Routes */}
+              <Route path="/my-account" element={
+                <ProtectedRoute>
+                  <MyAccount />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-bookings" element={
+                <ProtectedRoute>
+                  <MyBookings />
+                </ProtectedRoute>
+              } />
+              
+              {/* Admin Routes */}
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminLayout />

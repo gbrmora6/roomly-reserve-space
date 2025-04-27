@@ -153,8 +153,42 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          booking_id: string
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          booking_id: string
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          booking_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          cnpj: string | null
+          cpf: string | null
           created_at: string
           crp: string | null
           first_name: string | null
@@ -166,6 +200,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cnpj?: string | null
+          cpf?: string | null
           created_at?: string
           crp?: string | null
           first_name?: string | null
@@ -177,6 +213,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cnpj?: string | null
+          cpf?: string | null
           created_at?: string
           crp?: string | null
           first_name?: string | null
