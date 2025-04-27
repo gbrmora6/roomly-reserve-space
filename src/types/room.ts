@@ -1,8 +1,17 @@
-
 export interface RoomPhoto {
   id: string;
   room_id: string;
   url: string;
+}
+
+export interface RoomSchedule {
+  weekday: string;
+  start_time: string;
+  end_time: string;
+  room_id: string;
+  id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Room {
