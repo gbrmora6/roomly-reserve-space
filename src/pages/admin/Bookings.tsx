@@ -2,14 +2,20 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Database } from "@/integrations/supabase/types";
 
-type BookingStatus = "pendente" | "confirmada" | "cancelada"; // corrigido para português
+type BookingStatus = "pendente" | "confirmada" | "cancelada";
 
 interface Booking {
   id: string;
@@ -20,12 +26,12 @@ interface Booking {
   status: BookingStatus;
   created_at: string;
   updated_at: string;
-  user: {
+  profiles: {
     first_name: string | null;
     last_name: string | null;
   };
-  room: {
-    name: string;
+  rooms: {
+    name: string | null;
   };
 }
 
@@ -33,44 +39,29 @@ const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
-  queryKey: ["bookings", filter],
-  queryFn: async () => {
-    let query = supabase
-      .from("bookings")
-      .select(`
-        id,
-        user_id,
-        room_id,
-        start_time,
-        end_time,
-        status,
-        created_at,
-        updated_at,
-        user:user_id(
-          first_name,
-          last_name
-        ),
-        room:room_id(
-          name
-        )
-      `)
-      .order("start_time", { ascending: false });
+    queryKey: ["bookings", filter],
+    queryFn: async () => {
+      let query = supabase
+        .from<Booking>("bookings")
+        .select(`
+          *,
+          profiles(first_name, last_name),
+          rooms(name)
+        `)
+        .order("start_time", { ascending: false });
 
-    if (filter !== "all") {
-      query = query.eq("status", filter); // <- ISSO aqui usa .eq corretamente no client JS
-    }
+      if (filter !== "all") {
+        query = query.eq("status", filter);
+      }
 
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Erro ao buscar reservas", error); // loga o erro real
-      throw error;
-    }
-
-    return data as Booking[];
-  },
-});
-
+      const { data, error } = await query;
+      if (error) {
+        console.error("Erro ao buscar reservas", error);
+        throw error;
+      }
+      return data;
+    },
+  });
 
   const handleUpdateStatus = async (id: string, status: BookingStatus) => {
     try {
@@ -95,11 +86,23 @@ const AdminBookings: React.FC = () => {
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
       case "pendente":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendente</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            Pendente
+          </Badge>
+        );
       case "confirmada":
-        return <Badge className="bg-green-100 text-green-800 border-green-300">Confirmada</Badge>;
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-300">
+            Confirmada
+          </Badge>
+        );
       case "cancelada":
-        return <Badge className="bg-red-100 text-red-800 border-red-300">Cancelada</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-300">
+            Cancelada
+          </Badge>
+        );
       default:
         return null;
     }
@@ -110,10 +113,30 @@ const AdminBookings: React.FC = () => {
       <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
 
       <div className="flex gap-2 mb-4">
-        <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>Todas</Button>
-        <Button variant={filter === "pendente" ? "default" : "outline"} onClick={() => setFilter("pendente")}>Pendentes</Button>
-        <Button variant={filter === "confirmada" ? "default" : "outline"} onClick={() => setFilter("confirmada")}>Confirmadas</Button>
-        <Button variant={filter === "cancelada" ? "default" : "outline"} onClick={() => setFilter("cancelada")}>Canceladas</Button>
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          onClick={() => setFilter("all")}
+        >
+          Todas
+        </Button>
+        <Button
+          variant={filter === "pendente" ? "default" : "outline"}
+          onClick={() => setFilter("pendente")}
+        >
+          Pendentes
+        </Button>
+        <Button
+          variant={filter === "confirmada" ? "default" : "outline"}
+          onClick={() => setFilter("confirmada")}
+        >
+          Confirmadas
+        </Button>
+        <Button
+          variant={filter === "cancelada" ? "default" : "outline"}
+          onClick={() => setFilter("cancelada")}
+        >
+          Canceladas
+        </Button>
       </div>
 
       {isLoading ? (
@@ -135,24 +158,48 @@ const AdminBookings: React.FC = () => {
             </TableHeader>
             <TableBody>
               {bookings && bookings.length > 0 ? (
-                bookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell>{booking.room?.name}</TableCell>
-                    <TableCell>{booking.user?.first_name} {booking.user?.last_name}</TableCell>
-                    <TableCell>{format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                bookings.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell>{b.rooms.name}</TableCell>
                     <TableCell>
-                      {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
+                      {b.profiles.first_name} {b.profiles.last_name}
                     </TableCell>
-                    <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                    <TableCell>
+                      {format(new Date(b.start_time), "dd/MM/yyyy", {
+                        locale: ptBR,
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(b.start_time), "HH:mm")} -{" "}
+                      {format(new Date(b.end_time), "HH:mm")}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(b.status)}</TableCell>
                     <TableCell className="flex gap-2">
-                      {booking.status === "pendente" && (
+                      {b.status === "pendente" && (
                         <>
-                          <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "confirmada")}>Confirmar</Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(booking.id, "cancelada")}>Cancelar</Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateStatus(b.id, "confirmada")}
+                          >
+                            Confirmar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleUpdateStatus(b.id, "cancelada")}
+                          >
+                            Cancelar
+                          </Button>
                         </>
                       )}
-                      {booking.status === "confirmada" && (
-                        <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(booking.id, "cancelada")}>Cancelar</Button>
+                      {b.status === "confirmada" && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleUpdateStatus(b.id, "cancelada")}
+                        >
+                          Cancelar
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
