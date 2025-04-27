@@ -13,6 +13,13 @@ export interface Room {
   has_ac: boolean | null;
   has_tv: boolean | null;
   has_private_bathroom: boolean | null;
+  has_chairs: boolean | null;
+  has_tables: boolean | null;
   price_per_hour: number;
   room_photos?: RoomPhoto[];
+  created_at: string;
+  updated_at: string;
+  open_time?: string | null;
+  close_time?: string | null;
+  open_days?: number[] | null;
 }

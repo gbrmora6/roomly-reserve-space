@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
@@ -21,10 +22,11 @@ const Clients: React.FC = () => {
 
   useEffect(() => {
     supabase
-      .from<Client>('profiles')
+      .from('profiles')
       .select('first_name,last_name,phone,email,crp,cpf,cnpj,specialty')
       .then(({ data }) => {
-        setClients(data || []); setLoading(false);
+        setClients(data as Client[] || []);
+        setLoading(false);
       });
   }, []);
 
