@@ -84,13 +84,47 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "bookings_room_id_fkey"
+            foreignKeyName: "fk_bookings_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_rooms"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
+      }
+      company_profile: {
+        Row: {
+          city: string | null
+          id: string
+          name: string
+          neighborhood: string | null
+          number: string | null
+          street: string | null
+        }
+        Insert: {
+          city?: string | null
+          id?: string
+          name: string
+          neighborhood?: string | null
+          number?: string | null
+          street?: string | null
+        }
+        Update: {
+          city?: string | null
+          id?: string
+          name?: string
+          neighborhood?: string | null
+          number?: string | null
+          street?: string | null
+        }
+        Relationships: []
       }
       equipment: {
         Row: {

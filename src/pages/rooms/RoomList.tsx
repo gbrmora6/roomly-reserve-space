@@ -1,244 +1,134 @@
-import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import "swiper/css/navigation";
-import { Navigation } from "swiper/modules";
-import React, { useEffect, useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { roomService } from "@/services/roomService";
-import { Room } from "@/types/room";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
-import { supabase } from "@/integrations/supabase/client";
-import { format, setHours, setMinutes, subHours } from "date-fns";
-import { Wifi, Snowflake, Chair2, Table } from "lucide-react";
 
+import React, { useState, useEffect } from "react";
+import MainLayout from "@/components/layout/MainLayout";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RoomCard } from "@/components/rooms/RoomCard";
+import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
+import { Room } from "@/types/room";
+import {
+  Wifi,
+  Snowflake,
+  Tv,
+  Bath, // Using Bath instead of Chair since Chair doesn't exist in lucide-react
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const RoomList: React.FC = () => {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    hasWifi: false,
+    hasAirConditioning: false,
+    hasTV: false,
+    hasPrivateBathroom: false,
+  });
 
-  const [filterDate, setFilterDate] = useState<Date | null>(null);
-  const [filterStartHour, setFilterStartHour] = useState<string>("");
-  const [filterEndHour, setFilterEndHour] = useState<string>("");
+  const { data: rooms, isLoading, error } = useQuery({
+    queryKey: ["rooms"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rooms")
+        .select(`
+          *,
+          room_photos(*)
+        `)
+        .order("name");
+      
+      if (error) throw error;
+      return data as Room[];
+    },
+  });
 
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const data = await roomService.getAllRooms();
-        setRooms(data || []);
-        setFilteredRooms(data || []);
-      } catch (err) {
-        console.error("Erro ao carregar salas:", err);
-        setError("Não foi possível carregar as salas. Tente novamente mais tarde.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRooms();
-  }, []);
-
-  const handleFilter = async () => {
-    if (!filterDate || !filterStartHour || !filterEndHour) {
-      setFilteredRooms(rooms);
-      return;
-    }
-
-    const startHour = parseInt(filterStartHour.split(":")[0]);
-    const endHour = parseInt(filterEndHour.split(":")[0]);
-
-    let startTime = setMinutes(setHours(filterDate, startHour), 0);
-    let endTime = setMinutes(setHours(filterDate, endHour), 0);
-
-    startTime = subHours(startTime, 3);
-    endTime = subHours(endTime, 3);
-
-    try {
-      const availableRooms: Room[] = [];
-      for (const room of rooms) {
-        const { data: bookingsData, error } = await supabase
-          .from("bookings")
-          .select("start_time, end_time")
-          .eq("room_id", room.id)
-          .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
-
-        if (error) {
-          console.error("Erro ao buscar reservas da sala:", room.id, error);
-          continue;
-        }
-
-        if (bookingsData.length === 0) {
-          availableRooms.push(room);
-        }
-      }
-
-      setFilteredRooms(availableRooms);
-    } catch (err) {
-      console.error("Erro ao filtrar salas:", err);
-    }
+  const handleReserve = (room: Room) => {
+    setSelectedRoom(room);
+    setIsReserveModalOpen(true);
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p>Carregando salas...</p>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </MainLayout>
-    );
-  }
+  const filteredRooms = rooms?.filter((room) => {
+    if (filters.hasWifi && !room.has_wifi) return false;
+    if (filters.hasAirConditioning && !room.has_ac) return false;
+    if (filters.hasTV && !room.has_tv) return false;
+    if (filters.hasPrivateBathroom && !room.has_private_bathroom) return false;
+    return true;
+  });
 
   return (
     <MainLayout>
-      <div className="p-6 space-y-8">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8 text-center md:text-left">Salas Disponíveis</h1>
 
-        {/* Texto explicativo do filtro */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-blue-600 mb-4">
-            Encontre a sala ideal para sua necessidade!
-          </h2>
-          <p className="text-gray-600 text-md">
-            Selecione a data e horários para visualizar as salas disponíveis.
-          </p>
-        </div>
-
-        {/* Área de Filtros */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4 p-4 bg-blue-50 rounded-md shadow-md">
-          <input
-            type="date"
-            className="border p-2 rounded w-40"
-            onChange={(e) => setFilterDate(new Date(e.target.value + 'T00:00:00'))}
-          />
-
-          <select
-            className="border p-2 rounded w-32"
-            value={filterStartHour}
-            onChange={(e) => setFilterStartHour(e.target.value)}
+        <div className="mb-6 bg-white p-4 rounded-lg shadow flex flex-wrap gap-3">
+          <Button
+            variant={filters.hasWifi ? "default" : "outline"}
+            onClick={() => setFilters({ ...filters, hasWifi: !filters.hasWifi })}
+            className="flex items-center gap-2"
           >
-            <option value="">Hora Inicial</option>
-            {[...Array(24)].map((_, i) => (
-              <option key={i} value={`${i.toString().padStart(2, "0")}:00`}>
-                {i.toString().padStart(2, "0")}:00
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="border p-2 rounded w-32"
-            value={filterEndHour}
-            onChange={(e) => setFilterEndHour(e.target.value)}
+            <Wifi className="h-4 w-4" />
+            Wi-Fi
+          </Button>
+          <Button
+            variant={filters.hasAirConditioning ? "default" : "outline"}
+            onClick={() => setFilters({ ...filters, hasAirConditioning: !filters.hasAirConditioning })}
+            className="flex items-center gap-2"
           >
-            <option value="">Hora Final</option>
-            {[...Array(24)].map((_, i) => (
-              <option key={i} value={`${i.toString().padStart(2, "0")}:00`}>
-                {i.toString().padStart(2, "0")}:00
-              </option>
-            ))}
-          </select>
-
-          <Button onClick={handleFilter}>Filtrar</Button>
-          <Button variant="outline" onClick={() => {
-            setFilterDate(null);
-            setFilterStartHour("");
-            setFilterEndHour("");
-            setFilteredRooms(rooms);
-          }}>
-            Limpar Filtro
+            <Snowflake className="h-4 w-4" />
+            Ar-Condicionado
+          </Button>
+          <Button
+            variant={filters.hasTV ? "default" : "outline"}
+            onClick={() => setFilters({ ...filters, hasTV: !filters.hasTV })}
+            className="flex items-center gap-2"
+          >
+            <Tv className="h-4 w-4" />
+            TV
+          </Button>
+          <Button
+            variant={filters.hasPrivateBathroom ? "default" : "outline"}
+            onClick={() => setFilters({ ...filters, hasPrivateBathroom: !filters.hasPrivateBathroom })}
+            className="flex items-center gap-2"
+          >
+            <Bath className="h-4 w-4" />
+            Banheiro Privativo
           </Button>
         </div>
 
-        {/* Cards de Salas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRooms.length > 0 ? (
-            filteredRooms.map((room) => (
-              <Card key={room.id} className="shadow-md hover:shadow-xl transition rounded-lg overflow-hidden">
-                {room.room_photos && room.room_photos.length > 0 && (
-                  <Swiper navigation modules={[Navigation]} className="w-full h-48">
-                    {room.room_photos.map((photo) => (
-                      <SwiperSlide key={photo.id}>
-                        <img
-                          src={photo.url}
-                          alt="Foto da sala"
-                          className="w-full h-48 object-cover"
-                        />
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                )}
-                <CardHeader className="p-4">
-                  <CardTitle className="text-xl">{room.name}</CardTitle>
-                  <p className="text-gray-500 text-sm mt-1">{room.description}</p>
-                </CardHeader>
-                <CardContent className="space-y-4 p-4">
-                  
-                  {/* Características com ícones */}
-                  <div className="flex flex-wrap gap-4 text-gray-700 text-sm">
-                    {room.characteristics?.includes("wifi") && (
-                      <div className="flex items-center gap-1">
-                        <Wifi size={18} /> Wi-Fi
-                      </div>
-                    )}
-                    {room.characteristics?.includes("ar-condicionado") && (
-                      <div className="flex items-center gap-1">
-                        <Snowflake size={18} /> Ar-condicionado
-                      </div>
-                    )}
-                    {room.characteristics?.includes("mesa") && (
-                      <div className="flex items-center gap-1">
-                        <Table size={18} /> Mesa
-                      </div>
-                    )}
-                    {room.characteristics?.includes("cadeira") && (
-                      <div className="flex items-center gap-1">
-                        <Chair size={18} /> Cadeira
-                      </div>
-                    )}
-                  </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-red-500 mb-2">Erro ao carregar salas</p>
+            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredRooms && filteredRooms.length > 0 ? (
+              filteredRooms.map((room) => (
+                <RoomCard key={room.id} room={room} onReserve={handleReserve} />
+              ))
+            ) : (
+              <p className="col-span-full text-center py-10">
+                Nenhuma sala encontrada com os filtros selecionados.
+              </p>
+            )}
+          </div>
+        )}
 
-                  {/* Preço */}
-                  <div className="text-primary text-lg font-bold">
-                    {room.price_per_hour !== undefined && room.price_per_hour !== null
-                      ? `R$ ${Number(room.price_per_hour).toFixed(2).replace('.', ',')} / hora`
-                      : "Preço sob consulta"}
-                  </div>
-
-                  <Button className="w-full mt-2" onClick={() => setSelectedRoom(room)}>
-                    Reservar
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full text-center text-gray-500">
-              Nenhuma sala disponível para o filtro selecionado.
-            </div>
-          )}
-        </div>
-
-        <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
-          <DialogContent>
+        <Dialog open={isReserveModalOpen} onOpenChange={setIsReserveModalOpen}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Reservar Sala</DialogTitle>
             </DialogHeader>
             {selectedRoom && (
-              <ReserveRoomForm room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+              <ReserveRoomForm
+                room={selectedRoom}
+                onClose={() => setIsReserveModalOpen(false)}
+              />
             )}
-            <DialogClose />
           </DialogContent>
         </Dialog>
       </div>
