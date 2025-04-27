@@ -1,3 +1,4 @@
+// src/pages/admin/bookings.tsx
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,7 @@ interface Booking {
   room_id: string;
   start_time: string;
   end_time: string;
-  booking_status: BookingStatus;    // aqui é booking_status
+  status: BookingStatus;      // usa a coluna `status`
   created_at: string;
   updated_at: string;
   user: { first_name: string | null; last_name: string | null };
@@ -45,24 +46,22 @@ const Bookings: React.FC = () => {
         `)
         .order("start_time", { ascending: false });
 
+      // filtra pela coluna correta `status`
       if (filter !== "all") {
-        // filtra pela coluna booking_status
-        query = query.eq("booking_status", filter);
+        query = query.eq("status", filter);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-
       return data as Booking[];
     },
   });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
-      // atualiza a coluna booking_status
       const { error } = await supabase
         .from("bookings")
-        .update({ booking_status: newStatus })
+        .update({ status: newStatus })   // atualiza `status`
         .eq("id", id);
 
       if (error) throw error;
@@ -74,7 +73,7 @@ const Bookings: React.FC = () => {
             : "Reserva cancelada com sucesso",
       });
 
-      // seta o filtro e refaz a consulta
+      // muda de aba e refaz a query
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
@@ -89,11 +88,23 @@ const Bookings: React.FC = () => {
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
       case "pending":
-        return <Badge variant="yellow">Pendente</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            Pendente
+          </Badge>
+        );
       case "confirmed":
-        return <Badge variant="green">Confirmada</Badge>;
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-300">
+            Confirmada
+          </Badge>
+        );
       case "cancelled":
-        return <Badge variant="red">Cancelada</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-300">
+            Cancelada
+          </Badge>
+        );
     }
   };
 
@@ -102,21 +113,30 @@ const Bookings: React.FC = () => {
       <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
 
       <div className="flex gap-2 mb-4">
-        {(["all", "pending", "confirmed", "cancelled"] as const).map((f) => (
-          <Button
-            key={f}
-            variant={filter === f ? "default" : "outline"}
-            onClick={() => setFilter(f)}
-          >
-            {f === "all"
-              ? "Todas"
-              : f === "pending"
-              ? "Pendentes"
-              : f === "confirmed"
-              ? "Confirmadas"
-              : "Canceladas"}
-          </Button>
-        ))}
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          onClick={() => setFilter("all")}
+        >
+          Todas
+        </Button>
+        <Button
+          variant={filter === "pending" ? "default" : "outline"}
+          onClick={() => setFilter("pending")}
+        >
+          Pendentes
+        </Button>
+        <Button
+          variant={filter === "confirmed" ? "default" : "outline"}
+          onClick={() => setFilter("confirmed")}
+        >
+          Confirmadas
+        </Button>
+        <Button
+          variant={filter === "cancelled" ? "default" : "outline"}
+          onClick={() => setFilter("cancelled")}
+        >
+          Canceladas
+        </Button>
       </div>
 
       {isLoading ? (
@@ -153,9 +173,9 @@ const Bookings: React.FC = () => {
                       {format(new Date(b.start_time), "HH:mm")} –{" "}
                       {format(new Date(b.end_time), "HH:mm")}
                     </TableCell>
-                    <TableCell>{getStatusBadge(b.booking_status)}</TableCell>
+                    <TableCell>{getStatusBadge(b.status)}</TableCell>
                     <TableCell className="flex gap-2">
-                      {b.booking_status === "pending" && (
+                      {b.status === "pending" && (
                         <>
                           <Button
                             size="sm"
@@ -176,7 +196,7 @@ const Bookings: React.FC = () => {
                           </Button>
                         </>
                       )}
-                      {b.booking_status === "confirmed" && (
+                      {b.status === "confirmed" && (
                         <Button
                           size="sm"
                           variant="destructive"
