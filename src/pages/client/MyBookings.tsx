@@ -2,7 +2,7 @@
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import { toZonedTime } from "date-fns-tz";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,8 +55,11 @@ const MyBookings = () => {
 
   const formatDateTime = (dateTimeString: string, formatPattern: string) => {
     try {
-      const date = toZonedTime(new Date(dateTimeString), timeZone);
-      return format(date, formatPattern, { locale: ptBR });
+      // Importante: não precisamos converter o horário aqui, apenas exibir no fuso horário correto
+      const date = new Date(dateTimeString);
+      // Aplicamos o fuso horário ao formatar a data
+      const zonedDate = toZonedTime(date, timeZone);
+      return format(zonedDate, formatPattern, { locale: ptBR });
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Data inválida";

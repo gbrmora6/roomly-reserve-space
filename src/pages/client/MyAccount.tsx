@@ -41,43 +41,90 @@ const MyAccount = () => {
         cnpj: ""
       };
       
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      return {
-        first_name: data?.first_name || "",
-        last_name: data?.last_name || "",
-        phone: data?.phone || "",
-        crp: data?.crp || "",
-        specialty: data?.specialty || "",
-        cpf: data?.cpf || "",
-        cnpj: data?.cnpj || ""
-      };
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error("Erro ao buscar perfil:", error);
+          throw error;
+        }
+        
+        return {
+          first_name: data?.first_name || "",
+          last_name: data?.last_name || "",
+          phone: data?.phone || "",
+          crp: data?.crp || "",
+          specialty: data?.specialty || "",
+          cpf: data?.cpf || "",
+          cnpj: data?.cnpj || ""
+        };
+      } catch (error) {
+        console.error('Erro ao buscar dados do perfil:', error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar perfil",
+          description: "Não foi possível carregar suas informações. Tente novamente mais tarde.",
+        });
+        
+        return {
+          first_name: "",
+          last_name: "",
+          phone: "",
+          crp: "",
+          specialty: "",
+          cpf: "",
+          cnpj: ""
+        };
+      }
     }
   });
 
   const onSubmit = async (data: ProfileFormData) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para atualizar seu perfil.",
+      });
+      return;
+    }
+    
     try {
+      console.log("Enviando dados para atualização:", data);
+      console.log("ID do usuário:", user.id);
+      
       const { error } = await supabase
         .from('profiles')
-        .update(data)
-        .eq('id', user?.id);
+        .update({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+          crp: data.crp,
+          specialty: data.specialty,
+          cpf: data.cpf || null,
+          cnpj: data.cnpj || null
+        })
+        .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro detalhado ao atualizar perfil:', error);
+        throw error;
+      }
 
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso.",
       });
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (error: any) {
+      console.error('Erro ao atualizar perfil:', error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar suas informações.",
+        description: error.message || "Ocorreu um erro ao atualizar suas informações.",
       });
     }
   };
