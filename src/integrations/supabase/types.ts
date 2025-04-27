@@ -6,13 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Room = Tables<"rooms"> & {
-  room_photos?: {
-    id: string;
-    url: string;
-  }[];
-};
-
 export type Database = {
   public: {
     Tables: {
@@ -63,6 +56,7 @@ export type Database = {
           room_id: string
           start_time: string
           status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
           updated_at: string
           user_id: string
         }
@@ -73,6 +67,7 @@ export type Database = {
           room_id: string
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
           updated_at?: string
           user_id: string
         }
@@ -83,6 +78,7 @@ export type Database = {
           room_id?: string
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
           updated_at?: string
           user_id?: string
         }
@@ -126,26 +122,35 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          crp: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          specialty: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          crp?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          specialty?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          crp?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          specialty?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -251,6 +256,7 @@ export type Database = {
       }
       rooms: {
         Row: {
+          close_time: string | null
           created_at: string
           description: string | null
           has_ac: boolean | null
@@ -259,9 +265,13 @@ export type Database = {
           has_wifi: boolean | null
           id: string
           name: string
+          open_days: number[] | null
+          open_time: string | null
+          price_per_hour: number
           updated_at: string
         }
         Insert: {
+          close_time?: string | null
           created_at?: string
           description?: string | null
           has_ac?: boolean | null
@@ -270,9 +280,13 @@ export type Database = {
           has_wifi?: boolean | null
           id?: string
           name: string
+          open_days?: number[] | null
+          open_time?: string | null
+          price_per_hour?: number
           updated_at?: string
         }
         Update: {
+          close_time?: string | null
           created_at?: string
           description?: string | null
           has_ac?: boolean | null
@@ -281,6 +295,9 @@ export type Database = {
           has_wifi?: boolean | null
           id?: string
           name?: string
+          open_days?: number[] | null
+          open_time?: string | null
+          price_per_hour?: number
           updated_at?: string
         }
         Relationships: []
