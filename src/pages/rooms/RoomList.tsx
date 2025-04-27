@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { supabase } from "@/integrations/supabase/client";
 import { format, setHours, setMinutes, subHours } from "date-fns";
+import { Wifi, Snowflake, Chair, Table } from "lucide-react";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -103,20 +104,28 @@ const RoomList: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="p-4 space-y-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="text-sm mb-2">
-            Selecione a data e horário para encontrar salas disponíveis:
-          </div>
+      <div className="p-6 space-y-8">
 
+        {/* Texto explicativo do filtro */}
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-blue-600 mb-4">
+            Encontre a sala ideal para sua necessidade!
+          </h2>
+          <p className="text-gray-600 text-md">
+            Selecione a data e horários para visualizar as salas disponíveis.
+          </p>
+        </div>
+
+        {/* Área de Filtros */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 p-4 bg-blue-50 rounded-md shadow-md">
           <input
             type="date"
-            className="border p-2 rounded"
+            className="border p-2 rounded w-40"
             onChange={(e) => setFilterDate(new Date(e.target.value + 'T00:00:00'))}
           />
 
           <select
-            className="border p-2 rounded"
+            className="border p-2 rounded w-32"
             value={filterStartHour}
             onChange={(e) => setFilterStartHour(e.target.value)}
           >
@@ -129,7 +138,7 @@ const RoomList: React.FC = () => {
           </select>
 
           <select
-            className="border p-2 rounded"
+            className="border p-2 rounded w-32"
             value={filterEndHour}
             onChange={(e) => setFilterEndHour(e.target.value)}
           >
@@ -152,46 +161,64 @@ const RoomList: React.FC = () => {
           </Button>
         </div>
 
+        {/* Cards de Salas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.length > 0 ? (
             filteredRooms.map((room) => (
-              <Card key={room.id}>
-                <CardHeader>
-                  <CardTitle>{room.name}</CardTitle>
+              <Card key={room.id} className="shadow-md hover:shadow-xl transition rounded-lg overflow-hidden">
+                {room.room_photos && room.room_photos.length > 0 && (
+                  <Swiper navigation modules={[Navigation]} className="w-full h-48">
+                    {room.room_photos.map((photo) => (
+                      <SwiperSlide key={photo.id}>
+                        <img
+                          src={photo.url}
+                          alt="Foto da sala"
+                          className="w-full h-48 object-cover"
+                        />
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                )}
+                <CardHeader className="p-4">
+                  <CardTitle className="text-xl">{room.name}</CardTitle>
+                  <p className="text-gray-500 text-sm mt-1">{room.description}</p>
                 </CardHeader>
-                <CardContent>
-                  {room.room_photos && room.room_photos.length > 0 && (
-                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-4">
-                      {room.room_photos.map((photo) => (
-                        <SwiperSlide key={photo.id}>
-                          <img
-                            src={photo.url}
-                            alt="Foto da sala"
-                            className="w-full h-48 object-cover rounded-md"
-                          />
-                        </SwiperSlide>
-                      ))}
-                    </Swiper>
-                  )}
-                  <p className="mb-2">{room.description}</p>
-
-                  {/* Características da sala */}
-                  {room.characteristics && (
-                    <ul className="text-sm text-gray-600 mb-2 list-disc pl-5">
-                      {room.characteristics.map((feature: string, index: number) => (
-                        <li key={index}>{feature}</li>
-                      ))}
-                    </ul>
-                  )}
+                <CardContent className="space-y-4 p-4">
+                  
+                  {/* Características com ícones */}
+                  <div className="flex flex-wrap gap-4 text-gray-700 text-sm">
+                    {room.characteristics?.includes("wifi") && (
+                      <div className="flex items-center gap-1">
+                        <Wifi size={18} /> Wi-Fi
+                      </div>
+                    )}
+                    {room.characteristics?.includes("ar-condicionado") && (
+                      <div className="flex items-center gap-1">
+                        <Snowflake size={18} /> Ar-condicionado
+                      </div>
+                    )}
+                    {room.characteristics?.includes("mesa") && (
+                      <div className="flex items-center gap-1">
+                        <Table size={18} /> Mesa
+                      </div>
+                    )}
+                    {room.characteristics?.includes("cadeira") && (
+                      <div className="flex items-center gap-1">
+                        <Chair size={18} /> Cadeira
+                      </div>
+                    )}
+                  </div>
 
                   {/* Preço */}
-                  <div className="text-primary text-lg font-bold mb-4">
+                  <div className="text-primary text-lg font-bold">
                     {room.price_per_hour !== undefined && room.price_per_hour !== null
                       ? `R$ ${Number(room.price_per_hour).toFixed(2).replace('.', ',')} / hora`
                       : "Preço sob consulta"}
                   </div>
 
-                  <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
+                  <Button className="w-full mt-2" onClick={() => setSelectedRoom(room)}>
+                    Reservar
+                  </Button>
                 </CardContent>
               </Card>
             ))
