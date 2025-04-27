@@ -16,7 +16,7 @@ import AdminRooms from "./pages/admin/Rooms";
 import AdminRoomForm from "./pages/admin/RoomForm";
 import AdminEquipment from "./pages/admin/Equipment";
 import AdminEquipmentForm from "./pages/admin/EquipmentForm";
-import AdminBookings from "./pages/admin/Bookings";
+import AdminBookings from "./pages/admin/AdminBookings";
 import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
