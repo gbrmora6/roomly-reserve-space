@@ -39,29 +39,26 @@ const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
-    queryKey: ["bookings", filter],
-    queryFn: async () => {
-      let query = supabase
-        .from<Booking>("bookings")
-        .select(`
-          *,
-          profiles(first_name, last_name),
-          rooms(name)
-        `)
-        .order("start_time", { ascending: false });
+  queryKey: ["bookings", filter],
+  queryFn: async () => {
+    let query = supabase
+      .from<Booking>("bookings")
+      .select(`
+        *,
+        profiles(first_name, last_name),
+        rooms(name)
+      `)                // agora o PostgREST reconhece as FKs
+      .order("start_time", { ascending: false });
 
-      if (filter !== "all") {
-        query = query.eq("status", filter);
-      }
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
 
-      const { data, error } = await query;
-      if (error) {
-        console.error("Erro ao buscar reservas", error);
-        throw error;
-      }
-      return data;
-    },
-  });
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+});
 
   const handleUpdateStatus = async (id: string, status: BookingStatus) => {
     try {
