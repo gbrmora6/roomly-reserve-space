@@ -2,6 +2,7 @@
 import React from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,13 +52,18 @@ const MyBookings = () => {
     );
   }
 
-  // Helper function to format datetime with proper timezone
+  // Helper function to format datetime with proper Brazil timezone
   const formatDateTime = (dateTimeString: string, formatPattern: string) => {
     try {
       // Parse the ISO string
       const date = parseISO(dateTimeString);
+      
+      // Convert to Brazil timezone (BRT/BRST)
+      const timeZone = 'America/Sao_Paulo';
+      const zonedDate = toZonedTime(date, timeZone);
+      
       // Format with Brazilian locale
-      return format(date, formatPattern, { locale: ptBR });
+      return format(zonedDate, formatPattern, { locale: ptBR });
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Data inválida";
