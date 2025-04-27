@@ -2,35 +2,12 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { toast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { Database } from "@/integrations/supabase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
+import { BookingsTable } from "@/components/bookings/BookingsTable";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
-
-interface Booking {
-  id: string;
-  user_id: string;
-  room_id: string;
-  start_time: string;
-  end_time: string;
-  status: BookingStatus;
-  created_at: string;
-  updated_at: string;
-  total_price: number;
-  user: {
-    first_name: string | null;
-    last_name: string | null;
-  };
-  room: {
-    name: string;
-  };
-}
 
 const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
@@ -60,7 +37,7 @@ const AdminBookings: React.FC = () => {
 
       if (error) throw error;
 
-      return data as unknown as Booking[];
+      return data;
     },
   });
 
@@ -87,35 +64,24 @@ const AdminBookings: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: BookingStatus) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendente</Badge>;
-      case "confirmed":
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Confirmada</Badge>;
-      case "cancelled":
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Cancelada</Badge>;
-      default:
-        return null;
-    }
-  };
-
-  const filterBookings = (bookings: Booking[] | undefined, status: BookingStatus | "all") => {
-    if (!bookings) return [];
-    if (status === "all") return bookings;
-    return bookings.filter(booking => booking.status === status);
-  };
-
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
-          <TabsTrigger value="all" onClick={() => setFilter("all")}>Todas</TabsTrigger>
-          <TabsTrigger value="pending" onClick={() => setFilter("pending")}>Pendentes</TabsTrigger>
-          <TabsTrigger value="confirmed" onClick={() => setFilter("confirmed")}>Confirmadas</TabsTrigger>
-          <TabsTrigger value="cancelled" onClick={() => setFilter("cancelled")}>Canceladas</TabsTrigger>
+          <TabsTrigger value="all" onClick={() => setFilter("all")}>
+            Todas
+          </TabsTrigger>
+          <TabsTrigger value="pending" onClick={() => setFilter("pending")}>
+            Pendentes
+          </TabsTrigger>
+          <TabsTrigger value="confirmed" onClick={() => setFilter("confirmed")}>
+            Confirmadas
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" onClick={() => setFilter("cancelled")}>
+            Canceladas
+          </TabsTrigger>
         </TabsList>
 
         {isLoading ? (
@@ -123,77 +89,7 @@ const AdminBookings: React.FC = () => {
             <p>Carregando reservas...</p>
           </div>
         ) : (
-          <div className="border rounded-md mt-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sala</TableHead>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Horário</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bookings && bookings.length > 0 ? (
-                  filterBookings(bookings, filter).map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell>{booking.room?.name}</TableCell>
-                      <TableCell>
-                        {booking.user?.first_name} {booking.user?.last_name}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
-                      </TableCell>
-                      <TableCell>
-                        R$ {booking.total_price.toFixed(2)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                      <TableCell className="space-x-2">
-                        {booking.status === "pending" && (
-                          <>
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleUpdateStatus(booking.id, "confirmed")}
-                            >
-                              Confirmar
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => handleUpdateStatus(booking.id, "cancelled")}
-                            >
-                              Recusar
-                            </Button>
-                          </>
-                        )}
-                        {booking.status === "confirmed" && (
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
-                            onClick={() => handleUpdateStatus(booking.id, "cancelled")}
-                          >
-                            Cancelar
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
-                      Nenhuma reserva encontrada
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
         )}
       </Tabs>
     </div>
