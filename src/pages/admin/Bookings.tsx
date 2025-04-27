@@ -23,12 +23,16 @@ interface Booking {
   room_id: string;
   start_time: string;
   end_time: string;
-  // manter só `status` no React
   status: BookingStatus;
   created_at: string;
   updated_at: string;
-  user: { first_name: string | null; last_name: string | null };
-  room: { name: string };
+  user: {
+    first_name: string | null;
+    last_name: string | null;
+  };
+  room: {
+    name: string;
+  };
 }
 
 const AdminBookings: React.FC = () => {
@@ -45,7 +49,7 @@ const AdminBookings: React.FC = () => {
           room_id,
           start_time,
           end_time,
-          booking_status,
+          status,
           created_at,
           updated_at,
           user:user_id(first_name,last_name),
@@ -54,16 +58,12 @@ const AdminBookings: React.FC = () => {
         .order("start_time", { ascending: false });
 
       if (filter !== "all") {
-        query = query.eq("booking_status", filter);
+        query = query.eq("status", filter);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-
-      return (data as any[]).map((r) => ({
-        ...r,
-        status: r.booking_status as BookingStatus,
-      })) as Booking[];
+      return data as Booking[];
     },
   });
 
@@ -71,8 +71,9 @@ const AdminBookings: React.FC = () => {
     try {
       const { error } = await supabase
         .from("bookings")
-        .update({ booking_status: newStatus })
+        .update({ status: newStatus })
         .eq("id", id);
+
       if (error) throw error;
 
       toast({
@@ -82,7 +83,7 @@ const AdminBookings: React.FC = () => {
             : "Reserva cancelada com sucesso",
       });
 
-      // muda de aba e recarrega só o filtro atual
+      // muda para a aba certa e refaz a query
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
@@ -179,7 +180,7 @@ const AdminBookings: React.FC = () => {
                       })}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(booking.start_time), "HH:mm")} –{" "}
+                      {format(new Date(booking.start_time), "HH:mm")} -{" "}
                       {format(new Date(booking.end_time), "HH:mm")}
                     </TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
