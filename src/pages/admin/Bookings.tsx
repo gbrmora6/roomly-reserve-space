@@ -23,7 +23,8 @@ interface Booking {
   room_id: string;
   start_time: string;
   end_time: string;
-  status: BookingStatus;        // aqui continua status para o React
+  // manter só `status` no React
+  status: BookingStatus;
   created_at: string;
   updated_at: string;
   user: { first_name: string | null; last_name: string | null };
@@ -36,7 +37,6 @@ const AdminBookings: React.FC = () => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
-      // 1) seleciona booking_status mas já o renomeia como status
       let query = supabase
         .from("bookings")
         .select(`
@@ -45,7 +45,7 @@ const AdminBookings: React.FC = () => {
           room_id,
           start_time,
           end_time,
-          booking_status:booking_status,  -- pega a coluna booking_status
+          booking_status,
           created_at,
           updated_at,
           user:user_id(first_name,last_name),
@@ -60,22 +60,19 @@ const AdminBookings: React.FC = () => {
       const { data, error } = await query;
       if (error) throw error;
 
-      // mapear cada objeto para que use `status` em vez de `booking_status`
-      return (data as any[]).map((row) => ({
-        ...row,
-        status: row.booking_status as BookingStatus,
+      return (data as any[]).map((r) => ({
+        ...r,
+        status: r.booking_status as BookingStatus,
       })) as Booking[];
     },
   });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
-      // 2) atualiza o campo booking_status
       const { error } = await supabase
         .from("bookings")
         .update({ booking_status: newStatus })
         .eq("id", id);
-
       if (error) throw error;
 
       toast({
@@ -85,7 +82,7 @@ const AdminBookings: React.FC = () => {
             : "Reserva cancelada com sucesso",
       });
 
-      // muda de aba e recarrega com o filtro correto
+      // muda de aba e recarrega só o filtro atual
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
