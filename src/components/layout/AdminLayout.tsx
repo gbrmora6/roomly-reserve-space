@@ -18,11 +18,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { 
-  LayoutDashboard, 
-  Bed, 
-  BookOpen, 
-  Mic, 
+  LayoutDashboard,
   Building2,
+  Bed, 
+  Mic, 
+  BookOpen, 
   Users,
   LogOut,
   Home,
@@ -32,10 +32,8 @@ const AdminLayout: React.FC = () => {
   const { signOut, user } = useAuth();
   const location = useLocation();
 
-  // Rota atual para destacar o item de menu ativo
-  const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <SidebarProvider>
@@ -47,7 +45,7 @@ const AdminLayout: React.FC = () => {
               {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
             </p>
           </SidebarHeader>
-          
+
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Principal</SidebarGroupLabel>
@@ -60,7 +58,7 @@ const AdminLayout: React.FC = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/company-profile" className={isActive("/admin/company-profile") ? "bg-muted" : ""}>
@@ -69,7 +67,7 @@ const AdminLayout: React.FC = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/rooms" className={isActive("/admin/rooms") ? "bg-muted" : ""}>
@@ -78,7 +76,7 @@ const AdminLayout: React.FC = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/equipment" className={isActive("/admin/equipment") ? "bg-muted" : ""}>
@@ -87,7 +85,7 @@ const AdminLayout: React.FC = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/bookings" className={isActive("/admin/bookings") ? "bg-muted" : ""}>
@@ -96,7 +94,7 @@ const AdminLayout: React.FC = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                
+
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/clients" className={isActive("/admin/clients") ? "bg-muted" : ""}>
@@ -108,7 +106,7 @@ const AdminLayout: React.FC = () => {
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
-          
+
           <SidebarFooter className="flex flex-col gap-2 p-4 border-t">
             <Button variant="outline" asChild className="w-full">
               <Link to="/">
@@ -116,14 +114,14 @@ const AdminLayout: React.FC = () => {
                 Site Principal
               </Link>
             </Button>
-            
+
             <Button variant="destructive" className="w-full" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </Button>
           </SidebarFooter>
         </Sidebar>
-        
+
         <SidebarInset>
           <div className="flex flex-col h-full">
             <header className="flex items-center justify-between p-4 border-b">
@@ -132,7 +130,7 @@ const AdminLayout: React.FC = () => {
                 <h1 className="text-xl font-bold">Painel Administrativo</h1>
               </div>
             </header>
-            
+
             <div className="flex-1 p-6">
               <Outlet />
             </div>
