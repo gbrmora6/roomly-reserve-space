@@ -1,7 +1,8 @@
+
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +55,7 @@ const MyBookings = () => {
 
   const formatDateTime = (dateTimeString: string, formatPattern: string) => {
     try {
-      const date = utcToZonedTime(new Date(dateTimeString), timeZone);
+      const date = toZonedTime(new Date(dateTimeString), timeZone);
       return format(date, formatPattern, { locale: ptBR });
     } catch (error) {
       console.error("Error formatting date:", error);
