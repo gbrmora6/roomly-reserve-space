@@ -1,4 +1,3 @@
-
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -9,11 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { roomService } from "@/services/roomService";
 import { Room } from "@/types/room";
-import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { supabase } from "@/integrations/supabase/client";
-import { format, setHours, setMinutes, subHours } from "date-fns";
+import { formatCurrency } from "@/utils/formatCurrency"; // nova função criada
+import { setHours, setMinutes, subHours } from "date-fns";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -30,8 +29,12 @@ const RoomList: React.FC = () => {
     const fetchRooms = async () => {
       try {
         const data = await roomService.getAllRooms();
-        setRooms(data || []);
-        setFilteredRooms(data || []);
+        const enhancedRooms = (data || []).map((room: any) => ({
+          ...room,
+          features: room.features || ["Wi-Fi", "Ar-condicionado", "Mesa", "Cadeiras"], // caso não venha
+        }));
+        setRooms(enhancedRooms);
+        setFilteredRooms(enhancedRooms);
       } catch (err) {
         console.error("Erro ao carregar salas:", err);
         setError("Não foi possível carregar as salas. Tente novamente mais tarde.");
@@ -49,13 +52,12 @@ const RoomList: React.FC = () => {
       return;
     }
 
-    const startHour = parseInt(filterStartHour.split(":" )[0]);
-    const endHour = parseInt(filterEndHour.split(":" )[0]);
+    const startHour = parseInt(filterStartHour.split(":")[0]);
+    const endHour = parseInt(filterEndHour.split(":")[0]);
 
     let startTime = setMinutes(setHours(filterDate, startHour), 0);
     let endTime = setMinutes(setHours(filterDate, endHour), 0);
 
-    // Ajuste UTC-3h
     startTime = subHours(startTime, 3);
     endTime = subHours(endTime, 3);
 
@@ -77,7 +79,6 @@ const RoomList: React.FC = () => {
           availableRooms.push(room);
         }
       }
-
       setFilteredRooms(availableRooms);
     } catch (err) {
       console.error("Erro ao filtrar salas:", err);
@@ -107,6 +108,12 @@ const RoomList: React.FC = () => {
   return (
     <MainLayout>
       <div className="p-4 space-y-6">
+        {/* Mensagem explicativa */}
+        <div className="text-center text-gray-600 max-w-2xl mx-auto mb-4">
+          Selecione a data e o horário desejados para verificar as salas disponíveis para reserva.
+        </div>
+
+        {/* Filtros */}
         <div className="flex flex-col md:flex-row items-center gap-4">
           <input
             type="date"
@@ -151,16 +158,17 @@ const RoomList: React.FC = () => {
           </Button>
         </div>
 
+        {/* Listagem de Salas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.length > 0 ? (
             filteredRooms.map((room) => (
-              <Card key={room.id}>
+              <Card key={room.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle>{room.name}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-3">
                   {room.room_photos && room.room_photos.length > 0 && (
-                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-4">
+                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-2">
                       {room.room_photos.map((photo) => (
                         <SwiperSlide key={photo.id}>
                           <img
@@ -172,11 +180,27 @@ const RoomList: React.FC = () => {
                       ))}
                     </Swiper>
                   )}
-                  <p className="mb-2">{room.description}</p>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Capacidade: {room.capacity || "?"} pessoas
-                  </p>
-                  <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
+
+                  <p className="text-gray-600">{room.description}</p>
+
+                  {/* Características */}
+                  <div>
+                    <h4 className="font-semibold mb-1">Características:</h4>
+                    <ul className="list-disc list-inside text-gray-600 text-sm">
+                      {room.features.map((feature, idx) => (
+                        <li key={idx}>{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Preço */}
+                  <div className="text-lg font-bold text-primary">
+                    {formatCurrency(room.price)}
+                  </div>
+
+                  <Button onClick={() => setSelectedRoom(room)} className="mt-2">
+                    Reservar
+                  </Button>
                 </CardContent>
               </Card>
             ))
@@ -187,6 +211,7 @@ const RoomList: React.FC = () => {
           )}
         </div>
 
+        {/* Modal Reserva */}
         <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
           <DialogContent>
             <DialogHeader>
