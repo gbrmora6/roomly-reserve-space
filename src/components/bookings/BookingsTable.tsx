@@ -1,5 +1,5 @@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { format, subHours } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingActions } from "./BookingActions";
@@ -55,10 +55,10 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                   {booking.user ? `${booking.user.first_name || ''} ${booking.user.last_name || ''}` : '-'}
                 </TableCell>
                 <TableCell>
-                  {format(subHours(new Date(booking.start_time), 3), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
                 </TableCell>
                 <TableCell>
-                  {format(subHours(new Date(booking.start_time), 3), "HH:mm")} - {format(subHours(new Date(booking.end_time), 3), "HH:mm")}
+                  {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
                 </TableCell>
                 <TableCell>
                   R$ {booking.total_price.toFixed(2)}
