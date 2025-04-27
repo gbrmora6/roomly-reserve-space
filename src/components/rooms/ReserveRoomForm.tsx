@@ -97,46 +97,44 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     }
 
     const fetchAvailableHours = async () => {
-      const weekday = format(selectedDate, "eeee").toLowerCase();
-      const schedule = schedules.find((sch) => sch.weekday === weekday);
+  const weekday = format(selectedDate, "eeee").toLowerCase();
+  const schedule = schedules.find((sch) => sch.weekday === weekday);
 
-      if (!schedule) {
-        setAvailableHours([]);
-        return;
-      }
+  if (!schedule) {
+    setAvailableHours([]);
+    return;
+  }
 
-      const startHour = parseInt(schedule.start_time.split(":")[0], 10);
-      const endHour = parseInt(schedule.end_time.split(":")[0], 10);
+  const startHour = parseInt(schedule.start_time.split(":")[0], 10);
+  const endHour = parseInt(schedule.end_time.split(":")[0], 10);
 
-      const hours: string[] = [];
-      for (let hour = startHour; hour < endHour; hour++) {
-        hours.push(`${hour.toString().padStart(2, "0")}:00`);
-      }
+  const hours: string[] = [];
+  for (let hour = startHour; hour < endHour; hour++) {
+    hours.push(`${hour.toString().padStart(2, "0")}:00`);
+  }
 
-      setAvailableHours(hours);
+  setAvailableHours(hours);
 
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select("start_time, end_time")
-        .eq("room_id", room.id)
-        .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
-        .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`);
+  const { data: bookingsData } = await supabase
+    .from("bookings")
+    .select("start_time, end_time")
+    .eq("room_id", room.id)
+    .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
+    .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`)
+    .neq("status", "cancelled");  // aqui!
 
-      const blocked: string[] = [];
+  const blocked: string[] = [];
 
-      bookingsData?.forEach((booking: any) => {
-        const start = parseInt(booking.start_time.split("T")[1].split(":")[0]);
-        const end = parseInt(booking.end_time.split("T")[1].split(":")[0]);
-        for (let i = start; i < end; i++) {
-          blocked.push(`${i.toString().padStart(2, "0")}:00`);
-        }
-      });
+  bookingsData?.forEach((booking: any) => {
+    const start = parseInt(booking.start_time.split("T")[1].split(":")[0]);
+    const end = parseInt(booking.end_time.split("T")[1].split(":")[0]);
+    for (let i = start; i < end; i++) {
+      blocked.push(`${i.toString().padStart(2, "0")}:00`);
+    }
+  });
 
-      setBlockedHours(blocked);
-    };
-
-    fetchAvailableHours();
-  }, [selectedDate, schedules]);
+  setBlockedHours(blocked);
+};
 
   const handleReserve = async () => {
     if (!selectedDate || !startHour || !endHour) return;
