@@ -33,31 +33,44 @@ const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
-    queryKey: ["bookings", filter],
-    queryFn: async () => {
-      let query = supabase
-        .from("bookings")
-        .select(`
-          *,
-          user:user_id(
-            first_name,
-            last_name
-          ),
-          room:room_id(
-            name
-          )
-        `)
-        .order("start_time", { ascending: false });
+  queryKey: ["bookings", filter],
+  queryFn: async () => {
+    let query = supabase
+      .from("bookings")
+      .select(`
+        id,
+        user_id,
+        room_id,
+        start_time,
+        end_time,
+        status,
+        created_at,
+        updated_at,
+        user:user_id(
+          first_name,
+          last_name
+        ),
+        room:room_id(
+          name
+        )
+      `)
+      .order("start_time", { ascending: false });
 
-      if (filter !== "all") {
-        query = query.eq("status", filter);
-      }
+    if (filter !== "all") {
+      query = query.eq("status", filter); // <- ISSO aqui usa .eq corretamente no client JS
+    }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as unknown as Booking[];
-    },
-  });
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Erro ao buscar reservas", error); // loga o erro real
+      throw error;
+    }
+
+    return data as Booking[];
+  },
+});
+
 
   const handleUpdateStatus = async (id: string, status: BookingStatus) => {
     try {
