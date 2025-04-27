@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,6 +16,8 @@ import AdminRoomForm from "./pages/admin/RoomForm";
 import AdminEquipment from "./pages/admin/Equipment";
 import AdminEquipmentForm from "./pages/admin/EquipmentForm";
 import AdminBookings from "./pages/admin/AdminBookings";
+import CompanyProfile from "./pages/admin/CompanyProfile";
+import Clients from "./pages/admin/Clients";
 import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -43,6 +44,7 @@ const App = () => (
                 </ProtectedRoute>
               }>
                 <Route index element={<AdminDashboard />} />
+                <Route path="company-profile" element={<CompanyProfile />} />
                 <Route path="rooms" element={<AdminRooms />} />
                 <Route path="rooms/new" element={<AdminRoomForm />} />
                 <Route path="rooms/:id" element={<AdminRoomForm />} />
@@ -50,6 +52,7 @@ const App = () => (
                 <Route path="equipment/new" element={<AdminEquipmentForm />} />
                 <Route path="equipment/:id" element={<AdminEquipmentForm />} />
                 <Route path="bookings" element={<AdminBookings />} />
+                <Route path="clients" element={<Clients />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />
