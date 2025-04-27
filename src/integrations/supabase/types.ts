@@ -379,7 +379,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_equipment_availability: {
+        Args: {
+          p_equipment_id: string
+          p_start_time: string
+          p_end_time: string
+          p_requested_quantity: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled"

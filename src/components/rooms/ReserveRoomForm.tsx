@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -8,6 +7,7 @@ import { TimeSelector } from "./TimeSelector";
 import { useRoomSchedule } from "@/hooks/useRoomSchedule";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useRoomReservation } from "@/hooks/useRoomReservation";
+import { EquipmentSelectionDialog } from "./EquipmentSelectionDialog";
 
 interface ReserveRoomFormProps {
   room: Room;
@@ -18,6 +18,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [startHour, setStartHour] = useState<string>("");
   const [endHour, setEndHour] = useState<string>("");
+  const [showEquipmentDialog, setShowEquipmentDialog] = useState(false);
+  const [currentBookingId, setCurrentBookingId] = useState<string | null>(null);
 
   const schedules = useRoomSchedule(room.id);
   const { availableHours, blockedHours } = useRoomAvailability(room, selectedDate);
@@ -26,18 +28,14 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const handleConfirmReservation = async () => {
     if (!selectedDate || !startHour || !endHour) return;
 
-    const start = parseInt(startHour.split(":")[0]);
-    const end = parseInt(endHour.split(":")[0]);
+    let startTime = setMinutes(setHours(selectedDate, parseInt(startHour)), 0);
+    let endTime = setMinutes(setHours(selectedDate, parseInt(endHour)), 0);
 
-    if (end <= start) {
-      alert("O horário final deve ser depois do horário inicial.");
-      return;
+    const result = await handleReserve(startTime, endTime);
+    if (result?.id) {
+      setCurrentBookingId(result.id);
+      setShowEquipmentDialog(true);
     }
-
-    let startTime = setMinutes(setHours(selectedDate, start), 0);
-    let endTime = setMinutes(setHours(selectedDate, end), 0);
-
-    await handleReserve(startTime, endTime);
   };
 
   const isDateDisabled = (date: Date) => {
@@ -111,6 +109,14 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
           {loading ? "Reservando..." : "Confirmar Reserva"}
         </Button>
       </div>
+
+      <EquipmentSelectionDialog
+        open={showEquipmentDialog}
+        onOpenChange={setShowEquipmentDialog}
+        startTime={selectedDate ? setHours(selectedDate, parseInt(startHour || "0")) : null}
+        endTime={selectedDate ? setHours(selectedDate, parseInt(endHour || "0")) : null}
+        bookingId={currentBookingId}
+      />
     </div>
   );
 };

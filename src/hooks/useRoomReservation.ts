@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, subHours } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +14,7 @@ export function useRoomReservation(room: Room, onClose: () => void) {
     if (!user) {
       alert("Usuário não autenticado.");
       setLoading(false);
-      return;
+      return null;
     }
 
     // Convert times to UTC-3
@@ -32,26 +31,26 @@ export function useRoomReservation(room: Room, onClose: () => void) {
     if (existingBookings && existingBookings.length > 0) {
       alert("Horário já reservado! Escolha outro horário.");
       setLoading(false);
-      return;
+      return null;
     }
 
-    const { error } = await supabase.from("bookings").insert({
+    const { data, error } = await supabase.from("bookings").insert({
       user_id: user.id,
       room_id: room.id,
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
       status: "pending",
-    });
+    }).select().single();
 
     if (error) {
       console.error(error);
       alert("Erro ao reservar a sala.");
-    } else {
-      alert("Reserva realizada com sucesso!");
-      onClose();
+      setLoading(false);
+      return null;
     }
 
     setLoading(false);
+    return data;
   };
 
   return { handleReserve, loading };
