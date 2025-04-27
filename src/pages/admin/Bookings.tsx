@@ -14,10 +14,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Database } from "@/integrations/supabase/types";
 
-// Agora puxamos do próprio enum do Supabase:
-type BookingStatus = Database["public"]["Enums"]["booking_status"];
+type BookingStatus = "pending" | "confirmed" | "cancelled";
 
 interface Booking {
   id: string;
@@ -46,14 +44,16 @@ const AdminBookings: React.FC = () => {
       let query = supabase
         .from("bookings")
         .select(`
-          *,
-          user:user_id(
-            first_name,
-            last_name
-          ),
-          room:room_id(
-            name
-          )
+          id,
+          user_id,
+          room_id,
+          start_time,
+          end_time,
+          status,
+          created_at,
+          updated_at,
+          user:user_id(first_name,last_name),
+          room:room_id(name)
         `)
         .order("start_time", { ascending: false });
 
@@ -62,47 +62,38 @@ const AdminBookings: React.FC = () => {
       }
 
       const { data, error } = await query;
-      if (error) {
-        console.error("Erro ao buscar reservas", error);
-        throw error;
-      }
+      if (error) throw error;
       return data as Booking[];
     },
   });
 
-    const handleUpdateStatus = async (id: string, status: BookingStatus) => {
-  try {
-    let rpc;
-    if (status === "cancelada") {
-      // apaga a reserva de fato
-      rpc = supabase.from("bookings").delete().eq("id", id);
-    } else {
-      // só marca como confirmada
-      rpc = supabase.from("bookings").update({ status }).eq("id", id);
+  const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title:
+          newStatus === "confirmed"
+            ? "Reserva confirmada com sucesso"
+            : "Reserva cancelada com sucesso",
+      });
+
+      // muda para a aba certa e refaz a query
+      setFilter(newStatus);
+      await refetch();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar reserva",
+        description: err.message,
+      });
     }
-
-    const { error } = await rpc;
-    if (error) throw error;
-
-    toast({ title: 
-      status === "cancelada"
-        ? "Reserva cancelada e horário liberado"
-        : "Reserva confirmada com sucesso"
-    });
-
-    // primeiro troco de aba para já refazer a query com o filtro
-    setFilter(status);
-    // aí sim peço pra recarregar
-    await refetch();
-  } catch (error: any) {
-    toast({
-      variant: "destructive",
-      title: "Erro ao atualizar reserva",
-      description: error.message,
-    });
-  }
-};
-
+  };
 
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
@@ -124,8 +115,6 @@ const AdminBookings: React.FC = () => {
             Cancelada
           </Badge>
         );
-      default:
-        return null;
     }
   };
 
@@ -179,29 +168,29 @@ const AdminBookings: React.FC = () => {
             </TableHeader>
             <TableBody>
               {bookings && bookings.length > 0 ? (
-                bookings.map((b) => (
-                  <TableRow key={b.id}>
-                    <TableCell>{b.room?.name}</TableCell>
+                bookings.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell>{booking.room.name}</TableCell>
                     <TableCell>
-                      {b.user?.first_name} {b.user?.last_name}
+                      {booking.user.first_name} {booking.user.last_name}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(b.start_time), "dd/MM/yyyy", {
+                      {format(new Date(booking.start_time), "dd/MM/yyyy", {
                         locale: ptBR,
                       })}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(b.start_time), "HH:mm")} —{" "}
-                      {format(new Date(b.end_time), "HH:mm")}
+                      {format(new Date(booking.start_time), "HH:mm")} -{" "}
+                      {format(new Date(booking.end_time), "HH:mm")}
                     </TableCell>
-                    <TableCell>{getStatusBadge(b.status)}</TableCell>
+                    <TableCell>{getStatusBadge(booking.status)}</TableCell>
                     <TableCell className="flex gap-2">
-                      {b.status === "pending" && (
+                      {booking.status === "pending" && (
                         <>
                           <Button
                             size="sm"
                             onClick={() =>
-                              handleUpdateStatus(b.id, "confirmed")
+                              handleUpdateStatus(booking.id, "confirmed")
                             }
                           >
                             Confirmar
@@ -210,19 +199,19 @@ const AdminBookings: React.FC = () => {
                             size="sm"
                             variant="destructive"
                             onClick={() =>
-                              handleUpdateStatus(b.id, "cancelled")
+                              handleUpdateStatus(booking.id, "cancelled")
                             }
                           >
                             Cancelar
                           </Button>
                         </>
                       )}
-                      {b.status === "confirmed" && (
+                      {booking.status === "confirmed" && (
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() =>
-                            handleUpdateStatus(b.id, "cancelled")
+                            handleUpdateStatus(booking.id, "cancelled")
                           }
                         >
                           Cancelar
