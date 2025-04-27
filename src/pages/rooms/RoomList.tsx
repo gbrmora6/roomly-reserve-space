@@ -11,7 +11,6 @@ import { Room } from "@/types/room";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency } from "@/utils/formatCurrency"; // nova função criada
 import { setHours, setMinutes, subHours } from "date-fns";
 
 const RoomList: React.FC = () => {
@@ -29,12 +28,8 @@ const RoomList: React.FC = () => {
     const fetchRooms = async () => {
       try {
         const data = await roomService.getAllRooms();
-        const enhancedRooms = (data || []).map((room: any) => ({
-          ...room,
-          features: room.features || ["Wi-Fi", "Ar-condicionado", "Mesa", "Cadeiras"], // caso não venha
-        }));
-        setRooms(enhancedRooms);
-        setFilteredRooms(enhancedRooms);
+        setRooms(data || []);
+        setFilteredRooms(data || []);
       } catch (err) {
         console.error("Erro ao carregar salas:", err);
         setError("Não foi possível carregar as salas. Tente novamente mais tarde.");
@@ -64,16 +59,11 @@ const RoomList: React.FC = () => {
     try {
       const availableRooms: Room[] = [];
       for (const room of rooms) {
-        const { data: bookingsData, error } = await supabase
+        const { data: bookingsData } = await supabase
           .from("bookings")
           .select("start_time, end_time")
           .eq("room_id", room.id)
           .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
-
-        if (error) {
-          console.error("Erro ao buscar reservas da sala:", room.id, error);
-          continue;
-        }
 
         if (bookingsData.length === 0) {
           availableRooms.push(room);
@@ -108,19 +98,18 @@ const RoomList: React.FC = () => {
   return (
     <MainLayout>
       <div className="p-4 space-y-6">
-        {/* Mensagem explicativa */}
-        <div className="text-center text-gray-600 max-w-2xl mx-auto mb-4">
-          Selecione a data e o horário desejados para verificar as salas disponíveis para reserva.
+        {/* Mensagem Explicativa */}
+        <div className="text-center text-gray-600 mb-4">
+          Selecione a data e horário desejado para ver quais salas estão disponíveis para sua reserva.
         </div>
 
-        {/* Filtros */}
+        {/* Filtro */}
         <div className="flex flex-col md:flex-row items-center gap-4">
           <input
             type="date"
             className="border p-2 rounded"
             onChange={(e) => setFilterDate(new Date(e.target.value + 'T00:00:00'))}
           />
-
           <select
             className="border p-2 rounded"
             value={filterStartHour}
@@ -158,15 +147,15 @@ const RoomList: React.FC = () => {
           </Button>
         </div>
 
-        {/* Listagem de Salas */}
+        {/* Lista de Salas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.length > 0 ? (
             filteredRooms.map((room) => (
-              <Card key={room.id} className="flex flex-col">
+              <Card key={room.id}>
                 <CardHeader>
                   <CardTitle>{room.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-3">
+                <CardContent className="flex flex-col gap-2">
                   {room.room_photos && room.room_photos.length > 0 && (
                     <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-2">
                       {room.room_photos.map((photo) => (
@@ -185,17 +174,17 @@ const RoomList: React.FC = () => {
 
                   {/* Características */}
                   <div>
-                    <h4 className="font-semibold mb-1">Características:</h4>
+                    <h4 className="font-semibold text-sm">Características:</h4>
                     <ul className="list-disc list-inside text-gray-600 text-sm">
-                      {room.features.map((feature, idx) => (
-                        <li key={idx}>{feature}</li>
-                      ))}
+                      <li>Wi-Fi</li>
+                      <li>Ar-condicionado</li>
+                      <li>Mesa e cadeiras</li>
                     </ul>
                   </div>
 
-                  {/* Preço */}
-                  <div className="text-lg font-bold text-primary">
-                    {formatCurrency(room.price)}
+                  {/* Valor */}
+                  <div className="text-primary text-lg font-bold">
+                    {room.price ? `R$ ${room.price.toFixed(2).replace('.', ',')}` : "Preço sob consulta"}
                   </div>
 
                   <Button onClick={() => setSelectedRoom(room)} className="mt-2">
@@ -211,7 +200,7 @@ const RoomList: React.FC = () => {
           )}
         </div>
 
-        {/* Modal Reserva */}
+        {/* Modal de Reserva */}
         <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
           <DialogContent>
             <DialogHeader>
