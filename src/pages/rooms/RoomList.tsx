@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, setHours, setMinutes, subHours } from "date-fns";
 import { Wifi, Snowflake, Chair, Table } from "lucide-react";
 
+
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
