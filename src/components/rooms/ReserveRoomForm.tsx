@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -67,6 +68,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
           .from("bookings")
           .select("start_time, end_time")
           .eq("room_id", room.id)
+          .eq("status", "confirmed")  // Only consider confirmed bookings
+          .or("status.eq.pending")     // Also include pending bookings
           .gte("start_time", `${format(date, "yyyy-MM-dd")}T00:00:00`)
           .lt("start_time", `${format(date, "yyyy-MM-dd")}T23:59:59`);
 
@@ -119,6 +122,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         .from("bookings")
         .select("start_time, end_time")
         .eq("room_id", room.id)
+        .not("status", "eq", "cancelled")  // Exclude cancelled bookings
         .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
         .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`);
 
@@ -169,6 +173,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       .from("bookings")
       .select("*")
       .eq("room_id", room.id)
+      .not("status", "eq", "cancelled")  // Exclude cancelled bookings
       .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
 
     if (existingBookings && existingBookings.length > 0) {

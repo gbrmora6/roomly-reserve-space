@@ -60,7 +60,8 @@ const RoomList: React.FC = () => {
           .select('room_id')
           .gte('end_time', startDateTime.toISOString())
           .lte('start_time', endDateTime.toISOString())
-          .eq('status', 'confirmed');
+          .eq('status', 'confirmed')  // Only consider confirmed bookings, not cancelled ones
+          .or('status.eq.pending');   // Also include pending bookings as they might get confirmed
 
         if (bookingsError) throw bookingsError;
 
