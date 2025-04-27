@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Outlet } from "react-router-dom";
 import { 
@@ -23,6 +22,8 @@ import {
   Bed, 
   BookOpen, 
   Mic, 
+  Building2,
+  Users,
   LogOut,
   Home,
 } from "lucide-react";
@@ -62,6 +63,15 @@ const AdminLayout: React.FC = () => {
                 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
+                    <Link to="/admin/company-profile" className={isActive("/admin/company-profile") ? "bg-muted" : ""}>
+                      <Building2 />
+                      <span>Perfil da Empresa</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
                     <Link to="/admin/rooms" className={isActive("/admin/rooms") ? "bg-muted" : ""}>
                       <Bed />
                       <span>Salas</span>
@@ -83,6 +93,15 @@ const AdminLayout: React.FC = () => {
                     <Link to="/admin/bookings" className={isActive("/admin/bookings") ? "bg-muted" : ""}>
                       <BookOpen />
                       <span>Reservas</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/clients" className={isActive("/admin/clients") ? "bg-muted" : ""}>
+                      <Users />
+                      <span>Clientes</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
