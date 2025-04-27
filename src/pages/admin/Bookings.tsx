@@ -38,10 +38,9 @@ interface Booking {
 const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
-  const { data: bookings, isLoading, refetch } = useQuery({
+  const { data: bookings = [], isLoading, refetch, isError } = useQuery<Booking[]>({
     queryKey: ["bookings", filter],
     queryFn: async () => {
-      // buscamos o campo booking_status e mapeamos depois para status
       let query = supabase
         .from("bookings")
         .select(`
@@ -59,17 +58,22 @@ const AdminBookings: React.FC = () => {
         .order("start_time", { ascending: false });
 
       if (filter !== "all") {
-        query = query.eq("booking_status", filter);
+        query = query.eq("status", filter);
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      // renomeia booking_status → status para uso no React
-      return (data as any[]).map((r) => ({
-        ...r,
-        status: r.status as BookingStatus,
-      })) as Booking[];
+      return data as Booking[];
+    },
+    onError: (err: any) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar reservas",
+        description: err.message,
+      });
     },
   });
 
@@ -89,8 +93,6 @@ const AdminBookings: React.FC = () => {
             : "Reserva cancelada com sucesso",
       });
 
-      // refaz o filtro para atualizar a lista
-      setFilter(newStatus);
       await refetch();
     } catch (err: any) {
       toast({
@@ -129,37 +131,29 @@ const AdminBookings: React.FC = () => {
       <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
 
       <div className="flex gap-2 mb-4">
-        <Button
-          variant={filter === "all" ? "default" : "outline"}
-          onClick={() => setFilter("all")}
-        >
-          Todas
-        </Button>
-        <Button
-          variant={filter === "pending" ? "default" : "outline"}
-          onClick={() => setFilter("pending")}
-        >
-          Pendentes
-        </Button>
-        <Button
-          variant={filter === "confirmed" ? "default" : "outline"}
-          onClick={() => setFilter("confirmed")}
-        >
-          Confirmadas
-        </Button>
-        <Button
-          variant={filter === "cancelled" ? "default" : "outline"}
-          onClick={() => setFilter("cancelled")}
-        >
-          Canceladas
-        </Button>
+        {(["all", "pending", "confirmed", "cancelled"] as const).map((status) => (
+          <Button
+            key={status}
+            variant={filter === status ? "default" : "outline"}
+            onClick={() => setFilter(status)}
+          >
+            {status === "all" && "Todas"}
+            {status === "pending" && "Pendentes"}
+            {status === "confirmed" && "Confirmadas"}
+            {status === "cancelled" && "Canceladas"}
+          </Button>
+        ))}
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
           <p>Carregando reservas...</p>
         </div>
-      ) : (
+      ) : isError ? (
+        <div className="flex items-center justify-center py-8">
+          <p>Erro ao carregar reservas.</p>
+        </div>
+      ) : bookings.length > 0 ? (
         <div className="border rounded-md">
           <Table>
             <TableHeader>
@@ -173,68 +167,53 @@ const AdminBookings: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bookings && bookings.length > 0 ? (
-                bookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell>{booking.room.name}</TableCell>
-                    <TableCell>
-                      {booking.user.first_name} {booking.user.last_name}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(booking.start_time), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(booking.start_time), "HH:mm")} –{" "}
-                      {format(new Date(booking.end_time), "HH:mm")}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                    <TableCell className="flex gap-2">
-                      {booking.status === "pending" && (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleUpdateStatus(booking.id, "confirmed")
-                            }
-                          >
-                            Confirmar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              handleUpdateStatus(booking.id, "cancelled")
-                            }
-                          >
-                            Cancelar
-                          </Button>
-                        </>
-                      )}
-                      {booking.status === "confirmed" && (
+              {bookings.map((booking) => (
+                <TableRow key={booking.id}>
+                  <TableCell>{booking.room.name}</TableCell>
+                  <TableCell>
+                    {booking.user.first_name} {booking.user.last_name}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(booking.start_time), "HH:mm")} –{" "}
+                    {format(new Date(booking.end_time), "HH:mm")}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                  <TableCell className="flex gap-2">
+                    {booking.status === "pending" && (
+                      <>
+                        <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "confirmed")}>
+                          Confirmar
+                        </Button>
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() =>
-                            handleUpdateStatus(booking.id, "cancelled")
-                          }
+                          onClick={() => handleUpdateStatus(booking.id, "cancelled")}
                         >
                           Cancelar
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">
-                    Nenhuma reserva encontrada
+                      </>
+                    )}
+                    {booking.status === "confirmed" && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleUpdateStatus(booking.id, "cancelled")}
+                      >
+                        Cancelar
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center py-8">
+          <p>Nenhuma reserva encontrada.</p>
         </div>
       )}
     </div>
