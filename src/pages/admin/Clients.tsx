@@ -29,13 +29,20 @@ const Clients: React.FC = () => {
           console.error("Error fetching clients:", error);
           return;
         }
-        // Add a dummy email field as it's required by the Client interface
-        // but apparently doesn't exist in the profiles table
+        
+        // Add a dummy email field and convert to Client type
         const clientsWithEmail = (data || []).map(client => ({
-          ...client,
-          email: '' // Add empty email since it's not in the profiles table
+          first_name: client.first_name || '',
+          last_name: client.last_name || '',
+          phone: client.phone || '',
+          email: '', // Add empty email since it's not in the profiles table
+          crp: client.crp || '',
+          cpf: client.cpf,
+          cnpj: client.cnpj,
+          specialty: client.specialty
         }));
-        setClients(clientsWithEmail as Client[]);
+        
+        setClients(clientsWithEmail);
         setLoading(false);
       });
   }, []);
