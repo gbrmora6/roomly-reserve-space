@@ -35,7 +35,7 @@ interface Booking {
   };
 }
 
-const AdminBookings: React.FC = () => {
+const Bookings: React.FC = () => {  // Alterei de AdminBookings para Bookings aqui
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
@@ -235,4 +235,4 @@ const AdminBookings: React.FC = () => {
   );
 };
 
-export default Bookings;
+export default Bookings; // Verifique se este export é consistente
