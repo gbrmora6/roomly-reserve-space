@@ -1,6 +1,5 @@
-
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { format } from "date-fns";
+import { format, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingActions } from "./BookingActions";
@@ -56,10 +55,10 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                   {booking.user ? `${booking.user.first_name || ''} ${booking.user.last_name || ''}` : '-'}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(subHours(new Date(booking.start_time), 3), "dd/MM/yyyy", { locale: ptBR })}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
+                  {format(subHours(new Date(booking.start_time), 3), "HH:mm")} - {format(subHours(new Date(booking.end_time), 3), "HH:mm")}
                 </TableCell>
                 <TableCell>
                   R$ {booking.total_price.toFixed(2)}
@@ -69,11 +68,10 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                 </TableCell>
                 <TableCell>
                   <BookingActions 
-                      bookingId={booking.id} 
-                      status={booking.status} 
-                      onUpdateStatus={onUpdateStatus}
-                    />
-
+                    bookingId={booking.id} 
+                    status={booking.status} 
+                    onUpdateStatus={onUpdateStatus}
+                  />
                 </TableCell>
               </TableRow>
             ))
