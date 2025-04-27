@@ -58,32 +58,45 @@ const Bookings: React.FC = () => {
   });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
-    try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: newStatus })   // atualiza `status`
-        .eq("id", id);
+  try {
+    // 1) Dispara o update e já seleciona a coluna `status` de volta
+    const { data, error, status: httpStatus } = await supabase
+      .from("bookings")
+      .update({ status: newStatus })
+      .eq("id", id)
+      .select("status");        // ⬅️ retorna o novo valor
 
-      if (error) throw error;
+    console.log("📦 update response:", { httpStatus, data, error });
 
-      toast({
-        title:
-          newStatus === "confirmed"
-            ? "Reserva confirmada com sucesso"
-            : "Reserva cancelada com sucesso",
-      });
-
-      // muda de aba e refaz a query
-      setFilter(newStatus);
-      await refetch();
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar reserva",
-        description: err.message,
-      });
+    // 2) Se der erro de política/RLS, vai aparecer aqui
+    if (error) {
+      throw error;
     }
-  };
+
+    // 3) Se data for vazio, não houve linha afetada
+    if (!data || data.length === 0) {
+      throw new Error("Nenhuma linha foi atualizada (talvez política RLS).");
+    }
+
+    toast({
+      title:
+        newStatus === "confirmed"
+          ? "Reserva confirmada com sucesso"
+          : "Reserva cancelada com sucesso",
+    });
+
+    // mantemos o filtro atual e recarregamos
+    await refetch();
+  } catch (err: any) {
+    console.error("❌ falha ao atualizar reserva:", err);
+    toast({
+      variant: "destructive",
+      title: "Erro ao atualizar reserva",
+      description: err.message,
+    });
+  }
+};
+
 
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
