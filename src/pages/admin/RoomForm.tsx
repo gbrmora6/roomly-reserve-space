@@ -26,8 +26,9 @@ interface Room {
   has_ac: boolean | null;
   has_chairs: boolean | null;
   has_tables: boolean | null;
-  open_time: string | null; // <--- ADICIONAR
-  close_time: string | null; // <--- ADICIONAR
+  price_per_hour: number;
+  open_time: string | null;
+  close_time: string | null;
 }
 
 interface RoomPhoto {
@@ -52,16 +53,16 @@ const RoomForm: React.FC = () => {
   const isEditing = !!id;
   
   const [room, setRoom] = useState<Partial<Room>>({
-  name: "",
-  description: "",
-  has_wifi: false,
-  has_ac: false,
-  has_chairs: false,
-  has_tables: false,
-  open_time: "08:00", // <--- ADICIONAR valor padrão
-  close_time: "18:00", // <--- ADICIONAR valor padrão
-});
-
+    name: "",
+    description: "",
+    has_wifi: false,
+    has_ac: false,
+    has_chairs: false,
+    has_tables: false,
+    open_time: "08:00",
+    close_time: "18:00",
+    price_per_hour: 0,
+  });
   
   const [photos, setPhotos] = useState<RoomPhoto[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -124,7 +125,10 @@ const RoomForm: React.FC = () => {
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setRoom((prev) => ({ ...prev, [name]: value }));
+    setRoom((prev) => ({ 
+      ...prev, 
+      [name]: name === 'price_per_hour' ? Number(value) : value 
+    }));
   };
   
   const handleCheckboxChange = (name: string, checked: boolean) => {
@@ -165,117 +169,113 @@ const RoomForm: React.FC = () => {
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    if (!room.name) {
-      throw new Error("O nome da sala é obrigatório");
-    }
-
-    // Criação ou atualização da sala
-    const { data: roomData, error: errorRoom } = await supabase
-      .from("rooms")
-      .upsert({
-        id: isEditing ? id : undefined,
-        name: room.name,
-        description: room.description,
-        has_wifi: room.has_wifi,
-        has_ac: room.has_ac,
-        has_chairs: room.has_chairs,
-        has_tables: room.has_tables,
-      })
-      .select("id")
-      .single();
-
-    if (errorRoom) {
-      throw new Error(errorRoom.message || "Erro desconhecido ao criar/atualizar sala");
-    }
-
-    const roomId = roomData.id;
-
-    // Se for edição, limpa horários antigos
-    if (isEditing) {
-      const { error: errorDeleteSchedules } = await supabase
-        .from("room_schedules")
-        .delete()
-        .eq("room_id", roomId);
-
-      if (errorDeleteSchedules) {
-        throw new Error(errorDeleteSchedules.message || "Erro ao limpar horários antigos");
+    try {
+      if (!room.name) {
+        throw new Error("O nome da sala é obrigatório");
       }
-    }
 
-    // Insere novos horários
-    if (schedules.length > 0) {
-      const schedulesToInsert = schedules.map(schedule => ({
-        room_id: roomId,
-        weekday: schedule.weekday,
-        start_time: schedule.start_time,
-        end_time: schedule.end_time,
-      }));
+      const { data: roomData, error: errorRoom } = await supabase
+        .from("rooms")
+        .upsert({
+          id: isEditing ? id : undefined,
+          name: room.name,
+          description: room.description,
+          has_wifi: room.has_wifi,
+          has_ac: room.has_ac,
+          has_chairs: room.has_chairs,
+          has_tables: room.has_tables,
+          price_per_hour: room.price_per_hour,
+        })
+        .select("id")
+        .single();
 
-      const { error: errorInsertSchedules } = await supabase
-        .from("room_schedules")
-        .insert(schedulesToInsert);
-
-      if (errorInsertSchedules) {
-        throw new Error(errorInsertSchedules.message || "Erro ao inserir horários");
+      if (errorRoom) {
+        throw new Error(errorRoom.message || "Erro desconhecido ao criar/atualizar sala");
       }
-    }
 
-    // Upload das fotos
-    if (files.length > 0) {
-      for (const file of files) {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `${roomId}/${fileName}`;
+      const roomId = roomData.id;
 
-        const { error: uploadError } = await supabase
-          .storage
-          .from("room-photos")
-          .upload(filePath, file);
+      if (isEditing) {
+        const { error: errorDeleteSchedules } = await supabase
+          .from("room_schedules")
+          .delete()
+          .eq("room_id", roomId);
 
-        if (uploadError) {
-          throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
-        }
-
-        const { data: publicURLData } = supabase
-          .storage
-          .from("room-photos")
-          .getPublicUrl(filePath);
-
-        const { error: photoInsertError } = await supabase
-          .from("room_photos")
-          .insert({
-            room_id: roomId,
-            url: publicURLData.publicUrl,
-          });
-
-        if (photoInsertError) {
-          throw new Error(photoInsertError.message || "Erro ao salvar imagem da sala");
+        if (errorDeleteSchedules) {
+          throw new Error(errorDeleteSchedules.message || "Erro ao limpar horários antigos");
         }
       }
+
+      if (schedules.length > 0) {
+        const schedulesToInsert = schedules.map(schedule => ({
+          room_id: roomId,
+          weekday: schedule.weekday,
+          start_time: schedule.start_time,
+          end_time: schedule.end_time,
+        }));
+
+        const { error: errorInsertSchedules } = await supabase
+          .from("room_schedules")
+          .insert(schedulesToInsert);
+
+        if (errorInsertSchedules) {
+          throw new Error(errorInsertSchedules.message || "Erro ao inserir horários");
+        }
+      }
+
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileExt = file.name.split(".").pop();
+          const fileName = `${uuidv4()}.${fileExt}`;
+          const filePath = `${roomId}/${fileName}`;
+
+          const { error: uploadError } = await supabase
+            .storage
+            .from("room-photos")
+            .upload(filePath, file);
+
+          if (uploadError) {
+            throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
+          }
+
+          const { data: publicURLData } = supabase
+            .storage
+            .from("room-photos")
+            .getPublicUrl(filePath);
+
+          const { error: photoInsertError } = await supabase
+            .from("room_photos")
+            .insert({
+              room_id: roomId,
+              url: publicURLData.publicUrl,
+            });
+
+          if (photoInsertError) {
+            throw new Error(photoInsertError.message || "Erro ao salvar imagem da sala");
+          }
+        }
+      }
+
+      toast({
+        title: isEditing ? "Sala atualizada com sucesso" : "Sala criada com sucesso",
+      });
+
+      navigate("/admin/rooms");
+
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: isEditing ? "Erro ao atualizar sala" : "Erro ao criar sala",
+        description: error.message || "Erro inesperado",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    toast({
-      title: isEditing ? "Sala atualizada com sucesso" : "Sala criada com sucesso",
-    });
-
-    navigate("/admin/rooms");
-
-  } catch (error: any) {
-    toast({
-      variant: "destructive",
-      title: isEditing ? "Erro ao atualizar sala" : "Erro ao criar sala",
-      description: error.message || "Erro inesperado",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-  
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -357,13 +357,25 @@ const RoomForm: React.FC = () => {
                 <Label htmlFor="has_tables">Possui Mesas</Label>
               </div>
             </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="price_per_hour">Preço por Hora</Label>
+              <Input
+                id="price_per_hour"
+                name="price_per_hour"
+                type="number"
+                step="0.01"
+                value={room.price_per_hour || 0}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
           
           <div className="space-y-4">
             <div>
               <Label>Fotos da Sala</Label>
               
-              {/* Exibir fotos atuais */}
               {photos.length > 0 && (
                 <div className="grid grid-cols-2 gap-4 mt-2 mb-4">
                   {photos.map((photo) => (
@@ -386,7 +398,6 @@ const RoomForm: React.FC = () => {
                 </div>
               )}
               
-              {/* Exibir arquivos selecionados */}
               {files.length > 0 && (
                 <div className="grid grid-cols-2 gap-4 mt-2 mb-4">
                   {files.map((file, index) => (

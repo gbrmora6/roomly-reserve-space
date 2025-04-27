@@ -1,5 +1,4 @@
 
-// src/services/roomService.ts
 import { supabase } from "@/integrations/supabase/client";
 import { Room } from "@/types/room";
 
