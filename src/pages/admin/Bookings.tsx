@@ -26,34 +26,44 @@ interface Booking {
   status: BookingStatus;
   created_at: string;
   updated_at: string;
-  user: { first_name: string | null; last_name: string | null };
-  room: { name: string };
+  user: {
+    first_name: string | null;
+    last_name: string | null;
+  };
+  room: {
+    name: string;
+  };
 }
 
-const Bookings: React.FC = () => {
+const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("bookings")
-        .select(`*, 
-          user:profiles!fk_bookings_profiles(first_name,last_name),
-          room:rooms!fk_bookings_rooms(name)
+        .select(`
+          id,
+          user_id,
+          room_id,
+          start_time,
+          end_time,
+          status,
+          created_at,
+          updated_at,
+          user:user_id(first_name,last_name),
+          room:room_id(name)
         `)
-        .order("start_time", { ascending: false })
-        .eq(filter !== "all" ? "status" : undefined, filter !== "all" ? filter : undefined);
+        .order("start_time", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao buscar reservas:", error);
-        throw error;
+      if (filter !== "all") {
+        query = query.eq("status", filter);
       }
 
-      return (data as any[]).map(r => ({
-        ...r,
-        status: r.status as BookingStatus,
-      })) as Booking[];
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Booking[];
     },
   });
 
@@ -63,14 +73,17 @@ const Bookings: React.FC = () => {
         .from("bookings")
         .update({ status: newStatus })
         .eq("id", id);
+
       if (error) throw error;
 
       toast({
-        title: newStatus === "confirmed"
-          ? "Reserva confirmada com sucesso"
-          : "Reserva cancelada com sucesso",
+        title:
+          newStatus === "confirmed"
+            ? "Reserva confirmada com sucesso"
+            : "Reserva cancelada com sucesso",
       });
 
+      // muda para a aba certa e refaz a query
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
@@ -85,11 +98,23 @@ const Bookings: React.FC = () => {
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendente</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+            Pendente
+          </Badge>
+        );
       case "confirmed":
-        return <Badge className="bg-green-100 text-green-800 border-green-300">Confirmada</Badge>;
+        return (
+          <Badge className="bg-green-100 text-green-800 border-green-300">
+            Confirmada
+          </Badge>
+        );
       case "cancelled":
-        return <Badge className="bg-red-100 text-red-800 border-red-300">Cancelada</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-300">
+            Cancelada
+          </Badge>
+        );
     }
   };
 
@@ -98,14 +123,36 @@ const Bookings: React.FC = () => {
       <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
 
       <div className="flex gap-2 mb-4">
-        <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>Todas</Button>
-        <Button variant={filter === "pending" ? "default" : "outline"} onClick={() => setFilter("pending")}>Pendentes</Button>
-        <Button variant={filter === "confirmed" ? "default" : "outline"} onClick={() => setFilter("confirmed")}>Confirmadas</Button>
-        <Button variant={filter === "cancelled" ? "default" : "outline"} onClick={() => setFilter("cancelled")}>Canceladas</Button>
+        <Button
+          variant={filter === "all" ? "default" : "outline"}
+          onClick={() => setFilter("all")}
+        >
+          Todas
+        </Button>
+        <Button
+          variant={filter === "pending" ? "default" : "outline"}
+          onClick={() => setFilter("pending")}
+        >
+          Pendentes
+        </Button>
+        <Button
+          variant={filter === "confirmed" ? "default" : "outline"}
+          onClick={() => setFilter("confirmed")}
+        >
+          Confirmadas
+        </Button>
+        <Button
+          variant={filter === "cancelled" ? "default" : "outline"}
+          onClick={() => setFilter("cancelled")}
+        >
+          Canceladas
+        </Button>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-8"><p>Carregando reservas...</p></div>
+        <div className="flex items-center justify-center py-8">
+          <p>Carregando reservas...</p>
+        </div>
       ) : (
         <div className="border rounded-md">
           <Table>
@@ -121,29 +168,63 @@ const Bookings: React.FC = () => {
             </TableHeader>
             <TableBody>
               {bookings && bookings.length > 0 ? (
-                bookings.map(booking => (
+                bookings.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell>{booking.room.name}</TableCell>
-                    <TableCell>{booking.user.first_name} {booking.user.last_name}</TableCell>
-                    <TableCell>{format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                    <TableCell>{format(new Date(booking.start_time), "HH:mm")} – {format(new Date(booking.end_time), "HH:mm")}</TableCell>
+                    <TableCell>
+                      {booking.user.first_name} {booking.user.last_name}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(booking.start_time), "dd/MM/yyyy", {
+                        locale: ptBR,
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(booking.start_time), "HH:mm")} -{" "}
+                      {format(new Date(booking.end_time), "HH:mm")}
+                    </TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
                     <TableCell className="flex gap-2">
                       {booking.status === "pending" && (
                         <>
-                          <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "confirmed")}>Confirmar</Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(booking.id, "cancelled")}>Cancelar</Button>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleUpdateStatus(booking.id, "confirmed")
+                            }
+                          >
+                            Confirmar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() =>
+                              handleUpdateStatus(booking.id, "cancelled")
+                            }
+                          >
+                            Cancelar
+                          </Button>
                         </>
                       )}
                       {booking.status === "confirmed" && (
-                        <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(booking.id, "cancelled")}>Cancelar</Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() =>
+                            handleUpdateStatus(booking.id, "cancelled")
+                          }
+                        >
+                          Cancelar
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4">Nenhuma reserva encontrada</TableCell>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    Nenhuma reserva encontrada
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
