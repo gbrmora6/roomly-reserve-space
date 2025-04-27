@@ -70,7 +70,7 @@ const AdminBookings: React.FC = () => {
     },
   });
 
-  const handleUpdateStatus = async (id: string, status: BookingStatus) => {
+    const handleUpdateStatus = async (id: string, status: BookingStatus) => {
     try {
       const { error } = await supabase
         .from("bookings")
@@ -80,7 +80,12 @@ const AdminBookings: React.FC = () => {
       if (error) throw error;
 
       toast({ title: "Status da reserva atualizado com sucesso" });
-      refetch();
+-     refetch();
++     // primeiro refetch pra atualizar os dados
++     await refetch();
++     // depois muda o filtro pra "confirmed" ou "cancelled"
++     setFilter(status);
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -89,6 +94,7 @@ const AdminBookings: React.FC = () => {
       });
     }
   };
+
 
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
