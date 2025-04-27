@@ -125,12 +125,13 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     setAvailableHours(hours);
 
     const { data: bookingsData } = await supabase
-      .from("bookings")
-      .select("start_time, end_time")
-      .eq("room_id", room.id)
-      .gte("start_time", `${format(date, "yyyy-MM-dd")}T00:00:00`)
-      .lt("start_time", `${format(date, "yyyy-MM-dd")}T23:59:59`)
-      .neq("status", "cancelled");
+        .from("bookings")
+        .select("start_time, end_time", { head: false })
+        .eq("room_id", room.id)
+        .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
+        .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`)
+        .throwOnError();
+
 
     const blocked: string[] = [];
     bookingsData?.forEach((booking: any) => {
@@ -175,7 +176,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       .select("*")
       .eq("room_id", room.id)
       .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`)
-      .neq("status", "cancelled");
+      
 
     if (existingBookings && existingBookings.length > 0) {
       alert("Horário já reservado! Escolha outro horário.");
