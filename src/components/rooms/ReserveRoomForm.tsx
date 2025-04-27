@@ -24,22 +24,28 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [fullyBookedDates, setFullyBookedDates] = useState<Date[]>([]);
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<RoomSchedule[]>([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    const fetchSchedulesAndBookings = async () => {
+    const fetchSchedules = async () => {
       if (!room?.id) return;
-
-      const { data: schedulesData, error: schedulesError } = await supabase
+      const { data, error } = await supabase
         .from("room_schedules")
         .select("*")
         .eq("room_id", room.id);
 
-      if (schedulesError) {
-        console.error("Erro ao buscar horários da sala:", schedulesError);
+      if (error) {
+        console.error("Erro ao buscar horários:", error);
         return;
       }
-      setSchedules(schedulesData || []);
+      setSchedules(data || []);
+    };
+
+    fetchSchedules();
+  }, [room]);
+
+  useEffect(() => {
+    const fetchFullyBookedDates = async () => {
+      if (!room?.id || schedules.length === 0) return;
 
       const today = new Date();
       const nextDays = Array.from({ length: 30 }, (_, i) => {
@@ -52,7 +58,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
       for (const date of nextDays) {
         const weekday = format(date, "eeee").toLowerCase();
-        const schedule = schedulesData?.find((sch) => sch.weekday === weekday);
+        const schedule = schedules.find((sch) => sch.weekday === weekday);
 
         if (!schedule) {
           bookedDates.push(date);
@@ -88,63 +94,61 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       setFullyBookedDates(bookedDates);
     };
 
-    fetchSchedulesAndBookings();
-  }, [room, refreshTrigger]);
+    fetchFullyBookedDates();
+  }, [room, schedules]);
 
-  useEffect(() => {
-    const fetchAvailableHours = async () => {
-      if (!selectedDate || schedules.length === 0) {
-        setAvailableHours([]);
-        return;
+  const handleDateSelect = async (date: Date | undefined) => {
+    if (!date || fullyBookedDates.some((d) => isSameDay(d, date))) {
+      return;
+    }
+
+    setSelectedDate(date);
+    setStartHour("");
+    setEndHour("");
+
+    const weekday = format(date, "eeee").toLowerCase();
+    const schedule = schedules.find((sch) => sch.weekday === weekday);
+
+    if (!schedule) {
+      setAvailableHours([]);
+      setBlockedHours([]);
+      return;
+    }
+
+    const start = parseInt(schedule.start_time.split(":")[0], 10);
+    const end = parseInt(schedule.end_time.split(":")[0], 10);
+
+    const hours: string[] = [];
+    for (let i = start; i < end; i++) {
+      hours.push(`${i.toString().padStart(2, "0")}:00`);
+    }
+    setAvailableHours(hours);
+
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("start_time, end_time")
+      .eq("room_id", room.id)
+      .gte("start_time", `${format(date, "yyyy-MM-dd")}T00:00:00`)
+      .lt("start_time", `${format(date, "yyyy-MM-dd")}T23:59:59`)
+      .neq("status", "cancelled");
+
+    const blocked: string[] = [];
+    bookingsData?.forEach((booking: any) => {
+      const start = new Date(booking.start_time).getHours();
+      const end = new Date(booking.end_time).getHours();
+      for (let i = start; i < end; i++) {
+        blocked.push(`${i.toString().padStart(2, "0")}:00`);
       }
+    });
 
-      const weekday = format(selectedDate, "eeee").toLowerCase();
-      const schedule = schedules.find((sch) => sch.weekday === weekday);
-
-      if (!schedule) {
-        setAvailableHours([]);
-        return;
-      }
-
-      const startHour = parseInt(schedule.start_time.split(":")[0], 10);
-      const endHour = parseInt(schedule.end_time.split(":")[0], 10);
-
-      const hours: string[] = [];
-      for (let hour = startHour; hour < endHour; hour++) {
-        hours.push(`${hour.toString().padStart(2, "0")}:00`);
-      }
-
-      setAvailableHours(hours);
-
-      const { data: bookingsData } = await supabase
-        .from("bookings")
-        .select("start_time, end_time")
-        .eq("room_id", room.id)
-        .gte("start_time", `${format(selectedDate, "yyyy-MM-dd")}T00:00:00`)
-        .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`)
-        .neq("status", "cancelled");
-
-      const blocked: string[] = [];
-
-      bookingsData?.forEach((booking: any) => {
-        const start = new Date(booking.start_time).getHours();
-        const end = new Date(booking.end_time).getHours();
-        for (let i = start; i < end; i++) {
-          blocked.push(`${i.toString().padStart(2, "0")}:00`);
-        }
-      });
-
-      setBlockedHours(blocked);
-    };
-
-    fetchAvailableHours();
-  }, [selectedDate, schedules, refreshTrigger]);
+    setBlockedHours(blocked);
+  };
 
   const handleReserve = async () => {
     if (!selectedDate || !startHour || !endHour) return;
 
-    const start = parseInt(startHour.split(":"[0]), 10);
-    const end = parseInt(endHour.split(":"[0]), 10);
+    const start = parseInt(startHour.split(":")[0]);
+    const end = parseInt(endHour.split(":")[0]);
 
     if (end <= start) {
       alert("O horário final deve ser depois do horário inicial.");
@@ -154,7 +158,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     setLoading(true);
 
     const user = (await supabase.auth.getUser()).data.user;
-
     if (!user) {
       alert("Usuário não autenticado.");
       setLoading(false);
@@ -190,11 +193,10 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
     if (error) {
       console.error(error);
-      alert("Erro ao reservar a sala.");
+      alert("Erro ao reservar.");
     } else {
-      alert("Reserva realizada com sucesso!");
+      alert("Reserva realizada!");
       onClose();
-      setRefreshTrigger((prev) => prev + 1); // Atualiza após reserva
     }
 
     setLoading(false);
@@ -203,16 +205,11 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Reservar {room.name}</h2>
-
       <div className="mb-6">
         <Calendar
           mode="single"
           selected={selectedDate!}
-          onSelect={(date) => {
-            if (!fullyBookedDates.some((d) => isSameDay(d, date!))) {
-              setSelectedDate(date);
-            }
-          }}
+          onSelect={handleDateSelect}
           className="rounded-md border"
           disabled={(date) => fullyBookedDates.some((d) => isSameDay(d, date))}
         />
@@ -222,21 +219,19 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         <>
           <h3 className="text-lg mb-2">Selecione o horário de início:</h3>
           <div className="grid grid-cols-3 gap-2 mb-6">
-            {availableHours.map((hour, index) => {
+            {availableHours.map((hour) => {
               const isBlocked = blockedHours.includes(hour);
-              const isLastHour = index === availableHours.length - 1;
-
               return (
                 <Button
                   key={hour}
-                  variant={startHour === hour ? "default" : (isBlocked || isLastHour) ? "destructive" : "outline"}
+                  variant={startHour === hour ? "default" : isBlocked ? "destructive" : "outline"}
                   onClick={() => {
-                    if (!isBlocked && !isLastHour) {
+                    if (!isBlocked) {
                       setStartHour(hour);
                       setEndHour("");
                     }
                   }}
-                  disabled={isBlocked || isLastHour}
+                  disabled={isBlocked}
                 >
                   {hour}
                 </Button>
@@ -269,9 +264,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       ) : null}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
+        <Button variant="outline" onClick={onClose}>Cancelar</Button>
         <Button onClick={handleReserve} disabled={!selectedDate || !startHour || !endHour || loading}>
           {loading ? "Reservando..." : "Confirmar Reserva"}
         </Button>
