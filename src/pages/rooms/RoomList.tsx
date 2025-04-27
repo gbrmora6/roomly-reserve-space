@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { supabase } from "@/integrations/supabase/client";
 import { format, setHours, setMinutes, subHours } from "date-fns";
-import { Wifi, Snowflake, Chair, Table } from "lucide-react";
+import { Wifi, Snowflake, Chair2, Table } from "lucide-react";
 
 
 const RoomList: React.FC = () => {
