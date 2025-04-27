@@ -77,7 +77,7 @@ const AdminBookings: React.FC = () => {
     try {
       const { error } = await supabase
         .from("bookings")
-        .update({ booking_status: newStatus })
+        .update({ status: newStatus })
         .eq("id", id);
 
       if (error) throw error;
