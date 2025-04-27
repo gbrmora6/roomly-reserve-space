@@ -81,7 +81,7 @@ const AdminBookings: React.FC = () => {
   try {
     const { error } = await supabase
       .from("bookings")
-      .update({ booking_status: newStatus }) // AQUI!!!
+      .update({ status: newStatus }) // usa status aqui!
       .eq("id", id);
 
     if (error) throw error;
@@ -102,6 +102,7 @@ const AdminBookings: React.FC = () => {
     });
   }
 };
+
 
 
   const getStatusBadge = (status: BookingStatus) => {
