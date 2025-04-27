@@ -1,10 +1,13 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { 
-  SidebarProvider, 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader, 
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
   SidebarFooter,
   SidebarTrigger,
   SidebarGroup,
@@ -12,17 +15,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarInset
+  SidebarInset,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "react-router-dom";
-import { 
+import {
   LayoutDashboard,
-  Building2,
-  Bed, 
-  Mic, 
-  BookOpen, 
+  Building,
+  Bed,
+  Mic,
+  BookOpen,
   Users,
   LogOut,
   Home,
@@ -53,7 +53,7 @@ const AdminLayout: React.FC = () => {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin" className={isActive("/admin") ? "bg-muted" : ""}>
-                      <LayoutDashboard />
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
                       <span>Dashboard</span>
                     </Link>
                   </SidebarMenuButton>
@@ -61,8 +61,11 @@ const AdminLayout: React.FC = () => {
 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/company-profile" className={isActive("/admin/company-profile") ? "bg-muted" : ""}>
-                      <Building2 />
+                    <Link
+                      to="/admin/company-profile"
+                      className={isActive("/admin/company-profile") ? "bg-muted" : ""}
+                    >
+                      <Building className="mr-2 h-4 w-4" />
                       <span>Perfil da Empresa</span>
                     </Link>
                   </SidebarMenuButton>
@@ -70,8 +73,11 @@ const AdminLayout: React.FC = () => {
 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/rooms" className={isActive("/admin/rooms") ? "bg-muted" : ""}>
-                      <Bed />
+                    <Link
+                      to="/admin/rooms"
+                      className={isActive("/admin/rooms") ? "bg-muted" : ""}
+                    >
+                      <Bed className="mr-2 h-4 w-4" />
                       <span>Salas</span>
                     </Link>
                   </SidebarMenuButton>
@@ -79,8 +85,11 @@ const AdminLayout: React.FC = () => {
 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/equipment" className={isActive("/admin/equipment") ? "bg-muted" : ""}>
-                      <Mic />
+                    <Link
+                      to="/admin/equipment"
+                      className={isActive("/admin/equipment") ? "bg-muted" : ""}
+                    >
+                      <Mic className="mr-2 h-4 w-4" />
                       <span>Equipamentos</span>
                     </Link>
                   </SidebarMenuButton>
@@ -88,8 +97,11 @@ const AdminLayout: React.FC = () => {
 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/bookings" className={isActive("/admin/bookings") ? "bg-muted" : ""}>
-                      <BookOpen />
+                    <Link
+                      to="/admin/bookings"
+                      className={isActive("/admin/bookings") ? "bg-muted" : ""}
+                    >
+                      <BookOpen className="mr-2 h-4 w-4" />
                       <span>Reservas</span>
                     </Link>
                   </SidebarMenuButton>
@@ -97,8 +109,11 @@ const AdminLayout: React.FC = () => {
 
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/clients" className={isActive("/admin/clients") ? "bg-muted" : ""}>
-                      <Users />
+                    <Link
+                      to="/admin/clients"
+                      className={isActive("/admin/clients") ? "bg-muted" : ""}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
                       <span>Clientes</span>
                     </Link>
                   </SidebarMenuButton>
@@ -114,7 +129,6 @@ const AdminLayout: React.FC = () => {
                 Site Principal
               </Link>
             </Button>
-
             <Button variant="destructive" className="w-full" onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair
