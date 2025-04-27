@@ -37,35 +37,31 @@ const AdminBookings: React.FC = () => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
-      let query = supabase
-        .from("bookings")
-        .select(`
-          id,
-          user_id,
-          room_id,
-          start_time,
-          end_time,
-          booking_status,
-          created_at,
-          updated_at,
-          user:user_id(first_name,last_name),
-          room:room_id(name)
-        `)
-        .order("start_time", { ascending: false });
+  // 1) pegamos tudo (*)
+  // 2) "users!user_id" é a relação gerada automaticamente pelo Supabase
+  // 3) "rooms!room_id" idem — se você tiver mais de uma FK pra rooms, use o name da constraint, ex: "rooms!bookings_room_id_fkey"
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      `*, 
+       user:users!user_id(first_name,last_name),
+       room:rooms!room_id(name)`
+    )
+    .order("start_time", { ascending: false })
+    .eq(filter !== "all" ? "booking_status" : undefined, filter !== "all" ? filter : undefined);
 
-      if (filter !== "all") {
-        query = query.eq("booking_status", filter);
-      }
+  if (error) {
+    console.error("Erro ao buscar reservas:", error);
+    throw error;
+  }
 
-      const { data, error } = await query;
-      if (error) throw error;
+  // mapeia booking_status → status
+  return (data as any[]).map((r) => ({
+    ...r,
+    status: r.booking_status as BookingStatus,
+  })) as Booking[];
+},
 
-      return (data as any[]).map((r) => ({
-        ...r,
-        status: r.booking_status as BookingStatus,
-      })) as Booking[];
-    },
-  });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
