@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -39,11 +38,12 @@ const Index: React.FC = () => {
                 </Button>
               </div>
             </div>
-            
+
+            {/* Aqui está a correção da imagem */}
             <div className="flex justify-center">
               <div className="overflow-hidden rounded-lg shadow-xl">
                 <img
-                  src="/placeholder.svg"
+                  src="https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg"
                   alt="Sistema de reserva de salas"
                   className="h-auto w-full"
                   width={600}
@@ -51,6 +51,7 @@ const Index: React.FC = () => {
                 />
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -69,27 +70,22 @@ const Index: React.FC = () => {
             {[
               {
                 title: "Gestão de salas",
-                description:
-                  "Cadastre salas com fotos, descrição e equipamentos disponíveis.",
+                description: "Cadastre salas com fotos, descrição e equipamentos disponíveis.",
               },
               {
                 title: "Reservas simplificadas",
-                description:
-                  "Sistema intuitivo de reserva para clientes com filtros avançados.",
+                description: "Sistema intuitivo de reserva para clientes com filtros avançados.",
               },
               {
                 title: "Controle de equipamentos",
-                description:
-                  "Gerencie a disponibilidade de equipamentos extras para cada sala.",
+                description: "Gerencie a disponibilidade de equipamentos extras para cada sala.",
               },
             ].map((feature, index) => (
               <div
                 key={index}
                 className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
               >
-                <h3 className="mb-3 text-xl font-semibold text-gray-900">
-                  {feature.title}
-                </h3>
+                <h3 className="mb-3 text-xl font-semibold text-gray-900">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
@@ -102,8 +98,7 @@ const Index: React.FC = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold">Pronto para começar?</h2>
           <p className="mx-auto mt-4 max-w-2xl">
-            Cadastre-se agora e comece a gerenciar suas salas e equipamentos de
-            forma eficiente.
+            Cadastre-se agora e comece a gerenciar suas salas e equipamentos de forma eficiente.
           </p>
           <Button
             size="lg"
