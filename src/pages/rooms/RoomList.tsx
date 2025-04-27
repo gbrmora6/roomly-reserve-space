@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -14,17 +14,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Wifi,
-  Snowflake,
-  Tv,
-  Bath,
-  Info,
-  Calendar as CalendarIcon,
-  Clock,
-} from "lucide-react";
+import { CalendarIcon, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
 
 // Time options for the dropdown
 const timeOptions = [
@@ -37,10 +28,6 @@ const RoomList: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [filters, setFilters] = useState({
-    hasWifi: false,
-    hasAirConditioning: false,
-    hasTV: false,
-    hasPrivateBathroom: false,
     date: null as Date | null,
     startTime: null as string | null,
   });
@@ -79,18 +66,7 @@ const RoomList: React.FC = () => {
         .order("name");
       
       if (error) throw error;
-      
-      // Transform the data to add missing properties with default values
-      const transformedData = data?.map(room => {
-        return {
-          ...room,
-          // Add properties that might be missing in database but are in Room interface
-          has_tv: room.has_tv || false, 
-          has_private_bathroom: room.has_private_bathroom || false
-        } as Room;
-      }) || [];
-      
-      return transformedData;
+      return data;
     },
   });
 
@@ -99,25 +75,11 @@ const RoomList: React.FC = () => {
       setSelectedRoom(room);
       setIsReserveModalOpen(true);
     }
-    // If not logged in, the button will redirect to registration (handled in render)
   };
-
-  const filteredRooms = rooms?.filter((room) => {
-    if (filters.hasWifi && !room.has_wifi) return false;
-    if (filters.hasAirConditioning && !room.has_ac) return false;
-    if (filters.hasTV && !room.has_tv) return false;
-    if (filters.hasPrivateBathroom && !room.has_private_bathroom) return false;
-    
-    // Further filtering by date/time could be implemented here
-    // This would require checking room availability against bookings
-    
-    return true;
-  });
 
   // Format the full address
   const formatAddress = () => {
     if (!companyAddress.street) return "";
-    
     return `${companyAddress.street}, ${companyAddress.number} - ${companyAddress.neighborhood}, ${companyAddress.city}`;
   };
 
@@ -128,24 +90,21 @@ const RoomList: React.FC = () => {
           Salas Disponíveis
         </h1>
 
-        {/* Improved filter card with better styling */}
-        <Card className="mb-8 bg-white shadow-lg border-roomly-100 overflow-hidden">
+        {/* Simplified filter card with only date/time */}
+        <Card className="mb-8 bg-white shadow-lg border-roomly-100">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-3">
-                <h2 className="text-xl font-semibold mb-4 text-roomly-700">Filtrar Salas</h2>
-                <p className="text-gray-600 mb-4 text-lg">
-                  Selecione os filtros abaixo para encontrar a sala ideal para suas necessidades
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-roomly-700">Filtrar por Data e Horário</h2>
+                <p className="text-gray-600 mb-6 text-lg">
+                  Selecione a data e horário desejados para verificar a disponibilidade das salas
                 </p>
               </div>
 
-              {/* Date and time filters */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-gray-700">Data e Horário</h3>
-                
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Date picker */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Data</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -160,7 +119,7 @@ const RoomList: React.FC = () => {
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 pointer-events-auto">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={filters.date || undefined}
@@ -174,7 +133,7 @@ const RoomList: React.FC = () => {
                 
                 {/* Time picker */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Horário</label>
                   <Select
                     value={filters.startTime || ""}
                     onValueChange={(value) => setFilters({ ...filters, startTime: value || null })}
@@ -201,56 +160,6 @@ const RoomList: React.FC = () => {
                   </Select>
                 </div>
               </div>
-
-              {/* Facilities filters */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-gray-700">Comodidades</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={filters.hasWifi ? "default" : "outline"}
-                    onClick={() => setFilters({ ...filters, hasWifi: !filters.hasWifi })}
-                    className="flex items-center gap-2"
-                  >
-                    <Wifi className="h-4 w-4" />
-                    Wi-Fi
-                  </Button>
-                  <Button
-                    variant={filters.hasAirConditioning ? "default" : "outline"}
-                    onClick={() => setFilters({ ...filters, hasAirConditioning: !filters.hasAirConditioning })}
-                    className="flex items-center gap-2"
-                  >
-                    <Snowflake className="h-4 w-4" />
-                    Ar-Condicionado
-                  </Button>
-                  <Button
-                    variant={filters.hasTV ? "default" : "outline"}
-                    onClick={() => setFilters({ ...filters, hasTV: !filters.hasTV })}
-                    className="flex items-center gap-2"
-                  >
-                    <Tv className="h-4 w-4" />
-                    TV
-                  </Button>
-                  <Button
-                    variant={filters.hasPrivateBathroom ? "default" : "outline"}
-                    onClick={() => setFilters({ ...filters, hasPrivateBathroom: !filters.hasPrivateBathroom })}
-                    className="flex items-center gap-2"
-                  >
-                    <Bath className="h-4 w-4" />
-                    Banheiro Privativo
-                  </Button>
-                </div>
-              </div>
-
-              {/* Information box */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-start">
-                  <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                  <p className="ml-2 text-blue-700 text-sm">
-                    <strong>Local das salas:</strong><br />
-                    {formatAddress() || "Endereço não disponível"}
-                  </p>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -267,23 +176,23 @@ const RoomList: React.FC = () => {
         ) : (
           <>
             {/* Filter guidance message */}
-            {filters.date || filters.startTime || filters.hasWifi || filters.hasAirConditioning || filters.hasTV || filters.hasPrivateBathroom ? (
+            {filters.date || filters.startTime ? (
               <div className="mb-6 p-4 bg-gradient-to-r from-roomly-100 to-roomly-50 rounded-lg text-center">
                 <p className="text-lg font-medium text-roomly-800">
-                  Exibindo salas de acordo com os filtros selecionados
+                  Exibindo salas disponíveis para a data e horário selecionados
                 </p>
               </div>
             ) : (
               <div className="mb-6 p-4 bg-gradient-to-r from-roomly-100 to-roomly-50 rounded-lg text-center">
                 <p className="text-lg font-medium text-roomly-800">
-                  Utilize os filtros acima para encontrar a sala ideal para você
+                  Selecione uma data e horário para verificar a disponibilidade das salas
                 </p>
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredRooms && filteredRooms.length > 0 ? (
-                filteredRooms.map((room) => (
+              {rooms && rooms.length > 0 ? (
+                rooms.map((room) => (
                   <RoomCard 
                     key={room.id} 
                     room={room} 
