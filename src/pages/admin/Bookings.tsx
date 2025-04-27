@@ -23,16 +23,11 @@ interface Booking {
   room_id: string;
   start_time: string;
   end_time: string;
-  status: BookingStatus;
+  status: BookingStatus;        // aqui continua status para o React
   created_at: string;
   updated_at: string;
-  user: {
-    first_name: string | null;
-    last_name: string | null;
-  };
-  room: {
-    name: string;
-  };
+  user: { first_name: string | null; last_name: string | null };
+  room: { name: string };
 }
 
 const AdminBookings: React.FC = () => {
@@ -41,6 +36,7 @@ const AdminBookings: React.FC = () => {
   const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
+      // 1) seleciona booking_status mas já o renomeia como status
       let query = supabase
         .from("bookings")
         .select(`
@@ -49,7 +45,7 @@ const AdminBookings: React.FC = () => {
           room_id,
           start_time,
           end_time,
-          status,
+          booking_status:booking_status,  -- pega a coluna booking_status
           created_at,
           updated_at,
           user:user_id(first_name,last_name),
@@ -58,20 +54,26 @@ const AdminBookings: React.FC = () => {
         .order("start_time", { ascending: false });
 
       if (filter !== "all") {
-        query = query.eq("status", filter);
+        query = query.eq("booking_status", filter);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Booking[];
+
+      // mapear cada objeto para que use `status` em vez de `booking_status`
+      return (data as any[]).map((row) => ({
+        ...row,
+        status: row.booking_status as BookingStatus,
+      })) as Booking[];
     },
   });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
+      // 2) atualiza o campo booking_status
       const { error } = await supabase
         .from("bookings")
-        .update({ status: newStatus })
+        .update({ booking_status: newStatus })
         .eq("id", id);
 
       if (error) throw error;
@@ -83,7 +85,7 @@ const AdminBookings: React.FC = () => {
             : "Reserva cancelada com sucesso",
       });
 
-      // muda para a aba certa e refaz a query
+      // muda de aba e recarrega com o filtro correto
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
@@ -180,7 +182,7 @@ const AdminBookings: React.FC = () => {
                       })}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(booking.start_time), "HH:mm")} -{" "}
+                      {format(new Date(booking.start_time), "HH:mm")} –{" "}
                       {format(new Date(booking.end_time), "HH:mm")}
                     </TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
