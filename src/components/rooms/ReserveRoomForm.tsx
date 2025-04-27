@@ -24,6 +24,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [fullyBookedDates, setFullyBookedDates] = useState<Date[]>([]);
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<RoomSchedule[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const fetchSchedulesAndBookings = async () => {
@@ -58,8 +59,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
           continue;
         }
 
-        const startHour = parseInt(schedule.start_time.split(":"[0]), 10);
-        const endHour = parseInt(schedule.end_time.split(":"[0]), 10);
+        const startHour = parseInt(schedule.start_time.split(":")[0], 10);
+        const endHour = parseInt(schedule.end_time.split(":")[0], 10);
         const expectedSlots = endHour - startHour;
 
         const { data: bookingsData } = await supabase
@@ -88,15 +89,15 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     };
 
     fetchSchedulesAndBookings();
-  }, [room]);
+  }, [room, refreshTrigger]);
 
   useEffect(() => {
-    if (!selectedDate || schedules.length === 0) {
-      setAvailableHours([]);
-      return;
-    }
-
     const fetchAvailableHours = async () => {
+      if (!selectedDate || schedules.length === 0) {
+        setAvailableHours([]);
+        return;
+      }
+
       const weekday = format(selectedDate, "eeee").toLowerCase();
       const schedule = schedules.find((sch) => sch.weekday === weekday);
 
@@ -105,8 +106,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         return;
       }
 
-      const startHour = parseInt(schedule.start_time.split(":"[0]), 10);
-      const endHour = parseInt(schedule.end_time.split(":"[0]), 10);
+      const startHour = parseInt(schedule.start_time.split(":")[0], 10);
+      const endHour = parseInt(schedule.end_time.split(":")[0], 10);
 
       const hours: string[] = [];
       for (let hour = startHour; hour < endHour; hour++) {
@@ -137,13 +138,13 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     };
 
     fetchAvailableHours();
-  }, [selectedDate, schedules]);
+  }, [selectedDate, schedules, refreshTrigger]);
 
   const handleReserve = async () => {
     if (!selectedDate || !startHour || !endHour) return;
 
-    const start = parseInt(startHour.split(":"[0]));
-    const end = parseInt(endHour.split(":"[0]));
+    const start = parseInt(startHour.split(":"[0]), 10);
+    const end = parseInt(endHour.split(":"[0]), 10);
 
     if (end <= start) {
       alert("O horário final deve ser depois do horário inicial.");
@@ -193,6 +194,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     } else {
       alert("Reserva realizada com sucesso!");
       onClose();
+      setRefreshTrigger((prev) => prev + 1); // Atualiza após reserva
     }
 
     setLoading(false);
