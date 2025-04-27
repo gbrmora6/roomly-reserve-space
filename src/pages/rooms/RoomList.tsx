@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +13,6 @@ import {
   Tv,
   Bath,
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 
 const RoomList: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
