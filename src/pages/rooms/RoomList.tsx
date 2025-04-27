@@ -1,3 +1,4 @@
+
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/navigation";
@@ -7,7 +8,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { roomService } from "@/services/roomService";
-import { Room } from "@/integrations/supabase/types";
+import { Room } from "@/types/room";
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";

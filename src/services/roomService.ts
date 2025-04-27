@@ -1,8 +1,10 @@
+
 // src/services/roomService.ts
 import { supabase } from "@/integrations/supabase/client";
+import { Room } from "@/types/room";
 
 export const roomService = {
-  async getAllRooms() {
+  async getAllRooms(): Promise<Room[] | null> {
     const { data, error } = await supabase
       .from("rooms")
       .select(`
@@ -19,6 +21,6 @@ export const roomService = {
       throw new Error("Erro ao carregar salas.");
     }
 
-    return data;
+    return data as Room[];
   },
 };

@@ -21,14 +21,14 @@ interface Booking {
   user: {
     first_name: string | null;
     last_name: string | null;
-  };
+  } | null;
   room: {
     name: string;
-  };
+  } | null;
 }
 
 interface BookingsTableProps {
-  bookings: Booking[];
+  bookings: Booking[] | null;
   onUpdateStatus: (id: string, status: BookingStatus) => void;
 }
 
@@ -51,9 +51,9 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
           {bookings && bookings.length > 0 ? (
             bookings.map((booking) => (
               <TableRow key={booking.id}>
-                <TableCell>{booking.room?.name}</TableCell>
+                <TableCell>{booking.room?.name || '-'}</TableCell>
                 <TableCell>
-                  {booking.user?.first_name} {booking.user?.last_name}
+                  {booking.user ? `${booking.user.first_name || ''} ${booking.user.last_name || ''}` : '-'}
                 </TableCell>
                 <TableCell>
                   {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
