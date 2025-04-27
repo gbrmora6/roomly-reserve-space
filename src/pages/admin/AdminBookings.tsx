@@ -74,19 +74,29 @@ const AdminBookings: React.FC = () => {
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
   try {
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: newStatus })
-      .eq("id", id);
+    if (newStatus === "cancelled") {
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", id);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    toast({
-      title:
-        newStatus === "confirmed"
-          ? "Reserva confirmada com sucesso"
-          : "Reserva cancelada com sucesso",
-    });
+      toast({
+        title: "Reserva cancelada e excluída com sucesso",
+      });
+    } else {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Reserva confirmada com sucesso",
+      });
+    }
 
     await refetch();
   } catch (err: any) {
@@ -97,6 +107,7 @@ const AdminBookings: React.FC = () => {
     });
   }
 };
+
 
 
   return (
