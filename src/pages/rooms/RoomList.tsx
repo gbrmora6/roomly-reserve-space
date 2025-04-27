@@ -11,7 +11,7 @@ import { Room } from "@/types/room";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { supabase } from "@/integrations/supabase/client";
-import { setHours, setMinutes, subHours } from "date-fns";
+import { format, setHours, setMinutes, subHours } from "date-fns";
 
 const RoomList: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -59,16 +59,22 @@ const RoomList: React.FC = () => {
     try {
       const availableRooms: Room[] = [];
       for (const room of rooms) {
-        const { data: bookingsData } = await supabase
+        const { data: bookingsData, error } = await supabase
           .from("bookings")
           .select("start_time, end_time")
           .eq("room_id", room.id)
           .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
 
+        if (error) {
+          console.error("Erro ao buscar reservas da sala:", room.id, error);
+          continue;
+        }
+
         if (bookingsData.length === 0) {
           availableRooms.push(room);
         }
       }
+
       setFilteredRooms(availableRooms);
     } catch (err) {
       console.error("Erro ao filtrar salas:", err);
@@ -98,18 +104,17 @@ const RoomList: React.FC = () => {
   return (
     <MainLayout>
       <div className="p-4 space-y-6">
-        {/* Mensagem Explicativa */}
-        <div className="text-center text-gray-600 mb-4">
-          Selecione a data e horário desejado para ver quais salas estão disponíveis para sua reserva.
-        </div>
-
-        {/* Filtro */}
         <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="text-sm mb-2">
+            Selecione a data e horário para encontrar salas disponíveis:
+          </div>
+
           <input
             type="date"
             className="border p-2 rounded"
             onChange={(e) => setFilterDate(new Date(e.target.value + 'T00:00:00'))}
           />
+
           <select
             className="border p-2 rounded"
             value={filterStartHour}
@@ -147,7 +152,6 @@ const RoomList: React.FC = () => {
           </Button>
         </div>
 
-        {/* Lista de Salas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.length > 0 ? (
             filteredRooms.map((room) => (
@@ -155,9 +159,9 @@ const RoomList: React.FC = () => {
                 <CardHeader>
                   <CardTitle>{room.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-2">
+                <CardContent>
                   {room.room_photos && room.room_photos.length > 0 && (
-                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-2">
+                    <Swiper navigation modules={[Navigation]} className="w-full h-48 rounded-md mb-4">
                       {room.room_photos.map((photo) => (
                         <SwiperSlide key={photo.id}>
                           <img
@@ -169,30 +173,25 @@ const RoomList: React.FC = () => {
                       ))}
                     </Swiper>
                   )}
+                  <p className="mb-2">{room.description}</p>
 
-                  <p className="text-gray-600">{room.description}</p>
-
-                  {/* Características */}
-                  <div>
-                    <h4 className="font-semibold text-sm">Características:</h4>
-                    <ul className="list-disc list-inside text-gray-600 text-sm">
-                      <li>Wi-Fi</li>
-                      <li>Ar-condicionado</li>
-                      <li>Mesa e cadeiras</li>
+                  {/* Características da sala */}
+                  {room.characteristics && (
+                    <ul className="text-sm text-gray-600 mb-2 list-disc pl-5">
+                      {room.characteristics.map((feature: string, index: number) => (
+                        <li key={index}>{feature}</li>
+                      ))}
                     </ul>
+                  )}
+
+                  {/* Preço */}
+                  <div className="text-primary text-lg font-bold mb-4">
+                    {room.price_per_hour !== undefined && room.price_per_hour !== null
+                      ? `R$ ${Number(room.price_per_hour).toFixed(2).replace('.', ',')} / hora`
+                      : "Preço sob consulta"}
                   </div>
 
-                  {/* Valor */}
-                  <div className="text-primary text-lg font-bold">
-                    {room.price !== undefined && room.price !== null
-                    ? `R$ ${Number(room.price).toFixed(2).replace('.', ',')}`
-                    : "Preço sob consulta"}
-
-                  </div>
-
-                  <Button onClick={() => setSelectedRoom(room)} className="mt-2">
-                    Reservar
-                  </Button>
+                  <Button onClick={() => setSelectedRoom(room)}>Reservar</Button>
                 </CardContent>
               </Card>
             ))
@@ -203,7 +202,6 @@ const RoomList: React.FC = () => {
           )}
         </div>
 
-        {/* Modal de Reserva */}
         <Dialog open={!!selectedRoom} onOpenChange={(open) => !open && setSelectedRoom(null)}>
           <DialogContent>
             <DialogHeader>
