@@ -76,7 +76,6 @@ export const useProfile = () => {
     
     try {
       console.log("Enviando dados para atualização:", data);
-      console.log("ID do usuário:", user.id);
       
       const { error } = await supabase
         .from('profiles')
@@ -84,7 +83,7 @@ export const useProfile = () => {
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone,
-          crp: data.crp,
+          crp: data.crp || null, // Ensure null is used instead of empty string
           specialty: data.specialty,
           cpf: data.cpf || null,
           cnpj: data.cnpj || null
