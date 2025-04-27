@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -38,14 +37,17 @@ const RoomList: React.FC = () => {
       
       if (error) throw error;
       
-      // Transform the data to include default values for the missing properties
-      const transformedData = (data || []).map(room => ({
-        ...room,
-        has_tv: room.has_tv || false,
-        has_private_bathroom: room.has_private_bathroom || false,
-      }));
+      // Transform the data to add missing properties with default values
+      const transformedData = data?.map(room => {
+        return {
+          ...room,
+          // Add properties that might be missing in database but are in Room interface
+          has_tv: false, 
+          has_private_bathroom: false
+        } as Room;
+      }) || [];
       
-      return transformedData as Room[];
+      return transformedData;
     },
   });
 

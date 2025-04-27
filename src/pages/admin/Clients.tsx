@@ -23,7 +23,7 @@ const Clients: React.FC = () => {
   useEffect(() => {
     supabase
       .from('profiles')
-      .select('first_name,last_name,phone,crp,cpf,cnpj,specialty')
+      .select('first_name,last_name,phone,crp,specialty')
       .then(({ data, error }) => {
         if (error) {
           console.error("Error fetching clients:", error);
@@ -31,16 +31,16 @@ const Clients: React.FC = () => {
         }
         
         // Add a dummy email field and convert to Client type
-        const clientsWithEmail = (data || []).map(client => ({
+        const clientsWithEmail = data ? data.map(client => ({
           first_name: client.first_name || '',
           last_name: client.last_name || '',
           phone: client.phone || '',
           email: '', // Add empty email since it's not in the profiles table
           crp: client.crp || '',
-          cpf: client.cpf,
-          cnpj: client.cnpj,
+          cpf: null, // These fields may not exist in the actual profiles table
+          cnpj: null, // These fields may not exist in the actual profiles table
           specialty: client.specialty
-        }));
+        })) : [];
         
         setClients(clientsWithEmail);
         setLoading(false);

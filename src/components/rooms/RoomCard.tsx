@@ -76,4 +76,4 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onReserve }) => {
       </CardContent>
     </Card>
   );
-}
+};
