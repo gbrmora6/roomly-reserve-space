@@ -77,31 +77,32 @@ const AdminBookings: React.FC = () => {
     },
   });
 
-  const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
-    try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: newStatus })
-        .eq("id", id);
+ const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
+  try {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ booking_status: newStatus }) // AQUI!!!
+      .eq("id", id);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast({
-        title:
-          newStatus === "confirmed"
-            ? "Reserva confirmada com sucesso"
-            : "Reserva cancelada com sucesso",
-      });
+    toast({
+      title:
+        newStatus === "confirmed"
+          ? "Reserva confirmada com sucesso"
+          : "Reserva cancelada com sucesso",
+    });
 
-      await refetch();
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar reserva",
-        description: err.message,
-      });
-    }
-  };
+    await refetch();
+  } catch (err: any) {
+    toast({
+      variant: "destructive",
+      title: "Erro ao atualizar reserva",
+      description: err.message,
+    });
+  }
+};
+
 
   const getStatusBadge = (status: BookingStatus) => {
     switch (status) {
