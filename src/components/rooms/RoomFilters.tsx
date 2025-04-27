@@ -13,11 +13,15 @@ interface RoomFiltersProps {
   filters: {
     date: Date | null;
     startTime: string | null;
+    endTime: string | null;
   };
   setFilters: React.Dispatch<React.SetStateAction<{
     date: Date | null;
     startTime: string | null;
+    endTime: string | null;
   }>>;
+  onFilter: () => void;
+  onClear: () => void;
 }
 
 const timeOptions = [
@@ -25,7 +29,12 @@ const timeOptions = [
   "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"
 ];
 
-export const RoomFilters: React.FC<RoomFiltersProps> = ({ filters, setFilters }) => {
+export const RoomFilters: React.FC<RoomFiltersProps> = ({ 
+  filters, 
+  setFilters, 
+  onFilter,
+  onClear 
+}) => {
   return (
     <Card className="mb-8 bg-white shadow-lg border-roomly-100">
       <CardContent className="p-6">
@@ -37,7 +46,7 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({ filters, setFilters })
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Date picker */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Data</label>
@@ -67,9 +76,9 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({ filters, setFilters })
               </Popover>
             </div>
 
-            {/* Time picker */}
+            {/* Start Time picker */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Horário Inicial</label>
               <Select
                 value={filters.startTime || ""}
                 onValueChange={(value) => setFilters({ ...filters, startTime: value || null })}
@@ -95,6 +104,53 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({ filters, setFilters })
                 </SelectContent>
               </Select>
             </div>
+
+            {/* End Time picker */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Horário Final</label>
+              <Select
+                value={filters.endTime || ""}
+                onValueChange={(value) => setFilters({ ...filters, endTime: value || null })}
+              >
+                <SelectTrigger className="w-full border-gray-300">
+                  <SelectValue placeholder="Selecione um horário">
+                    {filters.endTime ? (
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4" />
+                        {filters.endTime}
+                      </div>
+                    ) : (
+                      <span>Selecione um horário</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.filter(time => !filters.startTime || time > filters.startTime).map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              variant="outline"
+              onClick={onClear}
+              className="px-6"
+            >
+              Limpar Filtros
+            </Button>
+            <Button
+              onClick={onFilter}
+              className="px-6"
+              disabled={!filters.date || !filters.startTime || !filters.endTime}
+            >
+              Filtrar
+            </Button>
           </div>
         </div>
       </CardContent>

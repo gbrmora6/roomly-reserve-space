@@ -9,6 +9,7 @@ import { RoomsGrid } from "@/components/rooms/RoomsGrid";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Room } from "@/types/room";
 import { useAuth } from "@/contexts/AuthContext";
+import { roomService } from "@/services/roomService";
 
 const RoomList: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const RoomList: React.FC = () => {
   const [filters, setFilters] = useState({
     date: null as Date | null,
     startTime: null as string | null,
+    endTime: null as string | null,
   });
   const [companyAddress, setCompanyAddress] = useState({
     street: "",
@@ -41,21 +43,46 @@ const RoomList: React.FC = () => {
     fetchCompanyProfile();
   }, []);
 
-  const { data: rooms, isLoading, error } = useQuery({
-    queryKey: ["rooms"],
+  const { data: rooms, isLoading, error, refetch } = useQuery({
+    queryKey: ["rooms", filters],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rooms")
-        .select(`
-          *,
-          room_photos(*)
-        `)
-        .order("name");
-      
-      if (error) throw error;
-      
-      // Cast the data to Room[] type to ensure TypeScript compatibility
-      return data as unknown as Room[];
+      if (filters.date && filters.startTime && filters.endTime) {
+        const startDateTime = new Date(filters.date);
+        const [startHours, startMinutes] = filters.startTime.split(':');
+        startDateTime.setHours(parseInt(startHours), parseInt(startMinutes));
+
+        const endDateTime = new Date(filters.date);
+        const [endHours, endMinutes] = filters.endTime.split(':');
+        endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
+
+        const { data: bookedRooms, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('room_id')
+          .gte('end_time', startDateTime.toISOString())
+          .lte('start_time', endDateTime.toISOString())
+          .eq('status', 'confirmed');
+
+        if (bookingsError) throw bookingsError;
+
+        const bookedRoomIds = bookedRooms.map(booking => booking.room_id);
+
+        const { data: availableRooms, error: roomsError } = await supabase
+          .from('rooms')
+          .select(`
+            *,
+            room_photos (
+              id,
+              url
+            )
+          `)
+          .not('id', 'in', `(${bookedRoomIds.join(',')})`)
+          .order('name');
+
+        if (roomsError) throw roomsError;
+        return availableRooms as unknown as Room[];
+      }
+
+      return roomService.getAllRooms();
     },
   });
 
@@ -64,6 +91,18 @@ const RoomList: React.FC = () => {
       setSelectedRoom(room);
       setIsReserveModalOpen(true);
     }
+  };
+
+  const handleFilter = () => {
+    refetch();
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      date: null,
+      startTime: null,
+      endTime: null,
+    });
   };
 
   // Format the full address
@@ -79,7 +118,12 @@ const RoomList: React.FC = () => {
           Salas Disponíveis
         </h1>
 
-        <RoomFilters filters={filters} setFilters={setFilters} />
+        <RoomFilters 
+          filters={filters} 
+          setFilters={setFilters} 
+          onFilter={handleFilter}
+          onClear={handleClearFilters}
+        />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -95,7 +139,7 @@ const RoomList: React.FC = () => {
             onReserve={handleReserve}
             isLoggedIn={!!user}
             address={formatAddress()}
-            showFilterMessage={!filters.date && !filters.startTime}
+            showFilterMessage={!filters.date && !filters.startTime && !filters.endTime}
           />
         )}
 
