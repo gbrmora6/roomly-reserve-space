@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { BookingsTable } from "@/components/bookings/BookingsTable";
 import { Database } from "@/integrations/supabase/types";
+import { addHours, format } from "date-fns";
 
-// Definição do tipo para status das reservas
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-// Definição do tipo Booking
 interface Booking {
   id: string;
   user_id: string;
@@ -61,7 +60,12 @@ const AdminBookings: React.FC = () => {
         throw new Error(error.message);
       }
 
-      return data as Booking[];
+      // Corrige horário local na exibição
+      return (data as Booking[]).map((booking) => ({
+        ...booking,
+        start_time: addHours(new Date(booking.start_time), 3).toISOString(),
+        end_time: addHours(new Date(booking.end_time), 3).toISOString(),
+      }));
     },
     onError: (err: any) => {
       toast({
@@ -73,42 +77,25 @@ const AdminBookings: React.FC = () => {
   });
 
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
-  try {
-    if (newStatus === "cancelled") {
-      const { error } = await supabase
-        .from("bookings")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+    try {
+      if (newStatus === "cancelled") {
+        const { error } = await supabase.from("bookings").delete().eq("id", id);
+        if (error) throw error;
+        toast({ title: "Reserva cancelada e excluída com sucesso" });
+      } else {
+        const { error } = await supabase.from("bookings").update({ status: newStatus }).eq("id", id);
+        if (error) throw error;
+        toast({ title: "Reserva confirmada com sucesso" });
+      }
+      await refetch();
+    } catch (err: any) {
       toast({
-        title: "Reserva cancelada e excluída com sucesso",
-      });
-    } else {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: newStatus })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Reserva confirmada com sucesso",
+        variant: "destructive",
+        title: "Erro ao atualizar reserva",
+        description: err.message,
       });
     }
-
-    await refetch();
-  } catch (err: any) {
-    toast({
-      variant: "destructive",
-      title: "Erro ao atualizar reserva",
-      description: err.message,
-    });
-  }
-};
-
-
+  };
 
   return (
     <div className="space-y-6">
