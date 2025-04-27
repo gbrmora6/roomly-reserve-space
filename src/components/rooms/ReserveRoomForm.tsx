@@ -73,12 +73,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         if (bookingsData) {
           let totalBookedSlots = 0;
           bookingsData.forEach((booking: any) => {
-            const startDate = subHours(new Date(booking.start_time), 3);
-            const endDate = subHours(new Date(booking.end_time), 3);
-            
-            const start = startDate.getHours();
-            const end = endDate.getHours();
-
+            const start = parseInt(booking.start_time.split("T")[1].split(":")[0]);
+            const end = parseInt(booking.end_time.split("T")[1].split(":")[0]);
             totalBookedSlots += end - start;
           });
 
@@ -127,19 +123,14 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         .lt("start_time", `${format(selectedDate, "yyyy-MM-dd")}T23:59:59`);
 
       const blocked: string[] = [];
-        
-              bookingsData?.forEach((booking: any) => {
-          const startDate = subHours(new Date(booking.start_time), 3);
-          const endDate = subHours(new Date(booking.end_time), 3);
-        
-          const start = startDate.getHours();
-          const end = endDate.getHours();
-        
-          for (let i = start; i < end; i++) {
-            blocked.push(`${i.toString().padStart(2, "0")}:00`);
-          }
-        });
 
+      bookingsData?.forEach((booking: any) => {
+        const start = parseInt(booking.start_time.split("T")[1].split(":")[0]);
+        const end = parseInt(booking.end_time.split("T")[1].split(":")[0]);
+        for (let i = start; i < end; i++) {
+          blocked.push(`${i.toString().padStart(2, "0")}:00`);
+        }
+      });
 
       setBlockedHours(blocked);
     };
