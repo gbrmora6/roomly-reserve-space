@@ -50,7 +50,7 @@ const AdminBookings: React.FC = () => {
           room_id,
           start_time,
           end_time,
-          booking_status,
+          status,
           created_at,
           updated_at,
           user:user_id(first_name,last_name),
