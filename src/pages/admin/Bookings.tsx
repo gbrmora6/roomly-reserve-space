@@ -35,7 +35,7 @@ interface Booking {
   };
 }
 
-const Bookings: React.FC = () => {  // Alterei de AdminBookings para Bookings aqui
+const AdminBookings: React.FC = () => {  // Alterado para AdminBookings
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
   const { data: bookings, isLoading, refetch } = useQuery({
@@ -83,7 +83,6 @@ const Bookings: React.FC = () => {  // Alterei de AdminBookings para Bookings aq
             : "Reserva cancelada com sucesso",
       });
 
-      // muda para a aba certa e refaz a query
       setFilter(newStatus);
       await refetch();
     } catch (err: any) {
@@ -235,4 +234,4 @@ const Bookings: React.FC = () => {  // Alterei de AdminBookings para Bookings aq
   );
 };
 
-export default Bookings; // Verifique se este export é consistente
+export default AdminBookings;  // Aqui está exportado como AdminBookings
