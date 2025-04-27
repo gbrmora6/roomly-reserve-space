@@ -20,6 +20,6 @@ export const roomService = {
       throw new Error("Erro ao carregar salas.");
     }
 
-    return data as Room[];
+    return data as unknown as Room[];
   },
 };

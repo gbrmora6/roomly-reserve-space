@@ -53,7 +53,9 @@ const RoomList: React.FC = () => {
         .order("name");
       
       if (error) throw error;
-      return data as Room[];
+      
+      // Cast the data to Room[] type to ensure TypeScript compatibility
+      return data as unknown as Room[];
     },
   });
 
