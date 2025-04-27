@@ -1,6 +1,6 @@
 
 import React from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -51,6 +51,19 @@ const MyBookings = () => {
     );
   }
 
+  // Helper function to format datetime with proper timezone
+  const formatDateTime = (dateTimeString: string, formatPattern: string) => {
+    try {
+      // Parse the ISO string
+      const date = parseISO(dateTimeString);
+      // Format with Brazilian locale
+      return format(date, formatPattern, { locale: ptBR });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Data inválida";
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
@@ -73,11 +86,11 @@ const MyBookings = () => {
                 <TableRow key={booking.id}>
                   <TableCell>{booking.room?.name}</TableCell>
                   <TableCell>
-                    {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
+                    {formatDateTime(booking.start_time, "dd/MM/yyyy")}
                   </TableCell>
                   <TableCell>
-                    {format(new Date(booking.start_time), "HH:mm")} -{" "}
-                    {format(new Date(booking.end_time), "HH:mm")}
+                    {formatDateTime(booking.start_time, "HH:mm")} -{" "}
+                    {formatDateTime(booking.end_time, "HH:mm")}
                   </TableCell>
                   <TableCell>
                     {new Intl.NumberFormat("pt-BR", {

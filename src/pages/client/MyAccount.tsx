@@ -17,8 +17,8 @@ const profileSchema = z.object({
   phone: z.string().min(10, "Telefone inválido"),
   crp: z.string().regex(/^[0-9]{7,9}$/, "CRP deve conter entre 7 e 9 dígitos"),
   specialty: z.string().min(2, "Especialidade deve ter pelo menos 2 caracteres"),
-  cpf: z.string().nullable(),
-  cnpj: z.string().nullable(),
+  cpf: z.string().nullable().optional(),
+  cnpj: z.string().nullable().optional(),
 }).refine(data => !data.cpf || !data.cnpj, {
   message: "Você deve preencher apenas CPF ou CNPJ, não ambos",
   path: ["cpf"]
@@ -31,7 +31,15 @@ const MyAccount = () => {
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: async () => {
-      if (!user) return {};
+      if (!user) return {
+        first_name: "",
+        last_name: "",
+        phone: "",
+        crp: "",
+        specialty: "",
+        cpf: "",
+        cnpj: ""
+      };
       
       const { data } = await supabase
         .from('profiles')
@@ -39,7 +47,15 @@ const MyAccount = () => {
         .eq('id', user.id)
         .single();
       
-      return data || {};
+      return {
+        first_name: data?.first_name || "",
+        last_name: data?.last_name || "",
+        phone: data?.phone || "",
+        crp: data?.crp || "",
+        specialty: data?.specialty || "",
+        cpf: data?.cpf || "",
+        cnpj: data?.cnpj || ""
+      };
     }
   });
 
@@ -134,11 +150,11 @@ const MyAccount = () => {
                 <FormField
                   control={form.control}
                   name="cpf"
-                  render={({ field }) => (
+                  render={({ field: { value, ...rest }}) => (
                     <FormItem>
                       <FormLabel>CPF</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input value={value || ""} {...rest} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -148,11 +164,11 @@ const MyAccount = () => {
                 <FormField
                   control={form.control}
                   name="cnpj"
-                  render={({ field }) => (
+                  render={({ field: { value, ...rest }}) => (
                     <FormItem>
                       <FormLabel>CNPJ</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input value={value || ""} {...rest} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
