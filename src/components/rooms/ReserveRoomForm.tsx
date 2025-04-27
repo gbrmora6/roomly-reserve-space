@@ -73,8 +73,12 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         if (bookingsData) {
           let totalBookedSlots = 0;
           bookingsData.forEach((booking: any) => {
-            const start = parseInt(booking.start_time.split("T")[1].split(":")[0]);
-            const end = parseInt(booking.end_time.split("T")[1].split(":")[0]);
+            const startDate = subHours(new Date(booking.start_time), 3);
+            const endDate = subHours(new Date(booking.end_time), 3);
+            
+            const start = startDate.getHours();
+            const end = endDate.getHours();
+
             totalBookedSlots += end - start;
           });
 
