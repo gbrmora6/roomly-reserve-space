@@ -77,17 +77,20 @@ export const useProfile = () => {
     try {
       console.log("Enviando dados para atualização:", data);
       
+      // Handle empty strings for fields that should be null in the database
+      const profileData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        phone: data.phone,
+        crp: data.crp === "" ? null : data.crp,  // Explicitly handle empty string
+        specialty: data.specialty,
+        cpf: data.cpf === "" ? null : data.cpf,
+        cnpj: data.cnpj === "" ? null : data.cnpj
+      };
+      
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-          crp: data.crp || null, // Ensure null is used instead of empty string
-          specialty: data.specialty,
-          cpf: data.cpf || null,
-          cnpj: data.cnpj || null
-        })
+        .update(profileData)
         .eq('id', user.id);
 
       if (error) {

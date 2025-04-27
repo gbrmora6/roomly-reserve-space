@@ -64,11 +64,11 @@ export const ProfileForm = () => {
           <FormField
             control={form.control}
             name="crp"
-            render={({ field }) => (
+            render={({ field: { value, ...rest }}) => (
               <FormItem>
                 <FormLabel>CRP</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Apenas números" />
+                  <Input value={value || ""} {...rest} placeholder="Opcional" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

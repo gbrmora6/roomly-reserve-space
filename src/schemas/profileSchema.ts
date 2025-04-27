@@ -5,7 +5,7 @@ export const profileSchema = z.object({
   first_name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   last_name: z.string().min(2, "Sobrenome deve ter pelo menos 2 caracteres"),
   phone: z.string().min(10, "Telefone inválido"),
-  crp: z.string(), // Removed the regex validation for CRP
+  crp: z.string().optional(), // Make CRP optional to avoid validation issues
   specialty: z.string().min(2, "Especialidade deve ter pelo menos 2 caracteres"),
   cpf: z.string().nullable().optional(),
   cnpj: z.string().nullable().optional(),
