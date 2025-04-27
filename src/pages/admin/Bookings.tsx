@@ -9,6 +9,26 @@ import { BookingsTable } from "@/components/bookings/BookingsTable";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
+// Define a type for the booking data returned from Supabase
+interface BookingData {
+  id: string;
+  user_id: string;
+  room_id: string;
+  start_time: string;
+  end_time: string;
+  status: BookingStatus;
+  created_at: string;
+  updated_at: string;
+  total_price: number;
+  user: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  room: {
+    name: string;
+  } | null;
+}
+
 const AdminBookings: React.FC = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
@@ -36,8 +56,15 @@ const AdminBookings: React.FC = () => {
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      // Process the data to handle error objects in foreign key relationships
+      const processedData = data?.map(item => ({
+        ...item,
+        user: typeof item.user === 'object' && item.user !== null ? item.user : null,
+        room: typeof item.room === 'object' && item.room !== null ? item.room : null
+      }));
 
-      return data;
+      return processedData as BookingData[];
     },
   });
 
