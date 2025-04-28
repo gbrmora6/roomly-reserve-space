@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ import { EquipmentsGrid } from "@/components/equipment/EquipmentsGrid";
 import { ReserveEquipmentForm } from "@/components/equipment/ReserveEquipmentForm";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Equipment {
   id: string;
@@ -68,7 +70,7 @@ const EquipmentList: React.FC = () => {
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
         // Get weekday from date (monday, tuesday, etc.)
-        const weekday = format(filters.date, "EEEE").toLowerCase();
+        const weekday = format(filters.date, "EEEE", { locale: ptBR }).toLowerCase();
 
         // Get all equipment with matching weekday in open_days
         const { data: allEquipments, error: equipmentsError } = await supabase

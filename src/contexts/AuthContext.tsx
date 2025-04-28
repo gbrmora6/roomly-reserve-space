@@ -19,8 +19,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, session, loading } = useSessionManager();
-  const { signIn, signUp, signOut } = useAuthOperations();
+  const { signIn: authSignIn, signUp, signOut } = useAuthOperations();
   const { refreshUserClaims } = useUserClaims();
+  
+  // Wrap the signIn function to match the AuthContextType
+  const signIn = async (email: string, password: string): Promise<void> => {
+    await authSignIn(email, password);
+    // Return type is now void, which matches the AuthContextType
+  };
 
   return (
     <AuthContext.Provider value={{ 
