@@ -1,37 +1,21 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { EquipmentForm } from "@/components/equipment/EquipmentForm";
 
-interface Equipment {
-  id: string;
-  name: string;
-  description: string | null;
-  quantity: number;
-}
-
-const EquipmentForm: React.FC = () => {
+const AdminEquipmentForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isEditing = !!id;
-  
-  const [equipment, setEquipment] = useState<Partial<Equipment>>({
-    name: "",
-    description: "",
-    quantity: 1,
-  });
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { isLoading } = useQuery({
+  const { data: equipment, isLoading } = useQuery({
     queryKey: ["equipment", id],
-    enabled: isEditing,
+    enabled: !!id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("equipment")
@@ -40,37 +24,24 @@ const EquipmentForm: React.FC = () => {
         .single();
       
       if (error) throw error;
-      
-      setEquipment(data);
       return data;
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEquipment((prev) => ({ ...prev, [name]: name === "quantity" ? parseInt(value) : value }));
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: any) => {
     setIsSubmitting(true);
-    
     try {
-      if (!equipment.name) {
-        throw new Error("O nome do equipamento é obrigatório");
-      }
-      
-      if (equipment.quantity !== undefined && equipment.quantity < 1) {
-        throw new Error("A quantidade deve ser maior que zero");
-      }
-      
-      if (isEditing) {
+      if (id) {
         const { error } = await supabase
           .from("equipment")
           .update({
-            name: equipment.name,
-            description: equipment.description,
-            quantity: equipment.quantity
+            name: formData.name,
+            description: formData.description,
+            quantity: formData.quantity,
+            price_per_hour: formData.price_per_hour,
+            open_time: formData.open_time,
+            close_time: formData.close_time,
+            open_days: formData.open_days
           })
           .eq("id", id);
         
@@ -79,31 +50,36 @@ const EquipmentForm: React.FC = () => {
         const { error } = await supabase
           .from("equipment")
           .insert({
-            name: equipment.name,
-            description: equipment.description,
-            quantity: equipment.quantity
+            name: formData.name,
+            description: formData.description,
+            quantity: formData.quantity,
+            price_per_hour: formData.price_per_hour,
+            open_time: formData.open_time,
+            close_time: formData.close_time,
+            open_days: formData.open_days
           });
         
         if (error) throw error;
       }
       
       toast({
-        title: isEditing ? "Equipamento atualizado com sucesso" : "Equipamento criado com sucesso",
+        title: id ? "Equipamento atualizado" : "Equipamento criado",
+        description: "As alterações foram salvas com sucesso.",
       });
       
       navigate("/admin/equipment");
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: isEditing ? "Erro ao atualizar equipamento" : "Erro ao criar equipamento",
+        title: "Erro ao salvar",
         description: error.message,
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  if (isEditing && isLoading) {
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
@@ -118,59 +94,17 @@ const EquipmentForm: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
         </Button>
         <h1 className="text-3xl font-bold">
-          {isEditing ? "Editar Equipamento" : "Novo Equipamento"}
+          {id ? "Editar Equipamento" : "Novo Equipamento"}
         </h1>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome do Equipamento</Label>
-            <Input
-              id="name"
-              name="name"
-              value={equipment.name || ""}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={equipment.description || ""}
-              onChange={handleChange}
-              rows={4}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantidade Disponível</Label>
-            <Input
-              id="quantity"
-              name="quantity"
-              type="number"
-              min="1"
-              value={equipment.quantity || 1}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        </div>
-        
-        <div className="flex justify-end">
-          <Button 
-            type="submit" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Salvando..." : isEditing ? "Atualizar Equipamento" : "Criar Equipamento"}
-          </Button>
-        </div>
-      </form>
+      <EquipmentForm
+        initialData={equipment}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
 
-export default EquipmentForm;
+export default AdminEquipmentForm;

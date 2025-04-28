@@ -9,6 +9,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     description: string | null;
     quantity: number;
     available: number;
+    price_per_hour: number;
   }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         // Fetch all equipment
         const { data: equipment, error: equipmentError } = await supabase
           .from("equipment")
-          .select("*");
+          .select("*")
+          .order("name");
 
         if (equipmentError) throw equipmentError;
 
@@ -33,6 +35,26 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           setAvailableEquipment([]);
           return;
         }
+
+        // Get weekday from startTime
+        const weekday = startTime.toLocaleDateString('en-US', { weekday: 'lowercase' });
+        
+        // Filter equipment based on open days and hours
+        const filteredEquipment = equipment.filter(item => {
+          // Check if weekday is in open_days
+          if (!item.open_days?.includes(weekday)) return false;
+          
+          // Convert time strings to Date objects for comparison
+          const startHour = startTime.getHours();
+          const endHour = endTime.getHours();
+          
+          if (!item.open_time || !item.close_time) return true;
+          
+          const [openHour] = item.open_time.split(':').map(Number);
+          const [closeHour] = item.close_time.split(':').map(Number);
+          
+          return startHour >= openHour && endHour <= closeHour;
+        });
 
         // Find overlapping bookings (not cancelled)
         const { data: overlappingBookings, error: bookingsError } = await supabase
@@ -46,14 +68,12 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
 
         const bookingIds = overlappingBookings?.map(booking => booking.id) || [];
 
-        // For each equipment, calculate availability
-        const availabilityResults = await Promise.all(equipment.map(async (item) => {
-          // Default: all equipment is available if no overlapping bookings
+        // Calculate availability for each equipment
+        const availabilityResults = await Promise.all(filteredEquipment.map(async (item) => {
           if (bookingIds.length === 0) {
             return { ...item, available: item.quantity };
           }
 
-          // Get equipment quantities booked in overlapping bookings
           const { data: bookedItems, error: bookedItemsError } = await supabase
             .from('booking_equipment')
             .select('booking_id, quantity')
@@ -62,10 +82,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
 
           if (bookedItemsError) throw bookedItemsError;
 
-          // Sum all booked quantities
           const totalBooked = bookedItems?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
-          
-          // Calculate available (never less than 0)
           const available = Math.max(0, item.quantity - totalBooked);
 
           return { ...item, available };

@@ -146,33 +146,112 @@ export type Database = {
       }
       equipment: {
         Row: {
+          close_time: string | null
           created_at: string
           description: string | null
           id: string
           name: string
+          open_days: Database["public"]["Enums"]["weekday"][] | null
+          open_time: string | null
           price_per_hour: number
           quantity: number
           updated_at: string
         }
         Insert: {
+          close_time?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          open_days?: Database["public"]["Enums"]["weekday"][] | null
+          open_time?: string | null
           price_per_hour?: number
           quantity?: number
           updated_at?: string
         }
         Update: {
+          close_time?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          open_days?: Database["public"]["Enums"]["weekday"][] | null
+          open_time?: string | null
           price_per_hour?: number
           quantity?: number
           updated_at?: string
         }
         Relationships: []
+      }
+      equipment_availability: {
+        Row: {
+          created_at: string
+          end_time: string
+          equipment_id: string | null
+          id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          equipment_id?: string | null
+          id?: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          equipment_id?: string | null
+          id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_availability_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_schedules: {
+        Row: {
+          created_at: string
+          end_time: string
+          equipment_id: string | null
+          id: string
+          start_time: string
+          updated_at: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          equipment_id?: string | null
+          id?: string
+          start_time: string
+          updated_at?: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          equipment_id?: string | null
+          id?: string
+          start_time?: string
+          updated_at?: string
+          weekday?: Database["public"]["Enums"]["weekday"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_schedules_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
