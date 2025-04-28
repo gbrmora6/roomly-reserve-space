@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
@@ -27,9 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!session?.user) return;
     
     try {
-      console.log("Refreshing user claims...");
+      console.log("Refreshing user claims - simplified version");
       
-      // Fetch current user profile from the database
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -41,25 +39,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      if (profile?.role === 'admin') {
-        console.log("Updating admin claims for user");
-        
-        // Update user metadata with admin role and is_admin flag
+      console.log("Profile data from database:", profile);
+      
+      if (profile?.role) {
         const { data, error: updateError } = await supabase.auth.updateUser({
           data: { 
-            role: 'admin',
-            is_admin: true
+            role: profile.role
           }
         });
         
         if (updateError) {
-          console.error("Error updating admin claims:", updateError);
+          console.error("Error updating user claims:", updateError);
           return;
         }
         
         if (data?.user) {
-          console.log("Admin claims updated successfully:", data.user.user_metadata);
+          console.log("User claims updated with role:", data.user.user_metadata);
           setUser(data.user);
+          
+          const { data: sessionData } = await supabase.auth.refreshSession();
+          if (sessionData.session) {
+            setSession(sessionData.session);
+          }
         }
       }
     } catch (err) {
@@ -68,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session]);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state changed:", event);
@@ -78,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("User metadata from session:", currentSession.user.user_metadata);
           
           try {
-            // Always check the profile in database to ensure updated information
             const { data: profile } = await supabase
               .from('profiles')
               .select('role')
@@ -88,7 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (profile?.role) {
               console.log("Role from profile database:", profile.role);
               
-              // Update user metadata with the profile role
               const updatedUser = {
                 ...currentSession.user,
                 user_metadata: {
@@ -98,31 +96,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               };
               setUser(updatedUser);
               
-              // Update JWT claims for admin users immediately
-              if (profile.role === 'admin') {
-                try {
-                  console.log("Updating claims for admin user");
-                  const { error: updateError } = await supabase.auth.updateUser({
-                    data: { 
-                      is_admin: true,
-                      role: 'admin'
-                    }
-                  });
-                  
-                  if (updateError) {
-                    console.error("Error updating admin claims:", updateError);
-                  } else {
-                    console.log("Admin claims updated successfully");
-                    
-                    // Force refresh user data after updating claims
-                    const { data } = await supabase.auth.getUser();
-                    if (data?.user) {
-                      setUser(data.user);
-                    }
-                  }
-                } catch (err) {
-                  console.error("Error in admin claims update:", err);
+              const { data, error } = await supabase.auth.updateUser({
+                data: { 
+                  role: profile.role
                 }
+              });
+              
+              if (error) {
+                console.error("Error updating user claims on auth change:", error);
+              } else if (data?.user) {
+                console.log("Auth state change: claims updated with role", data.user.user_metadata);
+                setUser(data.user);
+                
+                await supabase.auth.refreshSession();
               }
             } else {
               setUser(currentSession.user);
@@ -139,7 +125,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession);
       
@@ -156,7 +141,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (profile?.role) {
             console.log("Initial role from profile:", profile.role);
             
-            // Update user metadata with the profile role
             const updatedUser = {
               ...currentSession.user,
               user_metadata: {
@@ -166,32 +150,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setUser(updatedUser);
             
-            // Update JWT claims for admin users
-            if (profile.role === 'admin') {
-              try {
-                console.log("Initial setup: Updating admin claims");
-                const { data, error: updateError } = await supabase.auth.updateUser({
-                  data: { 
-                    is_admin: true,
-                    role: 'admin'
-                  }
-                });
-                
-                if (updateError) {
-                  console.error("Error updating initial admin claims:", updateError);
-                } else {
-                  console.log("Initial admin claims updated successfully", data?.user?.user_metadata);
-                  
-                  if (data?.user) {
-                    setUser(data.user);
-                  }
-                  
-                  // Force token refresh
-                  await supabase.auth.refreshSession();
+            try {
+              const { data, error } = await supabase.auth.updateUser({
+                data: { 
+                  role: profile.role
                 }
-              } catch (err) {
-                console.error("Error in initial admin claims update:", err);
+              });
+              
+              if (error) {
+                console.error("Error updating initial claims:", error);
+              } else {
+                console.log("Initial claims updated with role", data?.user?.user_metadata);
+                
+                if (data?.user) {
+                  setUser(data.user);
+                }
+                
+                await supabase.auth.refreshSession();
               }
+            } catch (err) {
+              console.error("Error in initial claims update:", err);
             }
           } else {
             setUser(currentSession.user);
@@ -242,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: "client", // Definir role padrão como "client"
+            role: "client",
           },
         },
       });
@@ -269,7 +247,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear user data from state
       setUser(null);
       setSession(null);
       

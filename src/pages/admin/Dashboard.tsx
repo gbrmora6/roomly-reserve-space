@@ -5,12 +5,19 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard, BookOpen, Mic, Bed as BedIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminDashboard: React.FC = () => {
-  // Add debugging for component mounting
+  const { refreshUserClaims } = useAuth();
+  
+  // Execute refresh claims on component mount
   useEffect(() => {
-    console.log("AdminDashboard component mounted");
-  }, []);
+    console.log("AdminDashboard component mounted, refreshing user claims");
+    const refreshClaims = async () => {
+      await refreshUserClaims();
+    };
+    refreshClaims();
+  }, [refreshUserClaims]);
 
   const { data: roomsCount, isLoading: roomsLoading } = useQuery({
     queryKey: ["roomsCount"],

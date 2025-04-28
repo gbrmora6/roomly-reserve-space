@@ -23,10 +23,13 @@ interface Room {
 const AdminRooms: React.FC = () => {
   const { refreshUserClaims } = useAuth();
   
-  // Add debugging for component mounting and refresh admin claims
+  // Execute refresh claims on component mount
   useEffect(() => {
-    console.log("AdminRooms component mounted");
-    refreshUserClaims();
+    console.log("AdminRooms component mounted, refreshing user claims");
+    const refreshClaims = async () => {
+      await refreshUserClaims();
+    };
+    refreshClaims();
   }, [refreshUserClaims]);
 
   const { data: rooms, isLoading, isError, error, refetch } = useQuery({

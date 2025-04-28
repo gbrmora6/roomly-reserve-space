@@ -20,10 +20,13 @@ interface Equipment {
 const AdminEquipment: React.FC = () => {
   const { refreshUserClaims } = useAuth();
   
-  // Add debugging for component mounting and refresh admin claims
+  // Execute refresh claims on component mount
   useEffect(() => {
-    console.log("AdminEquipment component mounted");
-    refreshUserClaims();
+    console.log("AdminEquipment component mounted, refreshing user claims");
+    const refreshClaims = async () => {
+      await refreshUserClaims();
+    };
+    refreshClaims();
   }, [refreshUserClaims]);
 
   const { data: equipment, isLoading, isError, error, refetch } = useQuery({

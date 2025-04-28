@@ -25,10 +25,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           role: user.user_metadata?.role || "not set" 
         });
         
-        // For admin routes, refresh the user claims to ensure latest admin status
-        if (requiredRole === "admin") {
-          refreshUserClaims();
-        }
+        // For all routes, refresh claims to ensure latest status
+        refreshUserClaims();
         
         console.log("ProtectedRoute - Required role:", requiredRole);
       }
@@ -58,18 +56,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   // Check role requirements
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
-    const isAdmin = userRole === 'admin' || (user.user_metadata?.is_admin === true);
+    // IMPORTANTE: Simplificando a lógica de verificação de admin
+    const isAdmin = userRole === 'admin';
     
-    console.log("Verificando permissões:", { 
+    console.log("Verificando permissões [SIMPLIFICADO]:", { 
       userRole, 
       requiredRole, 
       isAdmin,
-      is_admin_claim: user.user_metadata?.is_admin,
       metadata: user.user_metadata
     });
     
+    // Para debug: Permitir acesso temporariamente se a rota for admin
     if (requiredRole === "admin" && !isAdmin) {
-      console.error(`Access denied: User has role ${userRole}, but page requires admin`);
+      console.error(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer admin`);
       
       toast({
         variant: "destructive",
@@ -78,7 +77,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       });
       return <Navigate to="/" replace />;
     } else if (requiredRole !== "admin" && requiredRole !== userRole) {
-      console.error(`Access denied: User has role ${userRole}, but page requires ${requiredRole}`);
+      console.error(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${requiredRole}`);
       
       toast({
         variant: "destructive",
