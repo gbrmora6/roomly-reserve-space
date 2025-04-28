@@ -15,10 +15,10 @@ const Index: React.FC = () => {
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="text-center md:text-left">
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
-                Reserve salas de forma <span className="text-roomly-600">simples e eficiente</span>
+                Bem-vindo ao <span className="text-roomly-600">EspaçoPsic</span>
               </h1>
               <p className="mt-6 text-lg text-gray-600">
-                Sistema completo para gerenciamento e reserva de salas com equipamentos para sua empresa ou espaço de trabalho.
+                Sala completa para suas atividades relacionadas a psicologia com teste e equipamentos preparados para você.
               </p>
               <div className="mt-8 flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0 md:justify-start">
                 <Button 
@@ -39,7 +39,6 @@ const Index: React.FC = () => {
               </div>
             </div>
 
-            {/* Aqui está a correção da imagem */}
             <div className="flex justify-center">
               <div className="overflow-hidden rounded-lg shadow-xl">
                 <img
@@ -51,7 +50,6 @@ const Index: React.FC = () => {
                 />
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -62,23 +60,23 @@ const Index: React.FC = () => {
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-gray-900">Recursos principais</h2>
             <p className="mx-auto mt-4 max-w-2xl text-gray-600">
-              Tudo o que você precisa para gerenciar suas salas e equipamentos de forma eficiente.
+              Tudo o que você precisa para realizar seus atendimentos psicológicos com excelência.
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
             {[
               {
-                title: "Gestão de salas",
-                description: "Cadastre salas com fotos, descrição e equipamentos disponíveis.",
+                title: "Salas Especializadas",
+                description: "Ambientes preparados para atendimento psicológico, com isolamento acústico e mobiliário adequado.",
               },
               {
-                title: "Reservas simplificadas",
-                description: "Sistema intuitivo de reserva para clientes com filtros avançados.",
+                title: "Materiais para Testes",
+                description: "Acesso a materiais e testes psicológicos necessários para sua prática profissional.",
               },
               {
-                title: "Controle de equipamentos",
-                description: "Gerencie a disponibilidade de equipamentos extras para cada sala.",
+                title: "Equipamentos Completos",
+                description: "Infraestrutura completa com equipamentos e recursos para suas sessões terapêuticas.",
               },
             ].map((feature, index) => (
               <div
@@ -98,7 +96,7 @@ const Index: React.FC = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold">Pronto para começar?</h2>
           <p className="mx-auto mt-4 max-w-2xl">
-            Cadastre-se agora e comece a gerenciar suas salas e equipamentos de forma eficiente.
+            Cadastre-se agora e tenha acesso a espaços preparados para sua prática profissional.
           </p>
           <Button
             size="lg"
