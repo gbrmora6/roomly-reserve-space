@@ -82,14 +82,35 @@ const AdminBookings: React.FC = () => {
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
       if (newStatus === "cancelled") {
-        const { error } = await supabase.from("bookings").delete().eq("id", id);
+        // First remove any equipment bookings
+        const { error: equipmentError } = await supabase
+          .from("booking_equipment")
+          .delete()
+          .eq("booking_id", id);
+          
+        if (equipmentError) {
+          throw equipmentError;
+        }
+        
+        // Then update the booking status
+        const { error } = await supabase
+          .from("bookings")
+          .update({ status: newStatus })
+          .eq("id", id);
+          
         if (error) throw error;
-        toast({ title: "Reserva cancelada e excluída com sucesso" });
+        
+        toast({ title: "Reserva cancelada com sucesso" });
       } else {
-        const { error } = await supabase.from("bookings").update({ status: newStatus }).eq("id", id);
+        const { error } = await supabase
+          .from("bookings")
+          .update({ status: newStatus })
+          .eq("id", id);
+          
         if (error) throw error;
-        toast({ title: "Reserva confirmada com sucesso" });
+        toast({ title: "Status da reserva atualizado com sucesso" });
       }
+      
       await refetch();
     } catch (err: any) {
       toast({

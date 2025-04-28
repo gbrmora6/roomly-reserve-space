@@ -22,17 +22,19 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       setLoading(true);
 
       try {
+        // Fetch all equipment
         const { data: equipment, error: equipmentError } = await supabase
           .from("equipment")
           .select("*");
 
         if (equipmentError) throw equipmentError;
 
-        if (!equipment) {
+        if (!equipment || equipment.length === 0) {
           setAvailableEquipment([]);
           return;
         }
 
+        // Find overlapping bookings (not cancelled)
         const { data: overlappingBookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('id')
@@ -44,26 +46,31 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
 
         const bookingIds = overlappingBookings?.map(booking => booking.id) || [];
 
-        const availabilityPromises = equipment.map(async (item) => {
+        // For each equipment, calculate availability
+        const availabilityResults = await Promise.all(equipment.map(async (item) => {
+          // Default: all equipment is available if no overlapping bookings
           if (bookingIds.length === 0) {
             return { ...item, available: item.quantity };
           }
 
+          // Get equipment quantities booked in overlapping bookings
           const { data: bookedItems, error: bookedItemsError } = await supabase
             .from('booking_equipment')
-            .select('quantity')
+            .select('booking_id, quantity')
             .eq('equipment_id', item.id)
             .in('booking_id', bookingIds);
 
           if (bookedItemsError) throw bookedItemsError;
 
+          // Sum all booked quantities
           const totalBooked = bookedItems?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
+          
+          // Calculate available (never less than 0)
           const available = Math.max(0, item.quantity - totalBooked);
 
           return { ...item, available };
-        });
+        }));
 
-        const availabilityResults = await Promise.all(availabilityPromises);
         setAvailableEquipment(availabilityResults);
       } catch (error) {
         console.error("Error fetching equipment availability:", error);
