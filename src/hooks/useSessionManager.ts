@@ -47,11 +47,11 @@ export function useSessionManager() {
                   .from('profiles')
                   .select('role')
                   .eq('id', currentSession.user.id)
-                  .single();
+                  .maybeSingle();
                 
-                // If profile doesn't have admin role, update it
-                if (profileError || profile?.role !== 'admin') {
-                  // First make sure profile exists
+                // If profile doesn't exist or doesn't have admin role, update it
+                if (profileError || !profile || profile?.role !== 'admin') {
+                  // Create or update profile with admin role
                   const { error: upsertError } = await supabase
                     .from('profiles')
                     .upsert({

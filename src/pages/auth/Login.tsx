@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login: React.FC = () => {
   const { signIn, user, loading } = useAuth();
@@ -57,18 +58,23 @@ const Login: React.FC = () => {
     try {
       await signIn(email, password);
       console.log("Login successful");
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
-      });
       // No need to redirect here as the AuthProvider will handle it
     } catch (error: any) {
       console.error("Login error:", error);
       setLoginError(error.message || "Falha na autenticação. Verifique suas credenciais.");
+      
+      let errorMessage = "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.";
+      
+      if (error.message && error.message.includes("Invalid login credentials")) {
+        errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
+      } else if (error.message && error.message.includes("Email not confirmed")) {
+        errorMessage = "Email não confirmado. Por favor, verifique seu email para ativar sua conta.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
-        description: error.message || "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -88,6 +94,11 @@ const Login: React.FC = () => {
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
+                {loginError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{loginError}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input 
@@ -98,6 +109,7 @@ const Login: React.FC = () => {
                     placeholder="seu@email.com" 
                     required 
                     disabled={isLoading}
+                    autoComplete="email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -114,13 +126,9 @@ const Login: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                 </div>
-                {loginError && (
-                  <div className="text-destructive text-sm font-medium">
-                    {loginError}
-                  </div>
-                )}
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
                 <Button 
