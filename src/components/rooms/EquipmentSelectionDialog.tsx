@@ -17,6 +17,16 @@ interface EquipmentSelectionDialogProps {
   bookingId: string | null;
 }
 
+// Updated Equipment interface to include price_per_hour
+interface Equipment {
+  id: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  available: number;
+  price_per_hour: number;
+}
+
 export function EquipmentSelectionDialog({
   open,
   onOpenChange,
@@ -60,7 +70,7 @@ export function EquipmentSelectionDialog({
         quantity,
         start_time: utcStartTime.toISOString(),
         end_time: utcEndTime.toISOString(),
-        status: 'pending'
+        status: 'pending' as const // Type assertion to match the enum
       }));
 
       const { error } = await supabase

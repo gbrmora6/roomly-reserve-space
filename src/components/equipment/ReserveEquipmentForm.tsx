@@ -161,13 +161,17 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
 
       if (bookingError) throw bookingError;
 
-      // Then create equipment booking
+      // Then create equipment booking with all required fields
       const { error: equipmentError } = await supabase
         .from("booking_equipment")
         .insert({
           booking_id: booking.id,
           equipment_id: equipment.id,
           quantity: data.quantity,
+          user_id: user.id,
+          start_time: startDate.toISOString(),
+          end_time: endDate.toISOString(),
+          status: "pending",
         });
 
       if (equipmentError) throw equipmentError;
