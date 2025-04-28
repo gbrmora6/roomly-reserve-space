@@ -22,30 +22,43 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       setLoading(true);
       
       try {
-        const { data: equipment, error } = await supabase
+        const { data: equipment } = await supabase
           .from("equipment")
           .select("*");
 
-        if (error) throw error;
+        if (!equipment) {
+          setAvailableEquipment([]);
+          setLoading(false);
+          return;
+        }
 
         const availabilityPromises = equipment.map(async (item) => {
-          const { data: result } = await supabase.rpc('check_equipment_availability', {
-            p_equipment_id: item.id,
-            p_start_time: startTime.toISOString(),
-            p_end_time: endTime.toISOString(),
-            p_requested_quantity: 1
-          });
+          const { data: bookedQuantity } = await supabase
+            .from('booking_equipment')
+            .select('quantity')
+            .eq('equipment_id', item.id)
+            .in('booking_id', 
+              supabase
+                .from('bookings')
+                .select('id')
+                .not('status', 'eq', 'cancelled')
+                .gte('end_time', startTime.toISOString())
+                .lte('start_time', endTime.toISOString())
+            );
+
+          const totalBooked = bookedQuantity?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
+          const available = Math.max(0, item.quantity - totalBooked);
 
           return {
             ...item,
-            available: result ? item.quantity : 0
+            available
           };
         });
 
         const availabilityResults = await Promise.all(availabilityPromises);
         setAvailableEquipment(availabilityResults);
       } catch (error) {
-        console.error("Error fetching equipment availability:", error);
+        console.error("Erro ao buscar disponibilidade dos equipamentos:", error);
       } finally {
         setLoading(false);
       }

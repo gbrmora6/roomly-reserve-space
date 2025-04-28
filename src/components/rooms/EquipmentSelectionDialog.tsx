@@ -36,7 +36,7 @@ export function EquipmentSelectionDialog({
   };
 
   const handleConfirm = async () => {
-    if (!bookingId) return;
+    if (!bookingId || Object.keys(selectedEquipment).length === 0) return;
 
     const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
       booking_id: bookingId,
@@ -84,33 +84,31 @@ export function EquipmentSelectionDialog({
                   )}
                   <p className="text-sm">Disponíveis: {equipment.available}</p>
                 </div>
-                {equipment.available > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEquipmentChange(
-                        equipment.id,
-                        Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
-                      )}
-                      disabled={!selectedEquipment[equipment.id]}
-                    >
-                      -
-                    </Button>
-                    <span className="w-8 text-center">{selectedEquipment[equipment.id] || 0}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEquipmentChange(
-                        equipment.id,
-                        Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
-                      )}
-                      disabled={selectedEquipment[equipment.id] === equipment.available}
-                    >
-                      +
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEquipmentChange(
+                      equipment.id,
+                      Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
+                    )}
+                    disabled={equipment.available === 0 || !selectedEquipment[equipment.id]}
+                  >
+                    -
+                  </Button>
+                  <span className="w-8 text-center">{selectedEquipment[equipment.id] || 0}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEquipmentChange(
+                      equipment.id,
+                      Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
+                    )}
+                    disabled={equipment.available === 0 || selectedEquipment[equipment.id] === equipment.available}
+                  >
+                    +
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
