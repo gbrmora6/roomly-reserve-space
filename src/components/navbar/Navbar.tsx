@@ -26,12 +26,16 @@ const Navbar: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4">
+          <Link to="/rooms">
+            <Button variant="ghost">Salas</Button>
+          </Link>
+          
+          <Link to="/equipment">
+            <Button variant="ghost">Equipamentos</Button>
+          </Link>
+          
           {user ? (
             <>
-              <Link to="/rooms">
-                <Button variant="ghost">Salas</Button>
-              </Link>
-              
               {user.user_metadata?.role === "admin" ? (
                 <Link to="/admin">
                   <Button variant="ghost">Painel Admin</Button>

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import RoomList from "./pages/rooms/RoomList";
+import EquipmentList from "./pages/equipment/EquipmentList";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminRooms from "./pages/admin/Rooms";
@@ -40,6 +41,7 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/rooms" element={<RoomList />} />
+              <Route path="/equipment" element={<EquipmentList />} />
               
               {/* Client Routes */}
               <Route path="/my-account" element={

@@ -1,10 +1,10 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingsTable } from "@/components/bookings/BookingsTable";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { Database } from "@/integrations/supabase/types";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];

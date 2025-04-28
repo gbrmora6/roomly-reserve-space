@@ -22,7 +22,7 @@ interface BookingEquipment {
 interface Booking {
   id: string;
   user_id: string;
-  room_id: string;
+  room_id: string | null;
   start_time: string;
   end_time: string;
   status: BookingStatus;
@@ -65,7 +65,7 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
           {bookings && bookings.length > 0 ? (
             bookings.map((booking) => (
               <TableRow key={booking.id}>
-                <TableCell>{booking.room?.name || '-'}</TableCell>
+                <TableCell>{booking.room?.name || 'Apenas Equipamento'}</TableCell>
                 <TableCell>
                   {booking.user ? `${booking.user.first_name || ''} ${booking.user.last_name || ''}` : '-'}
                 </TableCell>
