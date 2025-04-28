@@ -25,6 +25,7 @@ export function EquipmentSelectionDialog({
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
   const { toast } = useToast();
   
+  // Reset selections when dialog opens or when available equipment changes
   useEffect(() => {
     setSelectedEquipment({});
   }, [open, availableEquipment]);
@@ -42,30 +43,34 @@ export function EquipmentSelectionDialog({
   const handleConfirm = async () => {
     if (!bookingId || Object.keys(selectedEquipment).length === 0) return;
 
-    const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
-      booking_id: bookingId,
-      equipment_id: id,
-      quantity
-    }));
+    try {
+      const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
+        booking_id: bookingId,
+        equipment_id: id,
+        quantity
+      }));
 
-    const { error } = await supabase
-      .from('booking_equipment')
-      .insert(equipmentToAdd);
+      const { error } = await supabase
+        .from('booking_equipment')
+        .insert(equipmentToAdd);
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Equipamentos reservados com sucesso!"
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Erro ao reservar equipamentos:", error);
       toast({
         title: "Erro",
         description: "Não foi possível reservar os equipamentos.",
         variant: "destructive"
       });
-      return;
     }
-
-    toast({
-      title: "Sucesso",
-      description: "Equipamentos reservados com sucesso!"
-    });
-    onOpenChange(false);
   };
 
   return (
@@ -86,14 +91,14 @@ export function EquipmentSelectionDialog({
               availableEquipment.map((equipment) => (
                 <div 
                   key={equipment.id} 
-                  className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${equipment.available === 0 ? 'opacity-70 bg-gray-50' : ''}`}
+                  className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${equipment.available === 0 ? 'opacity-60 bg-gray-100' : ''}`}
                 >
                   <div>
                     <h4 className="font-medium">{equipment.name}</h4>
                     {equipment.description && (
                       <p className="text-sm text-muted-foreground">{equipment.description}</p>
                     )}
-                    <p className={`text-sm ${equipment.available === 0 ? 'text-red-500 font-medium' : ''}`}>
+                    <p className={`text-sm ${equipment.available === 0 ? 'text-red-500 font-semibold' : ''}`}>
                       Disponíveis: {equipment.available}
                     </p>
                   </div>
@@ -117,7 +122,7 @@ export function EquipmentSelectionDialog({
                         equipment.id,
                         Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
                       )}
-                      disabled={equipment.available === 0 || selectedEquipment[equipment.id] === equipment.available}
+                      disabled={equipment.available === 0 || (selectedEquipment[equipment.id] || 0) >= equipment.available}
                     >
                       +
                     </Button>
