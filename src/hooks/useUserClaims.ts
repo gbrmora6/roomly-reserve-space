@@ -43,8 +43,8 @@ export function useUserClaims() {
       // Get user email from auth.users through profile data
       const userEmail = session.user.email;
       
-      // Check if user is superAdmin (admin@example.com)
-      const isSuperAdmin = userEmail === "admin@example.com";
+      // Check if user is superAdmin
+      const isSuperAdmin = userEmail === "admin@example.com" || userEmail === "cpd@sapiens-psi.com.br";
       
       // Only update if there's a mismatch or missing data
       const isAdmin = profile.role === 'admin';

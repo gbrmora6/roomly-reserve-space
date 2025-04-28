@@ -33,9 +33,10 @@ export function useSessionManager() {
                 .single();
               
               if (profile?.role) {
-                // Check if user is superAdmin (admin@example.com)
+                // Check if user is superAdmin
                 const isAdmin = profile.role === 'admin';
-                const isSuperAdmin = currentSession.user.email === "admin@example.com";
+                const isSuperAdmin = currentSession.user.email === "admin@example.com" || 
+                                    currentSession.user.email === "cpd@sapiens-psi.com.br";
                 
                 // Check if claims need updating before making an API call
                 const currentIsAdmin = currentSession.user.user_metadata?.is_admin === true;

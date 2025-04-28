@@ -34,7 +34,8 @@ export function useAuthOperations() {
             console.error("Error fetching user profile:", profileError);
           } else if (profile?.role) {
             const isAdmin = profile.role === 'admin';
-            const isSuperAdmin = data.user.email === "admin@example.com";
+            const isSuperAdmin = data.user.email === "admin@example.com" || 
+                                data.user.email === "cpd@sapiens-psi.com.br";
             
             const { error: updateError } = await supabase.auth.updateUser({
               data: { 
@@ -82,6 +83,9 @@ export function useAuthOperations() {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      // Verificar se o email é um dos superadmins
+      const isSuperAdmin = email === "admin@example.com" || email === "cpd@sapiens-psi.com.br";
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -89,9 +93,9 @@ export function useAuthOperations() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: "client",
-            is_admin: false,
-            is_super_admin: email === "admin@example.com"
+            role: isSuperAdmin ? "admin" : "client",
+            is_admin: isSuperAdmin,
+            is_super_admin: isSuperAdmin
           },
         },
       });
@@ -109,6 +113,48 @@ export function useAuthOperations() {
         title: "Erro ao criar conta",
         description: error.message,
       });
+    }
+  };
+
+  const createSuperAdmin = async () => {
+    try {
+      const email = "cpd@sapiens-psi.com.br";
+      const password = "123456789";
+      const firstName = "Super";
+      const lastName = "Admin";
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            role: "admin",
+            is_admin: true,
+            is_super_admin: true
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Usuário SuperAdmin criado!",
+        description: `Conta para ${email} foi criada com sucesso.`,
+      });
+      
+      return data;
+    } catch (error: any) {
+      console.error("Error creating superadmin:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar SuperAdmin",
+        description: error.message,
+      });
+      throw error;
     }
   };
 
@@ -130,5 +176,5 @@ export function useAuthOperations() {
     }
   };
 
-  return { signIn, signUp, signOut };
+  return { signIn, signUp, signOut, createSuperAdmin };
 }

@@ -24,6 +24,7 @@ import AdminLayout from "./components/layout/AdminLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import MyAccount from "./pages/client/MyAccount";
 import MyBookings from "./pages/client/MyBookings";
+import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 
 // Create a new QueryClient instance outside of the component
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/rooms" element={<RoomList />} />
               <Route path="/equipment" element={<EquipmentList />} />
+              <Route path="/create-superadmin" element={<CreateSuperAdmin />} />
               
               {/* Client Routes */}
               <Route path="/my-account" element={
