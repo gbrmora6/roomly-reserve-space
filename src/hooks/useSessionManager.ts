@@ -37,9 +37,7 @@ export function useSessionManager() {
               setUser(updatedUser);
               
               const { data, error } = await supabase.auth.updateUser({
-                data: { 
-                  role: profile.role
-                }
+                data: { role: profile.role }
               });
               
               if (error) {
@@ -47,7 +45,6 @@ export function useSessionManager() {
               } else if (data?.user) {
                 console.log("Auth state change: claims updated with role", data.user.user_metadata);
                 setUser(data.user);
-                
                 await supabase.auth.refreshSession();
               }
             } else {
@@ -87,9 +84,7 @@ export function useSessionManager() {
             setUser(updatedUser);
             
             const { data, error } = await supabase.auth.updateUser({
-              data: { 
-                role: profile.role
-              }
+              data: { role: profile.role }
             });
             
             if (error) {
