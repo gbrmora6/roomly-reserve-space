@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Equipment {
   id: string;
@@ -17,10 +18,13 @@ interface Equipment {
 }
 
 const AdminEquipment: React.FC = () => {
-  // Add debugging for component mounting
+  const { refreshUserClaims } = useAuth();
+  
+  // Add debugging for component mounting and refresh admin claims
   useEffect(() => {
     console.log("AdminEquipment component mounted");
-  }, []);
+    refreshUserClaims();
+  }, [refreshUserClaims]);
 
   const { data: equipment, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["equipment"],

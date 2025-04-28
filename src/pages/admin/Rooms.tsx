@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { Plus, Pencil, Trash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Room {
   id: string;
@@ -20,10 +21,13 @@ interface Room {
 }
 
 const AdminRooms: React.FC = () => {
-  // Add debugging for component mounting
+  const { refreshUserClaims } = useAuth();
+  
+  // Add debugging for component mounting and refresh admin claims
   useEffect(() => {
     console.log("AdminRooms component mounted");
-  }, []);
+    refreshUserClaims();
+  }, [refreshUserClaims]);
 
   const { data: rooms, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["rooms"],

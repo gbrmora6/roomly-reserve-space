@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
 
   // Enhanced debugging
@@ -24,10 +24,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           metadata: user.user_metadata,
           role: user.user_metadata?.role || "not set" 
         });
+        
+        // For admin routes, refresh the user claims to ensure latest admin status
+        if (requiredRole === "admin") {
+          refreshUserClaims();
+        }
+        
         console.log("ProtectedRoute - Required role:", requiredRole);
       }
     }
-  }, [user, loading, requiredRole]);
+  }, [user, loading, requiredRole, refreshUserClaims]);
 
   // Show improved loading state
   if (loading) {
@@ -52,15 +58,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   // Check role requirements
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
+    const isAdmin = userRole === 'admin' || (user.user_metadata?.is_admin === true);
     
     console.log("Verificando permissões:", { 
       userRole, 
       requiredRole, 
-      isAdmin: userRole === 'admin',
+      isAdmin,
+      is_admin_claim: user.user_metadata?.is_admin,
       metadata: user.user_metadata
     });
     
-    if (userRole !== requiredRole) {
+    if (requiredRole === "admin" && !isAdmin) {
+      console.error(`Access denied: User has role ${userRole}, but page requires admin`);
+      
+      toast({
+        variant: "destructive",
+        title: "Acesso restrito",
+        description: `Você não tem permissão para acessar esta área. Acesso restrito para administradores.`,
+      });
+      return <Navigate to="/" replace />;
+    } else if (requiredRole !== "admin" && requiredRole !== userRole) {
       console.error(`Access denied: User has role ${userRole}, but page requires ${requiredRole}`);
       
       toast({

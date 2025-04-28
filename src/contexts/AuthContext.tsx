@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
+
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
+  refreshUserClaims: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,42 +23,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const refreshUserClaims = useCallback(async () => {
+    if (!session?.user) return;
+    
+    try {
+      console.log("Refreshing user claims...");
+      
+      // Fetch current user profile from the database
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching user profile for claims refresh:", profileError);
+        return;
+      }
+      
+      if (profile?.role === 'admin') {
+        console.log("Updating admin claims for user");
+        
+        // Update user metadata with admin role and is_admin flag
+        const { data, error: updateError } = await supabase.auth.updateUser({
+          data: { 
+            role: 'admin',
+            is_admin: true
+          }
+        });
+        
+        if (updateError) {
+          console.error("Error updating admin claims:", updateError);
+          return;
+        }
+        
+        if (data?.user) {
+          console.log("Admin claims updated successfully:", data.user.user_metadata);
+          setUser(data.user);
+        }
+      }
+    } catch (err) {
+      console.error("Error in refreshUserClaims:", err);
+    }
+  }, [session]);
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, currentSession) => {
         console.log("Auth state changed:", event);
-        setSession(session);
+        setSession(currentSession);
         
-        if (session?.user) {
-          console.log("User metadata from session:", session.user.user_metadata);
+        if (currentSession?.user) {
+          console.log("User metadata from session:", currentSession.user.user_metadata);
           
           try {
-            // Sempre verificar o perfil no banco de dados para garantir informações atualizadas
+            // Always check the profile in database to ensure updated information
             const { data: profile } = await supabase
               .from('profiles')
               .select('role')
-              .eq('id', session.user.id)
+              .eq('id', currentSession.user.id)
               .single();
             
             if (profile?.role) {
               console.log("Role from profile database:", profile.role);
               
-              // Atualizar os metadados do usuário com a role do perfil
+              // Update user metadata with the profile role
               const updatedUser = {
-                ...session.user,
+                ...currentSession.user,
                 user_metadata: {
-                  ...session.user.user_metadata,
+                  ...currentSession.user.user_metadata,
                   role: profile.role
                 }
               };
               setUser(updatedUser);
               
-              // Atualizar os claims JWT para incluir a flag is_admin se o usuário for administrador
+              // Update JWT claims for admin users immediately
               if (profile.role === 'admin') {
                 try {
-                  // Aqui você pode adicionar console.log para depuração
-                  console.log("Atualizando claims para admin user");
+                  console.log("Updating claims for admin user");
                   const { error: updateError } = await supabase.auth.updateUser({
                     data: { 
                       is_admin: true,
@@ -68,17 +113,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     console.error("Error updating admin claims:", updateError);
                   } else {
                     console.log("Admin claims updated successfully");
+                    
+                    // Force refresh user data after updating claims
+                    const { data } = await supabase.auth.getUser();
+                    if (data?.user) {
+                      setUser(data.user);
+                    }
                   }
                 } catch (err) {
                   console.error("Error in admin claims update:", err);
                 }
               }
             } else {
-              setUser(session.user);
+              setUser(currentSession.user);
             }
           } catch (error) {
             console.error("Error fetching user profile:", error);
-            setUser(session.user);
+            setUser(currentSession.user);
           }
         } else {
           setUser(null);
@@ -89,37 +140,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      setSession(currentSession);
       
-      if (session?.user) {
-        console.log("Initial user metadata:", session.user.user_metadata);
+      if (currentSession?.user) {
+        console.log("Initial user metadata:", currentSession.user.user_metadata);
         
         try {
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', session.user.id)
+            .eq('id', currentSession.user.id)
             .single();
           
           if (profile?.role) {
             console.log("Initial role from profile:", profile.role);
             
-            // Atualizar os metadados do usuário com a role do perfil
+            // Update user metadata with the profile role
             const updatedUser = {
-              ...session.user,
+              ...currentSession.user,
               user_metadata: {
-                ...session.user.user_metadata,
+                ...currentSession.user.user_metadata,
                 role: profile.role
               }
             };
             setUser(updatedUser);
             
-            // Atualizar os claims JWT para incluir a flag is_admin se o usuário for administrador
+            // Update JWT claims for admin users
             if (profile.role === 'admin') {
               try {
                 console.log("Initial setup: Updating admin claims");
-                const { error: updateError } = await supabase.auth.updateUser({
+                const { data, error: updateError } = await supabase.auth.updateUser({
                   data: { 
                     is_admin: true,
                     role: 'admin'
@@ -129,18 +180,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (updateError) {
                   console.error("Error updating initial admin claims:", updateError);
                 } else {
-                  console.log("Initial admin claims updated successfully");
+                  console.log("Initial admin claims updated successfully", data?.user?.user_metadata);
+                  
+                  if (data?.user) {
+                    setUser(data.user);
+                  }
+                  
+                  // Force token refresh
+                  await supabase.auth.refreshSession();
                 }
               } catch (err) {
                 console.error("Error in initial admin claims update:", err);
               }
             }
           } else {
-            setUser(session.user);
+            setUser(currentSession.user);
           }
         } catch (error) {
           console.error("Error fetching initial user profile:", error);
-          setUser(session.user);
+          setUser(currentSession.user);
         }
       } else {
         setUser(null);
@@ -231,7 +289,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signUp, signOut, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      signIn, 
+      signUp, 
+      signOut, 
+      loading, 
+      refreshUserClaims 
+    }}>
       {children}
     </AuthContext.Provider>
   );
