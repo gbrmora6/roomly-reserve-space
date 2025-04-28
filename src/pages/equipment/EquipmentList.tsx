@@ -11,6 +11,7 @@ import { EquipmentFilters } from "@/components/equipment/EquipmentFilters";
 import { EquipmentsGrid } from "@/components/equipment/EquipmentsGrid";
 import { ReserveEquipmentForm } from "@/components/equipment/ReserveEquipmentForm";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { format } from "date-fns";
 
 interface Equipment {
   id: string;
@@ -18,6 +19,9 @@ interface Equipment {
   description: string | null;
   quantity: number;
   price_per_hour: number;
+  open_time?: string;
+  close_time?: string;
+  open_days?: string[];
 }
 
 const EquipmentList: React.FC = () => {
@@ -64,10 +68,14 @@ const EquipmentList: React.FC = () => {
         const [endHours, endMinutes] = filters.endTime.split(':');
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
-        // Get all equipment
+        // Get weekday from date (monday, tuesday, etc.)
+        const weekday = format(filters.date, "EEEE", { locale: { code: "en" } }).toLowerCase();
+
+        // Get all equipment with matching weekday in open_days
         const { data: allEquipments, error: equipmentsError } = await supabase
           .from('equipment')
           .select('*')
+          .contains('open_days', [weekday])
           .order('name');
 
         if (equipmentsError) throw equipmentsError;
@@ -102,7 +110,7 @@ const EquipmentList: React.FC = () => {
           }
         });
 
-        // Filter out equipment with no available quantity
+        // Filter equipment for availability
         const availableEquipments = allEquipments.map(equipment => ({
           ...equipment,
           available: equipment.quantity - (bookedQuantities[equipment.id] || 0)
@@ -111,7 +119,7 @@ const EquipmentList: React.FC = () => {
         return availableEquipments;
       }
 
-      // If no filters, just get all equipment
+      // If no filters, get all equipment
       const { data, error } = await supabase
         .from('equipment')
         .select('*')

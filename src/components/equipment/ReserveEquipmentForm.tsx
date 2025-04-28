@@ -1,32 +1,16 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useAuth } from "@/contexts/AuthContext";
-import { CalendarIcon, Clock } from "lucide-react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { format, setHours, setMinutes } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 interface Equipment {
@@ -35,6 +19,9 @@ interface Equipment {
   description: string | null;
   quantity: number;
   price_per_hour: number;
+  open_time?: string;
+  close_time?: string;
+  open_days?: string[];
 }
 
 interface ReserveEquipmentFormProps {
@@ -47,89 +34,117 @@ interface ReserveEquipmentFormProps {
   };
 }
 
-const formSchema = z.object({
-  date: z.date({
-    required_error: "A data é obrigatória.",
-  }),
-  startTime: z.string().min(1, "O horário de início é obrigatório."),
-  endTime: z.string().min(1, "O horário de término é obrigatório."),
-  quantity: z.number().min(1, "A quantidade deve ser pelo menos 1"),
-});
-
 export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   equipment,
   onClose,
   filters,
 }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const endTimeRef = useRef<HTMLButtonElement>(null);
-  
+  const [selectedDate, setSelectedDate] = useState<Date | null>(filters?.date || null);
+  const [startHour, setStartHour] = useState<string>(filters?.startTime || "");
+  const [endHour, setEndHour] = useState<string>(filters?.endTime || "");
+  const [quantity, setQuantity] = useState<number>(1);
   const [bookingTotal, setBookingTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const startHourRef = useRef<HTMLDivElement>(null);
+  const endHourRef = useRef<HTMLDivElement>(null);
+  
+  // Generate available hours based on equipment settings
+  const getAvailableHours = () => {
+    if (!equipment.open_time || !equipment.close_time) {
+      return Array.from({ length: 16 }, (_, i) => {
+        const hour = i + 7;
+        return `${hour.toString().padStart(2, '0')}:00`;
+      });
+    }
 
-  // Generate hours from 7:00 to 22:00 for time selection
-  const hours = Array.from({ length: 16 }, (_, i) => {
-    const hour = i + 7;
-    return `${hour.toString().padStart(2, '0')}:00`;
-  });
+    const startHour = parseInt(equipment.open_time.split(":")[0]);
+    const endHour = parseInt(equipment.close_time.split(":")[0]);
+    
+    return Array.from({ length: endHour - startHour }, (_, i) => {
+      const hour = i + startHour;
+      return `${hour.toString().padStart(2, '0')}:00`;
+    });
+  };
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      date: filters?.date || undefined,
-      startTime: filters?.startTime || "",
-      endTime: filters?.endTime || "",
-      quantity: 1,
-    },
-  });
-
-  const watchDate = form.watch("date");
-  const watchStartTime = form.watch("startTime");
-  const watchEndTime = form.watch("endTime");
-  const watchQuantity = form.watch("quantity");
+  const availableHours = getAvailableHours();
 
   // Calculate booking price when relevant fields change
-  useEffect(() => {
-    if (watchDate && watchStartTime && watchEndTime && watchQuantity) {
+  React.useEffect(() => {
+    if (selectedDate && startHour && endHour && quantity) {
       // Calculate duration in hours
-      const startParts = watchStartTime.split(":");
-      const endParts = watchEndTime.split(":");
+      const startParts = startHour.split(":");
+      const endParts = endHour.split(":");
       
-      const startHours = parseInt(startParts[0]);
-      const startMinutes = parseInt(startParts[1]);
-      const endHours = parseInt(endParts[0]);
-      const endMinutes = parseInt(endParts[1]);
+      const startHourNum = parseInt(startParts[0]);
+      const endHourNum = parseInt(endParts[0]);
       
-      // Calculate total minutes and convert to hours
-      const startTotalMinutes = startHours * 60 + startMinutes;
-      const endTotalMinutes = endHours * 60 + endMinutes;
-      let durationHours = (endTotalMinutes - startTotalMinutes) / 60;
+      let durationHours = endHourNum - startHourNum;
       
       if (durationHours <= 0) {
         durationHours = 0;
       }
       
       // Calculate total price
-      const total = equipment.price_per_hour * durationHours * watchQuantity;
+      const total = equipment.price_per_hour * durationHours * quantity;
       setBookingTotal(total);
     }
-  }, [watchDate, watchStartTime, watchEndTime, watchQuantity, equipment.price_per_hour]);
+  }, [selectedDate, startHour, endHour, quantity, equipment.price_per_hour]);
 
-  // Scroll to end time selector when start time is selected
-  useEffect(() => {
-    if (watchStartTime && endTimeRef.current) {
-      endTimeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Scroll to sections when selections are made
+  React.useEffect(() => {
+    if (selectedDate && !startHour) {
+      setTimeout(() => startHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
-  }, [watchStartTime]);
+  }, [selectedDate]);
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  React.useEffect(() => {
+    if (startHour) {
+      setTimeout(() => endHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  }, [startHour]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setStartHour("");
+      setEndHour("");
+    }
+  };
+
+  const handleStartHourSelect = (hour: string) => {
+    setStartHour(hour);
+    setEndHour("");
+  };
+
+  const isDateDisabled = (date: Date) => {
+    if (!equipment.open_days || equipment.open_days.length === 0) {
+      return false;
+    }
+    
+    const weekday = format(date, "eeee", { locale: ptBR }).toLowerCase();
+    const weekdayEnglish = {
+      'segunda-feira': 'monday',
+      'terça-feira': 'tuesday',
+      'quarta-feira': 'wednesday',
+      'quinta-feira': 'thursday',
+      'sexta-feira': 'friday',
+      'sábado': 'saturday',
+      'domingo': 'sunday'
+    }[weekday] || weekday;
+    
+    return !equipment.open_days.includes(weekdayEnglish);
+  };
+
+  const handleSubmit = async () => {
     if (!user) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para fazer uma reserva",
-        variant: "destructive",
-      });
+      toast.error("Você precisa estar logado para fazer uma reserva");
+      return;
+    }
+
+    if (!selectedDate || !startHour || !endHour) {
+      toast.error("Por favor, selecione data e horários");
       return;
     }
 
@@ -137,14 +152,18 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
 
     try {
       // Create date objects for start and end times
-      const startDate = new Date(data.date);
-      const endDate = new Date(data.date);
+      const startDate = new Date(selectedDate);
+      const endDate = new Date(selectedDate);
       
-      const [startHours, startMinutes] = data.startTime.split(":");
-      const [endHours, endMinutes] = data.endTime.split(":");
+      const [startHours, startMinutes] = startHour.split(":");
+      const [endHours, endMinutes] = endHour.split(":");
       
       startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
       endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+
+      // Convert times to UTC-3
+      const utcStartTime = setHours(startDate, startDate.getHours() - 3);
+      const utcEndTime = setHours(endDate, endDate.getHours() - 3);
 
       // Create booking first
       const { data: booking, error: bookingError } = await supabase
@@ -152,8 +171,8 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
         .insert({
           user_id: user.id,
           room_id: null, // No room for equipment-only booking
-          start_time: startDate.toISOString(),
-          end_time: endDate.toISOString(),
+          start_time: utcStartTime.toISOString(),
+          end_time: utcEndTime.toISOString(),
           status: "pending",
         })
         .select()
@@ -161,225 +180,142 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
 
       if (bookingError) throw bookingError;
 
-      // Then create equipment booking with all required fields
+      // Then create equipment booking
       const { error: equipmentError } = await supabase
         .from("booking_equipment")
         .insert({
           booking_id: booking.id,
           equipment_id: equipment.id,
-          quantity: data.quantity,
+          quantity: quantity,
           user_id: user.id,
-          start_time: startDate.toISOString(),
-          end_time: endDate.toISOString(),
+          start_time: utcStartTime.toISOString(),
+          end_time: utcEndTime.toISOString(),
           status: "pending",
         });
 
       if (equipmentError) throw equipmentError;
 
-      toast({
-        title: "Reserva realizada com sucesso!",
-        description: "Sua reserva foi enviada para aprovação.",
-      });
-
+      toast.success("Reserva realizada com sucesso!");
       onClose();
     } catch (error: any) {
-      toast({
-        title: "Erro ao fazer reserva",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`Erro ao fazer reserva: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="mb-4 pb-4 border-b">
-          <h3 className="font-semibold text-lg">{equipment.name}</h3>
-          {equipment.description && (
-            <p className="text-sm text-muted-foreground">{equipment.description}</p>
-          )}
-          <p className="text-sm mt-2">
-            <span className="font-medium">Preço:</span> {formatCurrency(equipment.price_per_hour)} / hora
-          </p>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Data</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
-                      ) : (
-                        <span>Selecione uma data</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    locale={ptBR}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Horário de início</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                        disabled={!form.getValues("date")}
-                      >
-                        {field.value ? (
-                          field.value
-                        ) : (
-                          <span>Selecione o horário</span>
-                        )}
-                        <Clock className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <div className="p-3">
-                      <TimeSelector
-                        hours={hours}
-                        blockedHours={[]}
-                        selectedHour={field.value}
-                        onSelectHour={(time) => field.onChange(time)}
-                      />
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="endTime"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Horário de término</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild ref={endTimeRef}>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                        disabled={!form.getValues("startTime")}
-                      >
-                        {field.value ? (
-                          field.value
-                        ) : (
-                          <span>Selecione o horário</span>
-                        )}
-                        <Clock className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <div className="p-3">
-                      <TimeSelector
-                        hours={hours}
-                        blockedHours={[]}
-                        selectedHour={field.value}
-                        onSelectHour={(time) => field.onChange(time)}
-                        isEndTime
-                        startHour={form.getValues("startTime")}
-                      />
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="quantity"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Quantidade</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min="1"
-                  max={equipment.quantity}
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {bookingTotal > 0 && (
-          <div className="p-4 bg-blue-50 rounded-md text-center">
-            <p className="text-sm text-gray-500">Valor total da reserva</p>
-            <p className="text-xl font-bold text-primary">
-              {formatCurrency(bookingTotal)}
-            </p>
+    <Card className="w-full max-w-xl mx-auto">
+      <CardHeader className="sticky top-0 z-10 bg-card border-b">
+        <CardTitle className="text-2xl font-bold text-primary">
+          Reservar {equipment.name}
+        </CardTitle>
+      </CardHeader>
+      <ScrollArea className="h-[80vh] overflow-auto">
+        <CardContent className="space-y-6 p-6">
+          <div className="bg-card rounded-lg p-4 shadow-sm">
+            <h3 className="text-lg font-medium mb-3">Selecione uma data</h3>
+            <Calendar
+              mode="single"
+              selected={selectedDate!}
+              onSelect={handleDateSelect}
+              className="rounded-md border pointer-events-auto mx-auto"
+              disabled={isDateDisabled}
+              locale={ptBR}
+            />
           </div>
-        )}
 
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Processando..." : "Confirmar Reserva"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          {selectedDate && availableHours.length > 0 && (
+            <div className="space-y-4">
+              <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
+                <h3 className="text-lg font-medium mb-3">Horário de início</h3>
+                <TimeSelector
+                  hours={availableHours}
+                  blockedHours={[]}
+                  selectedHour={startHour}
+                  onSelectHour={handleStartHourSelect}
+                />
+              </div>
+
+              {startHour && (
+                <div ref={endHourRef} className="bg-card rounded-lg p-4 shadow-sm">
+                  <h3 className="text-lg font-medium mb-3">Horário de término</h3>
+                  <TimeSelector
+                    hours={availableHours}
+                    blockedHours={[]}
+                    selectedHour={endHour}
+                    onSelectHour={setEndHour}
+                    isEndTime
+                    startHour={startHour}
+                  />
+                </div>
+              )}
+
+              {endHour && (
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <h3 className="text-lg font-medium mb-3">Quantidade</h3>
+                  <div className="flex items-center gap-2 justify-center">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </Button>
+                    <span className="w-8 text-center font-medium">{quantity}</span>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setQuantity(prev => Math.min(equipment.quantity, prev + 1))}
+                      disabled={quantity >= equipment.quantity}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {endHour && bookingTotal > 0 && (
+                <div className="bg-card rounded-lg p-4 shadow-sm text-center">
+                  <h3 className="text-lg font-medium mb-2">Resumo da reserva</h3>
+                  <p className="text-sm text-gray-500">Valor total da reserva</p>
+                  <p className="text-xl font-bold text-primary">
+                    {formatCurrency(bookingTotal)}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedDate && availableHours.length === 0 && (
+            <div className="text-center py-6">
+              <p className="text-red-500 font-medium">
+                Nenhum horário disponível para este equipamento.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-32"
+            >
+              Cancelar
+            </Button>
+            {startHour && endHour && (
+              <Button
+                onClick={handleSubmit}
+                disabled={!selectedDate || !startHour || !endHour || isSubmitting}
+                className="w-32"
+              >
+                {isSubmitting ? "Reservando..." : "Confirmar"}
+              </Button>
+            )}
+          </DialogFooter>
+        </CardContent>
+      </ScrollArea>
+    </Card>
   );
 };

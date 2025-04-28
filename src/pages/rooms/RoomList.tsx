@@ -10,6 +10,7 @@ import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Room } from "@/types/room";
 import { useAuth } from "@/contexts/AuthContext";
 import { roomService } from "@/services/roomService";
+import { format } from "date-fns";
 
 const RoomList: React.FC = () => {
   const { user } = useAuth();
@@ -55,19 +56,11 @@ const RoomList: React.FC = () => {
         const [endHours, endMinutes] = filters.endTime.split(':');
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
-        const { data: bookedRooms, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('room_id')
-          .gte('end_time', startDateTime.toISOString())
-          .lte('start_time', endDateTime.toISOString())
-          .eq('status', 'confirmed')  // Only consider confirmed bookings, not cancelled ones
-          .or('status.eq.pending');   // Also include pending bookings as they might get confirmed
+        // Get weekday from date (monday, tuesday, etc.)
+        const weekday = format(filters.date, "EEEE", { locale: { code: "en" } }).toLowerCase();
 
-        if (bookingsError) throw bookingsError;
-
-        const bookedRoomIds = bookedRooms.map(booking => booking.room_id);
-
-        const { data: availableRooms, error: roomsError } = await supabase
+        // Get all rooms with matching weekday in open_days
+        const { data: allRooms, error: roomsError } = await supabase
           .from('rooms')
           .select(`
             *,
@@ -76,10 +69,26 @@ const RoomList: React.FC = () => {
               url
             )
           `)
-          .not('id', 'in', `(${bookedRoomIds.join(',')})`)
+          .contains('open_days', [weekday])
           .order('name');
 
         if (roomsError) throw roomsError;
+
+        // Get bookings that overlap with the selected time
+        const { data: bookedRooms, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('room_id')
+          .not('status', 'eq', 'cancelled')
+          .gte('end_time', startDateTime.toISOString())
+          .lte('start_time', endDateTime.toISOString());
+
+        if (bookingsError) throw bookingsError;
+
+        const bookedRoomIds = bookedRooms.map(booking => booking.room_id);
+
+        // Filter out booked rooms
+        const availableRooms = allRooms.filter(room => !bookedRoomIds.includes(room.id));
+
         return availableRooms as unknown as Room[];
       }
 
