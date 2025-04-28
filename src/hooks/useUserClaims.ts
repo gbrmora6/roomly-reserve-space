@@ -12,18 +12,48 @@ export function useUserClaims() {
         return;
       }
       
-      // Check if user already has the proper JWT claims
-      const currentRole = session.user.user_metadata?.role;
-      const currentIsAdmin = !!session.user.user_metadata?.is_admin;
-      const currentIsSuperAdmin = !!session.user.user_metadata?.is_super_admin;
+      // First check if user is one of the superadmins by email
+      const userEmail = session.user.email;
+      const isSuperAdmin = 
+        userEmail === "admin@example.com" || 
+        userEmail === "cpd@sapiens-psi.com.br";
       
-      console.log("Current user metadata:", {
-        role: currentRole,
-        is_admin: currentIsAdmin,
-        is_super_admin: currentIsSuperAdmin
-      });
+      // Force admin status for superadmins
+      if (isSuperAdmin) {
+        console.log("SuperAdmin detected by email, setting admin privileges");
+        
+        const { data, error: updateError } = await supabase.auth.updateUser({
+          data: { 
+            role: "admin",
+            is_admin: true,
+            is_super_admin: true
+          }
+        });
+        
+        if (updateError) {
+          console.error("Error updating superadmin claims:", updateError);
+          return;
+        }
+        
+        if (data?.user) {
+          console.log("SuperAdmin claims updated successfully:", data.user.user_metadata);
+          
+          // Refresh session to update JWT claims
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.error("Error refreshing session after superadmin claims update:", refreshError);
+          } else {
+            console.log("Session refreshed with new superadmin JWT claims");
+          }
+        }
+        
+        return;
+      }
       
-      // Only fetch profile if we don't have role info or need to verify it
+      // For regular users, check if we need to update based on profile
+      console.log("Current user metadata:", session.user.user_metadata);
+      
+      // Fetch profile data to verify role
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -40,14 +70,13 @@ export function useUserClaims() {
         return;
       }
 
-      // Get user email from auth.users through profile data
-      const userEmail = session.user.email;
-      
-      // Check if user is superAdmin
-      const isSuperAdmin = userEmail === "admin@example.com" || userEmail === "cpd@sapiens-psi.com.br";
-      
-      // Only update if there's a mismatch or missing data
+      // Check if user role has changed or admin status needs updating
+      const currentRole = session.user.user_metadata?.role;
       const isAdmin = profile.role === 'admin';
+      const currentIsAdmin = session.user.user_metadata?.is_admin === true;
+      const currentIsSuperAdmin = session.user.user_metadata?.is_super_admin === true;
+      
+      // Only update if there's a mismatch
       if (currentRole === profile.role && currentIsAdmin === isAdmin && currentIsSuperAdmin === isSuperAdmin) {
         console.log("User claims already up to date, skipping update");
         return;

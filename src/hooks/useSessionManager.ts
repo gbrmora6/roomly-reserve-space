@@ -21,11 +21,48 @@ export function useSessionManager() {
           setLoading(false);
         }
         
-        // If we have a session and user, fetch the role from profiles
-        // but use setTimeout to avoid potential deadlocks with Supabase client
-        if (currentSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // If we have a session and user, check for special admin emails
+        if (currentSession?.user) {
+          // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
             try {
+              const userEmail = currentSession.user.email;
+              
+              // Check if this is one of our special admin emails
+              const isSuperAdmin = 
+                userEmail === "admin@example.com" || 
+                userEmail === "cpd@sapiens-psi.com.br";
+                
+              if (isSuperAdmin) {
+                console.log("Special admin account detected:", userEmail);
+                
+                // Force admin privileges for these accounts
+                const { data, error } = await supabase.auth.updateUser({
+                  data: { 
+                    role: "admin",
+                    is_admin: true,
+                    is_super_admin: true
+                  }
+                });
+                
+                if (error) {
+                  console.error("Error updating admin claims:", error);
+                } else if (data?.user) {
+                  console.log("Admin claims set:", data.user.user_metadata);
+                  setUser(data.user);
+                  
+                  // Refresh session
+                  const { error: refreshError } = await supabase.auth.refreshSession();
+                  if (refreshError) {
+                    console.error("Error refreshing session:", refreshError);
+                  }
+                }
+                
+                setLoading(false);
+                return;
+              }
+              
+              // For non-admin users, fetch the role from profiles
               const { data: profile } = await supabase
                 .from('profiles')
                 .select('role')
@@ -33,30 +70,19 @@ export function useSessionManager() {
                 .single();
               
               if (profile?.role) {
-                // Check if user is superAdmin
+                // Check if claims need updating
                 const isAdmin = profile.role === 'admin';
-                const isSuperAdmin = currentSession.user.email === "admin@example.com" || 
-                                    currentSession.user.email === "cpd@sapiens-psi.com.br";
-                
-                // Check if claims need updating before making an API call
-                const currentIsAdmin = currentSession.user.user_metadata?.is_admin === true;
-                const currentIsSuperAdmin = currentSession.user.user_metadata?.is_super_admin === true;
-                const currentRole = currentSession.user.user_metadata?.role;
-                
-                const needsUpdate = currentRole !== profile.role || 
-                                   currentIsAdmin !== isAdmin || 
-                                   currentIsSuperAdmin !== isSuperAdmin;
+                const needsUpdate = 
+                  currentSession.user.user_metadata?.role !== profile.role || 
+                  currentSession.user.user_metadata?.is_admin !== isAdmin;
                 
                 if (needsUpdate) {
-                  console.log("Updating user JWT claims with role:", profile.role, 
-                             "isAdmin:", isAdmin,
-                             "isSuperAdmin:", isSuperAdmin);
+                  console.log("Updating user JWT claims with role:", profile.role, "isAdmin:", isAdmin);
                   
                   const { data, error } = await supabase.auth.updateUser({
                     data: { 
                       role: profile.role, 
-                      is_admin: isAdmin,
-                      is_super_admin: isSuperAdmin 
+                      is_admin: isAdmin
                     }
                   });
                   
@@ -72,12 +98,10 @@ export function useSessionManager() {
                       console.error("Error refreshing session:", refreshError);
                     }
                   }
-                } else {
-                  console.log("User claims already match profile role, skipping update");
                 }
               }
             } catch (error) {
-              console.error("Error fetching user profile:", error);
+              console.error("Error processing user session:", error);
             } finally {
               setLoading(false);
             }

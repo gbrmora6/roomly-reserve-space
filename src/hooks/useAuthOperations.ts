@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -21,51 +20,82 @@ export function useAuthOperations() {
       
       console.log("Login successful, user:", data?.user?.id);
       
-      // Get profile role and update user JWT claims
+      // Check if this is a special admin account
       if (data?.user) {
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-            
-          if (profileError) {
-            console.error("Error fetching user profile:", profileError);
-          } else if (profile?.role) {
-            const isAdmin = profile.role === 'admin';
-            const isSuperAdmin = data.user.email === "admin@example.com" || 
-                                data.user.email === "cpd@sapiens-psi.com.br";
-            
+        const isSuperAdmin = 
+          data.user.email === "admin@example.com" || 
+          data.user.email === "cpd@sapiens-psi.com.br";
+        
+        if (isSuperAdmin) {
+          console.log("Special admin account detected, setting full admin privileges");
+          
+          try {
             const { error: updateError } = await supabase.auth.updateUser({
-              data: { 
-                role: profile.role,
-                is_admin: isAdmin,
-                is_super_admin: isSuperAdmin
+              data: {
+                role: "admin",
+                is_admin: true,
+                is_super_admin: true
               }
             });
             
             if (updateError) {
-              console.error("Error updating user claims:", updateError);
+              console.error("Error setting admin privileges:", updateError);
             } else {
-              console.log("Updated user JWT claims with role:", profile.role, 
-                         "is_admin:", isAdmin,
-                         "is_super_admin:", isSuperAdmin);
+              console.log("Admin privileges successfully set for", data.user.email);
               
-              // Explicitly refresh the session to update JWT with new claims
+              // Force refresh the session
               const { error: refreshError } = await supabase.auth.refreshSession();
               if (refreshError) {
-                console.error("Error refreshing session:", refreshError);
+                console.error("Error refreshing session after admin privileges update:", refreshError);
               } else {
-                console.log("Session refreshed with new claims");
+                console.log("Session refreshed with admin privileges");
               }
             }
+          } catch (adminError) {
+            console.error("Error in admin privileges update:", adminError);
           }
-        } catch (profileError) {
-          console.error("Error in profile update process:", profileError);
+        } else {
+          // For non-admin users, get profile role
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', data.user.id)
+              .single();
+              
+            if (profileError) {
+              console.error("Error fetching user profile:", profileError);
+            } else if (profile?.role) {
+              const isAdmin = profile.role === 'admin';
+              
+              const { error: updateError } = await supabase.auth.updateUser({
+                data: { 
+                  role: profile.role,
+                  is_admin: isAdmin
+                }
+              });
+              
+              if (updateError) {
+                console.error("Error updating user claims:", updateError);
+              } else {
+                console.log("Updated user JWT claims with role:", profile.role, "is_admin:", isAdmin);
+                
+                // Refresh session to update JWT with new claims
+                const { error: refreshError } = await supabase.auth.refreshSession();
+                if (refreshError) {
+                  console.error("Error refreshing session:", refreshError);
+                } else {
+                  console.log("Session refreshed with new claims");
+                }
+              }
+            }
+          } catch (profileError) {
+            console.error("Error in profile update process:", profileError);
+          }
         }
       }
       
+      // Navigate and show success toast
       navigate("/rooms");
       toast({
         title: "Login realizado com sucesso!",

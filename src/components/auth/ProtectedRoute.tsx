@@ -58,9 +58,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   // Check if user is superAdmin, which bypasses all role checks
-  const isSuperAdmin = user.user_metadata?.is_super_admin === true || 
-                      user.email === "admin@example.com" || 
-                      user.email === "cpd@sapiens-psi.com.br";
+  const isSuperAdmin = 
+    user.user_metadata?.is_super_admin === true || 
+    user.email === "admin@example.com" || 
+    user.email === "cpd@sapiens-psi.com.br";
   
   if (isSuperAdmin) {
     console.log("SuperAdmin detected - bypassing role checks");
@@ -70,9 +71,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   // Check role requirements using JWT claims
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
-    const isAdmin = user.app_metadata?.is_admin === true || 
-                   (user.app_metadata?.claims_admin === true) ||
-                   user.user_metadata?.is_admin === true;
+    const isAdmin = 
+      user.user_metadata?.is_admin === true || 
+      user.user_metadata?.role === "admin";
     
     console.log("Verificando permissões:", { 
       userRole, 
