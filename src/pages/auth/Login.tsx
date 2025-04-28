@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
@@ -7,20 +7,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 
 const Login: React.FC = () => {
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    console.log("Login component - Auth state:", { user: user?.id || null, loading });
+  }, [user, loading]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Verificando autenticação...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   if (user) {
+    console.log("User is already logged in, redirecting to /rooms");
     return <Navigate to="/rooms" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e senha",
+      });
+      return;
+    }
+    
     setIsLoading(true);
+    console.log("Attempting login with email:", email);
     await signIn(email, password);
     setIsLoading(false);
   };
@@ -47,6 +77,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com" 
                     required 
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -62,6 +93,7 @@ const Login: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </CardContent>
@@ -71,7 +103,12 @@ const Login: React.FC = () => {
                   className="w-full bg-roomly-600 hover:bg-roomly-700"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Entrando..." : "Login"}
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin mr-2 h-4 w-4 border-b-2 border-white rounded-full inline-block"></span>
+                      Entrando...
+                    </>
+                  ) : "Login"}
                 </Button>
                 <div className="text-center text-sm">
                   Não tem uma conta?{" "}
@@ -82,6 +119,11 @@ const Login: React.FC = () => {
               </CardFooter>
             </form>
           </Card>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            <p>Credenciais de teste:</p>
+            <p>Cliente: client@example.com / password</p>
+            <p>Admin: admin@example.com / password</p>
+          </div>
         </div>
       </div>
     </MainLayout>

@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -8,23 +7,29 @@ export function useAuthOperations() {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting to sign in with:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error.message);
+        throw error;
+      }
       
+      console.log("Login successful, user:", data?.user?.id);
       navigate("/rooms");
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
     } catch (error: any) {
+      console.error("Login error (catch):", error);
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
-        description: error.message,
+        description: error.message || "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.",
       });
     }
   };

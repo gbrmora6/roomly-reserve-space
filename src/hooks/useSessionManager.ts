@@ -9,103 +9,64 @@ export function useSessionManager() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
+        setUser(currentSession?.user || null);
         
+        // If we have a session and user, fetch the role from profiles
         if (currentSession?.user) {
-          console.log("User metadata from session:", currentSession.user.user_metadata);
+          console.log("User detected in auth change:", currentSession.user.id);
           
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', currentSession.user.id)
-              .single();
-            
-            if (profile?.role) {
-              console.log("Role from profile database:", profile.role);
+          // Use setTimeout to avoid Supabase auth deadlock
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', currentSession.user.id)
+                .single();
               
-              const updatedUser = {
-                ...currentSession.user,
-                user_metadata: {
-                  ...currentSession.user.user_metadata,
-                  role: profile.role
+              if (profile?.role) {
+                console.log("Role from profile database:", profile.role);
+                
+                // Update user metadata with role
+                const { data, error } = await supabase.auth.updateUser({
+                  data: { role: profile.role }
+                });
+                
+                if (error) {
+                  console.error("Error updating user claims:", error);
+                } else if (data?.user) {
+                  console.log("Claims updated with role:", data.user.user_metadata);
+                  setUser(data.user);
+                  await supabase.auth.refreshSession();
                 }
-              };
-              setUser(updatedUser);
-              
-              const { data, error } = await supabase.auth.updateUser({
-                data: { role: profile.role }
-              });
-              
-              if (error) {
-                console.error("Error updating user claims on auth change:", error);
-              } else if (data?.user) {
-                console.log("Auth state change: claims updated with role", data.user.user_metadata);
-                setUser(data.user);
-                await supabase.auth.refreshSession();
               }
-            } else {
-              setUser(currentSession.user);
+            } catch (error) {
+              console.error("Error fetching user profile:", error);
+            } finally {
+              setLoading(false);
             }
-          } catch (error) {
-            console.error("Error fetching user profile:", error);
-            setUser(currentSession.user);
-          }
+          }, 0);
         } else {
-          setUser(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession?.user?.id || "No session");
       setSession(currentSession);
+      setUser(currentSession?.user || null);
       
-      if (currentSession?.user) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', currentSession.user.id)
-            .single();
-          
-          if (profile?.role) {
-            const updatedUser = {
-              ...currentSession.user,
-              user_metadata: {
-                ...currentSession.user.user_metadata,
-                role: profile.role
-              }
-            };
-            setUser(updatedUser);
-            
-            const { data, error } = await supabase.auth.updateUser({
-              data: { role: profile.role }
-            });
-            
-            if (error) {
-              console.error("Error updating initial claims:", error);
-            } else if (data?.user) {
-              console.log("Initial claims updated with role", data.user.user_metadata);
-              setUser(data.user);
-              await supabase.auth.refreshSession();
-            }
-          } else {
-            setUser(currentSession.user);
-          }
-        } catch (error) {
-          console.error("Error fetching initial user profile:", error);
-          setUser(currentSession.user);
-        }
-      } else {
-        setUser(null);
+      if (!currentSession) {
+        setLoading(false);
       }
-      
-      setLoading(false);
+      // If session exists, the auth change handler above will handle loading state
     });
 
     return () => subscription.unsubscribe();
