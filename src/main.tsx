@@ -12,5 +12,7 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 root.render(
-  <App />
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
