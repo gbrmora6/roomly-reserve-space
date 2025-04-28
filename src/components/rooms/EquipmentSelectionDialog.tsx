@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useEquipmentAvailability } from "@/hooks/useEquipmentAvailability";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +75,9 @@ export function EquipmentSelectionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Selecionar Equipamentos</DialogTitle>
+          <DialogDescription>
+            Escolha os equipamentos para sua reserva de {startTime?.toLocaleTimeString()} até {endTime?.toLocaleTimeString()}
+          </DialogDescription>
         </DialogHeader>
         
         {loading ? (
@@ -83,13 +86,18 @@ export function EquipmentSelectionDialog({
           <div className="grid gap-4 py-4">
             {availableEquipment.length > 0 ? (
               availableEquipment.map((equipment) => (
-                <div key={equipment.id} className="flex items-center justify-between gap-4 p-4 border rounded-lg">
+                <div 
+                  key={equipment.id} 
+                  className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${equipment.available === 0 ? 'opacity-70 bg-gray-50' : ''}`}
+                >
                   <div>
                     <h4 className="font-medium">{equipment.name}</h4>
                     {equipment.description && (
                       <p className="text-sm text-muted-foreground">{equipment.description}</p>
                     )}
-                    <p className="text-sm">Disponíveis: {equipment.available}</p>
+                    <p className={`text-sm ${equipment.available === 0 ? 'text-red-500 font-medium' : ''}`}>
+                      Disponíveis: {equipment.available}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
