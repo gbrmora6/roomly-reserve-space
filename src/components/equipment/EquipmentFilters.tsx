@@ -60,6 +60,12 @@ export const EquipmentFilters: React.FC<FiltersProps> = ({
   const isFilterActive =
     !!filters.date && !!filters.startTime && !!filters.endTime;
 
+  // Generate hours from 7:00 to 22:00 for time selection
+  const hours = Array.from({ length: 16 }, (_, i) => {
+    const hour = i + 7;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  });
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
       <h2 className="text-lg font-semibold mb-4">Filtrar por disponibilidade</h2>
@@ -120,10 +126,14 @@ export const EquipmentFilters: React.FC<FiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <TimeSelector
-                onSelectTime={handleStartTimeChange}
-                className="p-3"
-              />
+              <div className="p-3">
+                <TimeSelector
+                  hours={hours}
+                  blockedHours={[]}
+                  selectedHour={filters.startTime || ""}
+                  onSelectHour={handleStartTimeChange}
+                />
+              </div>
             </PopoverContent>
           </Popover>
         </div>
@@ -151,11 +161,16 @@ export const EquipmentFilters: React.FC<FiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <TimeSelector
-                onSelectTime={handleEndTimeChange}
-                startTime={filters.startTime}
-                className="p-3"
-              />
+              <div className="p-3">
+                <TimeSelector
+                  hours={hours}
+                  blockedHours={[]}
+                  selectedHour={filters.endTime || ""}
+                  onSelectHour={handleEndTimeChange}
+                  isEndTime
+                  startHour={filters.startTime || ""}
+                />
+              </div>
             </PopoverContent>
           </Popover>
         </div>

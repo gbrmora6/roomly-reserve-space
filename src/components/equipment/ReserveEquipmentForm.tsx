@@ -68,6 +68,12 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   const [bookingTotal, setBookingTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Generate hours from 7:00 to 22:00 for time selection
+  const hours = Array.from({ length: 16 }, (_, i) => {
+    const hour = i + 7;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -266,10 +272,14 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <TimeSelector
-                      onSelectTime={(time) => field.onChange(time)}
-                      className="p-3"
-                    />
+                    <div className="p-3">
+                      <TimeSelector
+                        hours={hours}
+                        blockedHours={[]}
+                        selectedHour={field.value}
+                        onSelectHour={(time) => field.onChange(time)}
+                      />
+                    </div>
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
@@ -304,11 +314,16 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <TimeSelector
-                      onSelectTime={(time) => field.onChange(time)}
-                      startTime={form.getValues("startTime")}
-                      className="p-3"
-                    />
+                    <div className="p-3">
+                      <TimeSelector
+                        hours={hours}
+                        blockedHours={[]}
+                        selectedHour={field.value}
+                        onSelectHour={(time) => field.onChange(time)}
+                        isEndTime
+                        startHour={form.getValues("startTime")}
+                      />
+                    </div>
                   </PopoverContent>
                 </Popover>
                 <FormMessage />
