@@ -24,8 +24,8 @@ export function EquipmentSelectionDialog({
   endTime,
   bookingId
 }: EquipmentSelectionDialogProps) {
-  const { availableEquipment, loading } = useEquipmentAvailability(startTime, endTime);
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
+  const { availableEquipment, loading } = useEquipmentAvailability(startTime, endTime);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -43,22 +43,31 @@ export function EquipmentSelectionDialog({
   };
 
   const handleConfirm = async () => {
-    if (!bookingId || Object.keys(selectedEquipment).length === 0) return;
+    if (Object.keys(selectedEquipment).length === 0) return;
 
     try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
+
+      // Convert times to UTC-3
+      const utcStartTime = new Date(startTime!.getTime() - (3 * 60 * 60 * 1000));
+      const utcEndTime = new Date(endTime!.getTime() - (3 * 60 * 60 * 1000));
+
       const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
-        booking_id: bookingId,
         equipment_id: id,
-        quantity
+        booking_id: bookingId,
+        user_id: user.id,
+        quantity,
+        start_time: utcStartTime.toISOString(),
+        end_time: utcEndTime.toISOString(),
+        status: 'pending'
       }));
 
       const { error } = await supabase
         .from('booking_equipment')
         .insert(equipmentToAdd);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Sucesso",

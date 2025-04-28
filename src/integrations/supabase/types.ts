@@ -13,23 +13,41 @@ export type Database = {
         Row: {
           booking_id: string
           created_at: string
+          end_time: string
           equipment_id: string
           id: string
           quantity: number
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          updated_at: string
+          user_id: string
         }
         Insert: {
           booking_id: string
           created_at?: string
+          end_time: string
           equipment_id: string
           id?: string
           quantity?: number
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          updated_at?: string
+          user_id: string
         }
         Update: {
           booking_id?: string
           created_at?: string
+          end_time?: string
           equipment_id?: string
           id?: string
           quantity?: number
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
