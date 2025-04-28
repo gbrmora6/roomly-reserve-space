@@ -12,7 +12,7 @@ export function useUserClaims() {
         return;
       }
       
-      // Check if user already has the proper claims to avoid unnecessary updates
+      // Check if user already has the proper JWT claims
       const currentRole = session.user.user_metadata?.role;
       const currentIsAdmin = !!session.user.user_metadata?.is_admin;
       
@@ -45,7 +45,7 @@ export function useUserClaims() {
         return;
       }
 
-      console.log("Updating user claims to match profile role:", {
+      console.log("Updating user JWT claims to match profile role:", {
         role: profile.role,
         is_admin: isAdmin
       });
@@ -70,8 +70,13 @@ export function useUserClaims() {
       if (data?.user) {
         console.log("User claims updated successfully:", data.user.user_metadata);
         
-        // Only refresh session if the update was successful
-        await supabase.auth.refreshSession();
+        // Refresh session to update JWT claims
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error("Error refreshing session after claims update:", refreshError);
+        } else {
+          console.log("Session refreshed with new JWT claims");
+        }
       }
     } catch (err) {
       console.error("Error in refreshUserClaims:", err);

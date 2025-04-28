@@ -21,7 +21,7 @@ export function useAuthOperations() {
       
       console.log("Login successful, user:", data?.user?.id);
       
-      // Get profile role and update user metadata
+      // Get profile role and update user JWT claims
       if (data?.user) {
         try {
           const { data: profile, error: profileError } = await supabase
@@ -44,10 +44,15 @@ export function useAuthOperations() {
             if (updateError) {
               console.error("Error updating user claims:", updateError);
             } else {
-              console.log("Updated user claims with role:", profile.role, "is_admin:", isAdmin);
+              console.log("Updated user JWT claims with role:", profile.role, "is_admin:", isAdmin);
               
               // Explicitly refresh the session to update JWT with new claims
-              await supabase.auth.refreshSession();
+              const { error: refreshError } = await supabase.auth.refreshSession();
+              if (refreshError) {
+                console.error("Error refreshing session:", refreshError);
+              } else {
+                console.log("Session refreshed with new claims");
+              }
             }
           }
         } catch (profileError) {

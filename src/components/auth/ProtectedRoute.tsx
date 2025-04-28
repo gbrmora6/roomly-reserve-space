@@ -30,6 +30,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           id: user.id, 
           email: user.email,
           metadata: user.user_metadata,
+          app_metadata: user.app_metadata,
           requiredRole
         });
       }
@@ -56,16 +57,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Check role requirements more efficiently
+  // Check role requirements using JWT claims
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
-    const isAdmin = !!user.user_metadata?.is_admin;
+    const isAdmin = user.app_metadata?.is_admin === true || 
+                   (user.app_metadata?.claims_admin === true) ||
+                   user.user_metadata?.is_admin === true;
     
     console.log("Verificando permissões:", { 
       userRole, 
       requiredRole, 
       isAdmin,
-      metadata: user.user_metadata
+      metadata: user.user_metadata,
+      app_metadata: user.app_metadata
     });
     
     // Simple permission check based on required role

@@ -36,12 +36,15 @@ export function useSessionManager() {
                 const isAdmin = profile.role === 'admin';
                 
                 // Check if claims need updating before making an API call
-                const needsUpdate = 
-                  currentSession.user.user_metadata?.role !== profile.role || 
-                  !!currentSession.user.user_metadata?.is_admin !== isAdmin;
+                const currentIsAdmin = (currentSession.user.app_metadata?.is_admin === true) || 
+                                      ((currentSession.user.app_metadata?.claims_admin === true));
+                const currentRole = currentSession.user.app_metadata?.role || 
+                                   currentSession.user.user_metadata?.role;
+                
+                const needsUpdate = currentRole !== profile.role || currentIsAdmin !== isAdmin;
                 
                 if (needsUpdate) {
-                  console.log("Updating user metadata with role:", profile.role);
+                  console.log("Updating user JWT claims with role:", profile.role);
                   
                   const { data, error } = await supabase.auth.updateUser({
                     data: { 
@@ -55,6 +58,12 @@ export function useSessionManager() {
                   } else if (data?.user) {
                     console.log("Claims updated:", data.user.user_metadata);
                     setUser(data.user);
+                    
+                    // Refresh session to update JWT claims
+                    const { error: refreshError } = await supabase.auth.refreshSession();
+                    if (refreshError) {
+                      console.error("Error refreshing session:", refreshError);
+                    }
                   }
                 } else {
                   console.log("User claims already match profile role, skipping update");
