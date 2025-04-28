@@ -1,7 +1,9 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, setHours, setMinutes } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Room } from "@/types/room";
 import { TimeSelector } from "./TimeSelector";
 import { useRoomSchedule } from "@/hooks/useRoomSchedule";
@@ -39,8 +41,19 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   };
 
   const isDateDisabled = (date: Date) => {
-    const weekday = format(date, "eeee").toLowerCase();
-    return !schedules.some((sch) => sch.weekday === weekday);
+    const weekday = format(date, "eeee", { locale: ptBR }).toLowerCase();
+    // Traduzir para o formato esperado pelo banco de dados
+    const weekdayEnglish = {
+      'segunda-feira': 'monday',
+      'terça-feira': 'tuesday',
+      'quarta-feira': 'wednesday',
+      'quinta-feira': 'thursday',
+      'sexta-feira': 'friday',
+      'sábado': 'saturday',
+      'domingo': 'sunday'
+    }[weekday] || weekday;
+    
+    return !schedules.some((sch) => sch.weekday === weekdayEnglish);
   };
 
   return (
@@ -58,8 +71,9 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
               setEndHour("");
             }
           }}
-          className="rounded-md border"
+          className="rounded-md border pointer-events-auto"
           disabled={isDateDisabled}
+          locale={ptBR}
         />
       </div>
 

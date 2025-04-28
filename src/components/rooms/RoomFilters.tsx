@@ -71,6 +71,7 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                     onSelect={(date) => setFilters({ ...filters, date })}
                     className="pointer-events-auto"
                     disabled={(date) => date < new Date()}
+                    locale={ptBR}
                   />
                 </PopoverContent>
               </Popover>

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -44,8 +45,28 @@ interface RoomSchedule {
 }
 
 const WEEKDAYS = [
-  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+  'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'
 ] as const;
+
+const WEEKDAYS_MAP: Record<string, 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'> = {
+  'segunda': 'monday',
+  'terça': 'tuesday',
+  'quarta': 'wednesday',
+  'quinta': 'thursday',
+  'sexta': 'friday',
+  'sábado': 'saturday',
+  'domingo': 'sunday'
+};
+
+const WEEKDAYS_MAP_REVERSE: Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', string> = {
+  'monday': 'segunda',
+  'tuesday': 'terça',
+  'wednesday': 'quarta',
+  'thursday': 'quinta',
+  'friday': 'sexta',
+  'saturday': 'sábado',
+  'sunday': 'domingo'
+};
 
 const RoomForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +112,11 @@ const RoomForm: React.FC = () => {
       
       setRoom(roomInfo || {});
       setPhotos(photoData || []);
-      setSchedules(scheduleData || []);
+      
+      // Traduzir os dias da semana ao carregar os horários
+      if (scheduleData) {
+        setSchedules(scheduleData);
+      }
       
       return { room: roomInfo, photos: photoData, schedules: scheduleData };
     },
@@ -116,10 +141,20 @@ const RoomForm: React.FC = () => {
     value: string
   ) => {
     const newSchedules = [...schedules];
-    newSchedules[index] = {
-      ...newSchedules[index],
-      [field]: value
-    };
+    
+    if (field === 'weekday') {
+      // Converte o dia da semana em português para inglês (para o banco de dados)
+      newSchedules[index] = {
+        ...newSchedules[index],
+        [field]: WEEKDAYS_MAP[value] as RoomSchedule['weekday']
+      };
+    } else {
+      newSchedules[index] = {
+        ...newSchedules[index],
+        [field]: value
+      };
+    }
+    
     setSchedules(newSchedules);
   };
   
@@ -450,9 +485,9 @@ const RoomForm: React.FC = () => {
           {schedules.map((schedule, index) => (
             <div key={index} className="grid grid-cols-4 gap-4 items-center">
               <Select 
-                value={schedule.weekday}
+                value={WEEKDAYS_MAP_REVERSE[schedule.weekday] || 'segunda'}
                 onValueChange={(value) => 
-                  handleScheduleChange(index, 'weekday', value as RoomSchedule['weekday'])
+                  handleScheduleChange(index, 'weekday', value)
                 }
               >
                 <SelectTrigger>
