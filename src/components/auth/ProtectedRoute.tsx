@@ -53,6 +53,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
     
+    console.log("Verificando permissões:", { 
+      userRole, 
+      requiredRole, 
+      isAdmin: userRole === 'admin',
+      metadata: user.user_metadata
+    });
+    
     if (userRole !== requiredRole) {
       console.error(`Access denied: User has role ${userRole}, but page requires ${requiredRole}`);
       

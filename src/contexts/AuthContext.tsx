@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
@@ -28,37 +27,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log("Auth state changed:", event);
         setSession(session);
-        setUser(session?.user ?? null);
         
-        // Log user metadata for debugging
         if (session?.user) {
           console.log("User metadata from session:", session.user.user_metadata);
           
-          // Se o usuário não tiver a role definida nas user_metadata, vamos verificar os dados do perfil
-          if (!session.user.user_metadata?.role) {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+          try {
+            // Sempre verificar o perfil no banco de dados para garantir informações atualizadas
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.role) {
+              console.log("Role from profile database:", profile.role);
               
-              if (profile?.role) {
-                console.log("Role from profile:", profile.role);
-                // Atualizar os metadados do usuário com a role do perfil
-                const updatedUser = {
-                  ...session.user,
-                  user_metadata: {
-                    ...session.user.user_metadata,
-                    role: profile.role
+              // Atualizar os metadados do usuário com a role do perfil
+              const updatedUser = {
+                ...session.user,
+                user_metadata: {
+                  ...session.user.user_metadata,
+                  role: profile.role
+                }
+              };
+              setUser(updatedUser);
+              
+              // Atualizar os claims JWT para incluir a flag is_admin se o usuário for administrador
+              if (profile.role === 'admin') {
+                try {
+                  // Aqui você pode adicionar console.log para depuração
+                  console.log("Atualizando claims para admin user");
+                  const { error: updateError } = await supabase.auth.updateUser({
+                    data: { 
+                      is_admin: true,
+                      role: 'admin'
+                    }
+                  });
+                  
+                  if (updateError) {
+                    console.error("Error updating admin claims:", updateError);
+                  } else {
+                    console.log("Admin claims updated successfully");
                   }
-                };
-                setUser(updatedUser);
+                } catch (err) {
+                  console.error("Error in admin claims update:", err);
+                }
               }
-            } catch (error) {
-              console.error("Error fetching user profile:", error);
+            } else {
+              setUser(session.user);
             }
+          } catch (error) {
+            console.error("Error fetching user profile:", error);
+            setUser(session.user);
           }
+        } else {
+          setUser(null);
         }
         
         setLoading(false);
@@ -70,37 +93,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       
       if (session?.user) {
-        // Log user metadata for debugging
         console.log("Initial user metadata:", session.user.user_metadata);
         
-        // Se o usuário não tiver a role definida nas user_metadata, vamos verificar os dados do perfil
-        if (!session.user.user_metadata?.role) {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile?.role) {
+            console.log("Initial role from profile:", profile.role);
             
-            if (profile?.role) {
-              console.log("Initial role from profile:", profile.role);
-              // Atualizar os metadados do usuário com a role do perfil
-              const updatedUser = {
-                ...session.user,
-                user_metadata: {
-                  ...session.user.user_metadata,
-                  role: profile.role
+            // Atualizar os metadados do usuário com a role do perfil
+            const updatedUser = {
+              ...session.user,
+              user_metadata: {
+                ...session.user.user_metadata,
+                role: profile.role
+              }
+            };
+            setUser(updatedUser);
+            
+            // Atualizar os claims JWT para incluir a flag is_admin se o usuário for administrador
+            if (profile.role === 'admin') {
+              try {
+                console.log("Initial setup: Updating admin claims");
+                const { error: updateError } = await supabase.auth.updateUser({
+                  data: { 
+                    is_admin: true,
+                    role: 'admin'
+                  }
+                });
+                
+                if (updateError) {
+                  console.error("Error updating initial admin claims:", updateError);
+                } else {
+                  console.log("Initial admin claims updated successfully");
                 }
-              };
-              setUser(updatedUser);
-            } else {
-              setUser(session.user);
+              } catch (err) {
+                console.error("Error in initial admin claims update:", err);
+              }
             }
-          } catch (error) {
-            console.error("Error fetching initial user profile:", error);
+          } else {
             setUser(session.user);
           }
-        } else {
+        } catch (error) {
+          console.error("Error fetching initial user profile:", error);
           setUser(session.user);
         }
       } else {
