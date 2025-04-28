@@ -488,6 +488,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_or_super: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_owner_or_admin: {
+        Args: { record_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled"

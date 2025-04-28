@@ -24,7 +24,7 @@ export function useSessionManager() {
         setLoading(false);
       }
       
-      // If we have a session and user, check for special admin emails
+      // If we have a session and user, check user role from profiles table
       if (currentSession?.user) {
         console.log("User metadata from session:", currentSession.user.user_metadata);
         
@@ -34,72 +34,41 @@ export function useSessionManager() {
             const userEmail = currentSession.user.email;
             
             // Check if this is one of our special admin emails
-            const isSuperAdmin = 
+            const isSpecialAdmin = 
               userEmail === "admin@example.com" || 
               userEmail === "cpd@sapiens-psi.com.br";
               
-            if (isSuperAdmin) {
+            if (isSpecialAdmin) {
               console.log("Special admin account detected:", userEmail);
               
-              // We don't need to update admin claims on every auth state change
-              // Only do it if the user doesn't already have the admin role
-              if (currentSession.user.user_metadata?.role !== "admin" || 
-                  !currentSession.user.user_metadata?.is_admin) {
+              try {
+                // Get the current user's profile from the database
+                const { data: profile, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', currentSession.user.id)
+                  .single();
                 
-                console.log("Setting admin privileges for special account");
-                
-                try {
-                  const { data, error } = await supabase.auth.updateUser({
-                    data: { 
-                      role: "admin",
-                      is_admin: true,
-                      is_super_admin: true
-                    }
-                  });
-                  
-                  if (error) {
-                    console.error("Error updating admin claims:", error);
-                  } else if (data?.user) {
-                    console.log("Admin claims set:", data.user.user_metadata);
-                    setUser(data.user);
-                  }
-                } catch (updateError) {
-                  console.error("Error in updateUser:", updateError);
-                }
-              }
-            } else {
-              // For non-admin users, fetch the role from profiles
-              // We don't need to check this on every auth state change
-              if (!currentSession.user.user_metadata?.role) {
-                try {
-                  const { data: profile } = await supabase
+                // If profile doesn't have admin role, update it
+                if (profileError || profile?.role !== 'admin') {
+                  // First make sure profile exists
+                  const { error: upsertError } = await supabase
                     .from('profiles')
-                    .select('role')
-                    .eq('id', currentSession.user.id)
-                    .single();
-                  
-                  if (profile?.role) {
-                    const isAdmin = profile.role === 'admin';
-                    
-                    console.log("Updating user JWT claims with role:", profile.role, "isAdmin:", isAdmin);
-                    
-                    const { data, error } = await supabase.auth.updateUser({
-                      data: { 
-                        role: profile.role, 
-                        is_admin: isAdmin
-                      }
+                    .upsert({
+                      id: currentSession.user.id,
+                      role: 'admin',
+                      first_name: currentSession.user.user_metadata.first_name || 'Admin',
+                      last_name: currentSession.user.user_metadata.last_name || 'User'
                     });
-                    
-                    if (error) {
-                      console.error("Error updating user claims:", error);
-                    } else if (data?.user) {
-                      console.log("Claims updated:", data.user.user_metadata);
-                      setUser(data.user);
-                    }
+                  
+                  if (upsertError) {
+                    console.error("Error updating admin profile:", upsertError);
+                  } else {
+                    console.log("Admin profile updated for special account");
                   }
-                } catch (profileError) {
-                  console.error("Error fetching profile:", profileError);
                 }
+              } catch (updateError) {
+                console.error("Error in admin profile update:", updateError);
               }
             }
           } catch (error) {
