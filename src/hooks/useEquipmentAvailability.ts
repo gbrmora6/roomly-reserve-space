@@ -32,13 +32,13 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return;
         }
 
-        // First, get overlapping bookings for this time period
+        // Look for bookings that overlap with the requested time period
         const { data: overlappingBookings } = await supabase
           .from('bookings')
           .select('id')
           .not('status', 'eq', 'cancelled')
-          .gte('end_time', startTime.toISOString())
-          .lte('start_time', endTime.toISOString());
+          .lte('start_time', endTime.toISOString())
+          .gte('end_time', startTime.toISOString());
         
         // Extract booking IDs into an array
         const bookingIds = overlappingBookings?.map(booking => booking.id) || [];
@@ -53,13 +53,13 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           }
 
           // Get booked quantities for this equipment in the overlapping bookings
-          const { data: bookedQuantity } = await supabase
+          const { data: bookedItems } = await supabase
             .from('booking_equipment')
             .select('quantity')
             .eq('equipment_id', item.id)
             .in('booking_id', bookingIds);
 
-          const totalBooked = bookedQuantity?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
+          const totalBooked = bookedItems?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
           const available = Math.max(0, item.quantity - totalBooked);
 
           return {

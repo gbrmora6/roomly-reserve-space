@@ -111,6 +111,12 @@ export function EquipmentSelectionDialog({
                 </div>
               </div>
             ))}
+
+            {availableEquipment.length === 0 && (
+              <div className="text-center py-4 text-muted-foreground">
+                Nenhum equipamento disponível para este horário.
+              </div>
+            )}
           </div>
         )}
 
