@@ -25,7 +25,6 @@ export function EquipmentSelectionDialog({
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
   const { toast } = useToast();
   
-  // Reset selected equipment when dialog opens or changes in available equipment
   useEffect(() => {
     setSelectedEquipment({});
   }, [open, availableEquipment]);
@@ -49,14 +48,11 @@ export function EquipmentSelectionDialog({
       quantity
     }));
 
-    console.log("Adding equipment to booking:", equipmentToAdd);
-
     const { error } = await supabase
       .from('booking_equipment')
       .insert(equipmentToAdd);
 
     if (error) {
-      console.error("Error adding equipment to booking:", error);
       toast({
         title: "Erro",
         description: "Não foi possível reservar os equipamentos.",
