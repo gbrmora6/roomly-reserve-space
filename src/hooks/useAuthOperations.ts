@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -19,6 +20,32 @@ export function useAuthOperations() {
       }
       
       console.log("Login successful, user:", data?.user?.id);
+      
+      // Get profile role and update user metadata
+      if (data?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+            
+          if (profile?.role) {
+            const isAdmin = profile.role === 'admin';
+            await supabase.auth.updateUser({
+              data: { 
+                role: profile.role,
+                is_admin: isAdmin
+              }
+            });
+            
+            console.log("Updated user claims with role:", profile.role, "is_admin:", isAdmin);
+          }
+        } catch (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        }
+      }
+      
       navigate("/rooms");
       toast({
         title: "Login realizado com sucesso!",
@@ -44,6 +71,7 @@ export function useAuthOperations() {
             first_name: firstName,
             last_name: lastName,
             role: "client",
+            is_admin: false,
           },
         },
       });

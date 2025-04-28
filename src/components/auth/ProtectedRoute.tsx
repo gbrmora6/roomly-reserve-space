@@ -21,11 +21,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
         console.log("ProtectedRoute - User data:", { 
           id: user.id, 
           email: user.email,
-          metadata: user.user_metadata,
-          role: user.user_metadata?.role || "not set" 
+          metadata: user.user_metadata
         });
         
-        // For all routes, refresh claims to ensure latest status
+        // Refresh claims only on initial mount to ensure latest status
         refreshUserClaims();
         
         console.log("ProtectedRoute - Required role:", requiredRole);
@@ -56,19 +55,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   // Check role requirements
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
-    // IMPORTANTE: Simplificando a lógica de verificação de admin
-    const isAdmin = userRole === 'admin';
+    // Check for is_admin flag directly in the metadata
+    const isAdmin = !!user.user_metadata?.is_admin;
     
-    console.log("Verificando permissões [SIMPLIFICADO]:", { 
+    console.log("Verificando permissões:", { 
       userRole, 
       requiredRole, 
       isAdmin,
       metadata: user.user_metadata
     });
     
-    // Para debug: Permitir acesso temporariamente se a rota for admin
     if (requiredRole === "admin" && !isAdmin) {
-      console.error(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer admin`);
+      console.error(`Acesso negado: Usuário não tem permissão de administrador`);
       
       toast({
         variant: "destructive",

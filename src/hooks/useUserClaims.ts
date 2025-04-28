@@ -8,7 +8,7 @@ export function useUserClaims() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
       
-      console.log("Refreshing user claims - simplified version");
+      console.log("Refreshing user claims");
       
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -24,9 +24,13 @@ export function useUserClaims() {
       console.log("Profile data from database:", profile);
       
       if (profile?.role) {
+        // Update user metadata with both role and is_admin flag for RLS policies
+        const isAdmin = profile.role === 'admin';
+        
         const { data, error: updateError } = await supabase.auth.updateUser({
           data: { 
-            role: profile.role
+            role: profile.role,
+            is_admin: isAdmin  // Add is_admin flag for RLS policies
           }
         });
         
@@ -36,8 +40,9 @@ export function useUserClaims() {
         }
         
         if (data?.user) {
-          console.log("User claims updated with role:", data.user.user_metadata);
+          console.log("User claims updated:", data.user.user_metadata);
           
+          // Refresh session to update JWT with new claims
           const { error: sessionError } = await supabase.auth.refreshSession();
           if (sessionError) {
             console.error("Error refreshing session:", sessionError);

@@ -11,7 +11,7 @@ export function useSessionManager() {
   useEffect(() => {
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         console.log("Auth state changed:", event);
         setSession(currentSession);
         setUser(currentSession?.user || null);
@@ -20,8 +20,9 @@ export function useSessionManager() {
         if (currentSession?.user) {
           console.log("User detected in auth change:", currentSession.user.id);
           
-          // Use setTimeout to avoid Supabase auth deadlock
-          setTimeout(async () => {
+          // We'll only fetch profile data on sign_in or token_refreshed events
+          // to avoid excessive API calls and prevent rate limiting
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
             try {
               const { data: profile } = await supabase
                 .from('profiles')
@@ -31,18 +32,21 @@ export function useSessionManager() {
               
               if (profile?.role) {
                 console.log("Role from profile database:", profile.role);
+                const isAdmin = profile.role === 'admin';
                 
-                // Update user metadata with role
+                // Update user metadata with role and is_admin flag
                 const { data, error } = await supabase.auth.updateUser({
-                  data: { role: profile.role }
+                  data: { 
+                    role: profile.role, 
+                    is_admin: isAdmin 
+                  }
                 });
                 
                 if (error) {
                   console.error("Error updating user claims:", error);
                 } else if (data?.user) {
-                  console.log("Claims updated with role:", data.user.user_metadata);
+                  console.log("Claims updated:", data.user.user_metadata);
                   setUser(data.user);
-                  await supabase.auth.refreshSession();
                 }
               }
             } catch (error) {
@@ -50,7 +54,9 @@ export function useSessionManager() {
             } finally {
               setLoading(false);
             }
-          }, 0);
+          } else {
+            setLoading(false);
+          }
         } else {
           setLoading(false);
         }
