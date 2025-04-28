@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useEquipmentAvailability } from "@/hooks/useEquipmentAvailability";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Check, X } from "lucide-react";
 
 interface EquipmentSelectionDialogProps {
   open: boolean;
@@ -75,80 +77,113 @@ export function EquipmentSelectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Selecionar Equipamentos</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-bold text-primary">
+            Selecionar Equipamentos
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Escolha os equipamentos para sua reserva de {startTime?.toLocaleTimeString()} até {endTime?.toLocaleTimeString()}
           </DialogDescription>
         </DialogHeader>
         
         {loading ? (
-          <div className="py-4 text-center">Carregando equipamentos...</div>
+          <div className="py-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Carregando equipamentos...</p>
+          </div>
         ) : (
           <div className="grid gap-4 py-4">
             {availableEquipment.length > 0 ? (
-              availableEquipment.map((equipment) => {
-                const isAvailable = equipment.available > 0;
-                return (
-                  <div 
-                    key={equipment.id} 
-                    className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${!isAvailable ? 'opacity-60 bg-gray-100' : ''}`}
-                  >
-                    <div>
-                      <h4 className="font-medium">{equipment.name}</h4>
-                      {equipment.description && (
-                        <p className="text-sm text-muted-foreground">{equipment.description}</p>
-                      )}
-                      <p className={`text-sm ${!isAvailable ? 'text-red-500 font-semibold' : ''}`}>
-                        {isAvailable 
-                          ? `Disponíveis: ${equipment.available}` 
-                          : "Indisponível"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEquipmentChange(
-                          equipment.id,
-                          Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableEquipment.map((equipment) => {
+                  const isAvailable = equipment.available > 0;
+                  return (
+                    <Card
+                      key={equipment.id}
+                      className={`p-4 transition-all duration-200 ${
+                        !isAvailable ? 'opacity-60 bg-muted' : 'hover:border-primary'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-medium text-lg">{equipment.name}</h4>
+                          {equipment.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{equipment.description}</p>
+                          )}
+                        </div>
+                        {isAvailable ? (
+                          <Check className="text-green-500 h-5 w-5" />
+                        ) : (
+                          <X className="text-red-500 h-5 w-5" />
                         )}
-                        disabled={!isAvailable || !selectedEquipment[equipment.id]}
-                      >
-                        -
-                      </Button>
-                      <span className="w-8 text-center">{selectedEquipment[equipment.id] || 0}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEquipmentChange(
-                          equipment.id,
-                          Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <p className={`text-sm font-medium ${!isAvailable ? 'text-red-500' : 'text-green-600'}`}>
+                          {isAvailable 
+                            ? `${equipment.available} disponível${equipment.available > 1 ? 's' : ''}` 
+                            : "Indisponível"}
+                        </p>
+                        
+                        {isAvailable && (
+                          <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEquipmentChange(
+                                equipment.id,
+                                Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
+                              )}
+                              disabled={!selectedEquipment[equipment.id]}
+                              className="h-8 w-8"
+                            >
+                              -
+                            </Button>
+                            <span className="w-8 text-center font-medium">
+                              {selectedEquipment[equipment.id] || 0}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEquipmentChange(
+                                equipment.id,
+                                Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
+                              )}
+                              disabled={(selectedEquipment[equipment.id] || 0) >= equipment.available}
+                              className="h-8 w-8"
+                            >
+                              +
+                            </Button>
+                          </div>
                         )}
-                        disabled={!isAvailable || (selectedEquipment[equipment.id] || 0) >= equipment.available}
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
             ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                Nenhum equipamento disponível para este horário.
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Nenhum equipamento disponível para este horário.
+                </p>
               </div>
             )}
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-32"
+          >
             Cancelar
           </Button>
           <Button 
             onClick={handleConfirm}
             disabled={loading || Object.keys(selectedEquipment).length === 0}
+            className="w-32"
           >
             Confirmar
           </Button>
