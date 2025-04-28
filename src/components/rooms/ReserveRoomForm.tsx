@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, setHours, setMinutes } from "date-fns";
@@ -12,6 +12,8 @@ import { useRoomReservation } from "@/hooks/useRoomReservation";
 import { EquipmentSelectionDialog } from "./EquipmentSelectionDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface ReserveRoomFormProps {
   room: Room;
@@ -24,6 +26,9 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [endHour, setEndHour] = useState<string>("");
   const [showEquipmentDialog, setShowEquipmentDialog] = useState(false);
   const [currentBookingId, setCurrentBookingId] = useState<string | null>(null);
+  const [wantsEquipment, setWantsEquipment] = useState<boolean | null>(null);
+  const startHourRef = useRef<HTMLDivElement>(null);
+  const endHourRef = useRef<HTMLDivElement>(null);
 
   const schedules = useRoomSchedule(room.id);
   const { availableHours, blockedHours } = useRoomAvailability(room, selectedDate);
@@ -38,13 +43,24 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     const result = await handleReserve(startTime, endTime);
     if (result?.id) {
       setCurrentBookingId(result.id);
-      setShowEquipmentDialog(true);
+      if (wantsEquipment) {
+        setShowEquipmentDialog(true);
+      } else {
+        toast.success("Reserva realizada com sucesso!");
+        onClose();
+      }
+    }
+  };
+
+  const handleEquipmentDialogClose = (open: boolean) => {
+    setShowEquipmentDialog(open);
+    if (!open) {
+      onClose();
     }
   };
 
   const isDateDisabled = (date: Date) => {
     const weekday = format(date, "eeee", { locale: ptBR }).toLowerCase();
-    // Traduzir para o formato esperado pelo banco de dados
     const weekdayEnglish = {
       'segunda-feira': 'monday',
       'terça-feira': 'tuesday',
@@ -56,6 +72,21 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     }[weekday] || weekday;
     
     return !schedules.some((sch) => sch.weekday === weekdayEnglish);
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date && !isDateDisabled(date)) {
+      setSelectedDate(date);
+      setStartHour("");
+      setEndHour("");
+      setTimeout(() => startHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  };
+
+  const handleStartHourSelect = (hour: string) => {
+    setStartHour(hour);
+    setEndHour("");
+    setTimeout(() => endHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
   return (
@@ -72,13 +103,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             <Calendar
               mode="single"
               selected={selectedDate!}
-              onSelect={(date) => {
-                if (!isDateDisabled(date!)) {
-                  setSelectedDate(date);
-                  setStartHour("");
-                  setEndHour("");
-                }
-              }}
+              onSelect={handleDateSelect}
               className="rounded-md border pointer-events-auto mx-auto"
               disabled={isDateDisabled}
               locale={ptBR}
@@ -87,21 +112,18 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
           {selectedDate && availableHours.length > 0 && (
             <div className="space-y-4">
-              <div className="bg-card rounded-lg p-4 shadow-sm">
+              <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
                 <h3 className="text-lg font-medium mb-3">Horário de início</h3>
                 <TimeSelector
                   hours={availableHours}
                   blockedHours={blockedHours}
                   selectedHour={startHour}
-                  onSelectHour={(hour) => {
-                    setStartHour(hour);
-                    setEndHour("");
-                  }}
+                  onSelectHour={handleStartHourSelect}
                 />
               </div>
 
               {startHour && (
-                <div className="bg-card rounded-lg p-4 shadow-sm">
+                <div ref={endHourRef} className="bg-card rounded-lg p-4 shadow-sm">
                   <h3 className="text-lg font-medium mb-3">Horário de término</h3>
                   <TimeSelector
                     hours={availableHours}
@@ -111,6 +133,27 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
                     isEndTime
                     startHour={startHour}
                   />
+                </div>
+              )}
+
+              {endHour && wantsEquipment === null && (
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <h3 className="text-lg font-medium mb-4">Deseja adicionar equipamentos?</h3>
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => setWantsEquipment(false)}
+                      className="w-32"
+                    >
+                      Não
+                    </Button>
+                    <Button
+                      onClick={() => setWantsEquipment(true)}
+                      className="w-32"
+                    >
+                      Sim
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -124,7 +167,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <DialogFooter className="flex justify-end gap-3 pt-4 border-t">
             <Button
               variant="outline"
               onClick={onClose}
@@ -132,18 +175,20 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             >
               Cancelar
             </Button>
-            <Button
-              onClick={handleConfirmReservation}
-              disabled={!selectedDate || !startHour || !endHour || loading}
-              className="w-32"
-            >
-              {loading ? "Reservando..." : "Confirmar"}
-            </Button>
-          </div>
+            {wantsEquipment !== null && (
+              <Button
+                onClick={handleConfirmReservation}
+                disabled={!selectedDate || !startHour || !endHour || loading}
+                className="w-32"
+              >
+                {loading ? "Reservando..." : "Confirmar"}
+              </Button>
+            )}
+          </DialogFooter>
 
           <EquipmentSelectionDialog
             open={showEquipmentDialog}
-            onOpenChange={setShowEquipmentDialog}
+            onOpenChange={handleEquipmentDialogClose}
             startTime={selectedDate ? setHours(selectedDate, parseInt(startHour || "0")) : null}
             endTime={selectedDate ? setHours(selectedDate, parseInt(endHour || "0")) : null}
             bookingId={currentBookingId}
