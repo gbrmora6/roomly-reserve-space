@@ -13,7 +13,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
 
-  // Enhanced debugging
+  // Refresh claims only once when component mounts
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("ProtectedRoute - Refreshing user claims on initial mount");
+      refreshUserClaims();
+    }
+  }, [user?.id, loading, refreshUserClaims]); // Only run when user ID changes or loading state changes
+
+  // Debug auth state
   useEffect(() => {
     if (!loading) {
       console.log("ProtectedRoute - Auth state:", { authenticated: !!user, loading });
@@ -21,16 +29,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
         console.log("ProtectedRoute - User data:", { 
           id: user.id, 
           email: user.email,
-          metadata: user.user_metadata
+          metadata: user.user_metadata,
+          requiredRole
         });
-        
-        // Refresh claims only on initial mount to ensure latest status
-        refreshUserClaims();
-        
-        console.log("ProtectedRoute - Required role:", requiredRole);
       }
     }
-  }, [user, loading, requiredRole, refreshUserClaims]);
+  }, [user, loading, requiredRole]);
 
   // Show improved loading state
   if (loading) {
@@ -52,10 +56,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  // Check role requirements
+  // Check role requirements more efficiently
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
-    // Check for is_admin flag directly in the metadata
     const isAdmin = !!user.user_metadata?.is_admin;
     
     console.log("Verificando permissões:", { 
@@ -65,6 +68,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       metadata: user.user_metadata
     });
     
+    // Simple permission check based on required role
     if (requiredRole === "admin" && !isAdmin) {
       console.error(`Acesso negado: Usuário não tem permissão de administrador`);
       

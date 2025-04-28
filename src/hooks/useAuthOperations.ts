@@ -24,25 +24,34 @@ export function useAuthOperations() {
       // Get profile role and update user metadata
       if (data?.user) {
         try {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', data.user.id)
             .single();
             
-          if (profile?.role) {
+          if (profileError) {
+            console.error("Error fetching user profile:", profileError);
+          } else if (profile?.role) {
             const isAdmin = profile.role === 'admin';
-            await supabase.auth.updateUser({
+            const { error: updateError } = await supabase.auth.updateUser({
               data: { 
                 role: profile.role,
                 is_admin: isAdmin
               }
             });
             
-            console.log("Updated user claims with role:", profile.role, "is_admin:", isAdmin);
+            if (updateError) {
+              console.error("Error updating user claims:", updateError);
+            } else {
+              console.log("Updated user claims with role:", profile.role, "is_admin:", isAdmin);
+              
+              // Explicitly refresh the session to update JWT with new claims
+              await supabase.auth.refreshSession();
+            }
           }
         } catch (profileError) {
-          console.error("Error fetching user profile:", profileError);
+          console.error("Error in profile update process:", profileError);
         }
       }
       

@@ -16,13 +16,15 @@ export function useSessionManager() {
         setSession(currentSession);
         setUser(currentSession?.user || null);
         
+        // Update loading state if we have clear auth state information
+        if (!currentSession) {
+          setLoading(false);
+        }
+        
         // If we have a session and user, fetch the role from profiles
-        if (currentSession?.user) {
-          console.log("User detected in auth change:", currentSession.user.id);
-          
-          // We'll only fetch profile data on sign_in or token_refreshed events
-          // to avoid excessive API calls and prevent rate limiting
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // but use setTimeout to avoid potential deadlocks with Supabase client
+        if (currentSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          setTimeout(async () => {
             try {
               const { data: profile } = await supabase
                 .from('profiles')
@@ -31,22 +33,31 @@ export function useSessionManager() {
                 .single();
               
               if (profile?.role) {
-                console.log("Role from profile database:", profile.role);
                 const isAdmin = profile.role === 'admin';
                 
-                // Update user metadata with role and is_admin flag
-                const { data, error } = await supabase.auth.updateUser({
-                  data: { 
-                    role: profile.role, 
-                    is_admin: isAdmin 
-                  }
-                });
+                // Check if claims need updating before making an API call
+                const needsUpdate = 
+                  currentSession.user.user_metadata?.role !== profile.role || 
+                  !!currentSession.user.user_metadata?.is_admin !== isAdmin;
                 
-                if (error) {
-                  console.error("Error updating user claims:", error);
-                } else if (data?.user) {
-                  console.log("Claims updated:", data.user.user_metadata);
-                  setUser(data.user);
+                if (needsUpdate) {
+                  console.log("Updating user metadata with role:", profile.role);
+                  
+                  const { data, error } = await supabase.auth.updateUser({
+                    data: { 
+                      role: profile.role, 
+                      is_admin: isAdmin 
+                    }
+                  });
+                  
+                  if (error) {
+                    console.error("Error updating user claims:", error);
+                  } else if (data?.user) {
+                    console.log("Claims updated:", data.user.user_metadata);
+                    setUser(data.user);
+                  }
+                } else {
+                  console.log("User claims already match profile role, skipping update");
                 }
               }
             } catch (error) {
@@ -54,11 +65,7 @@ export function useSessionManager() {
             } finally {
               setLoading(false);
             }
-          } else {
-            setLoading(false);
-          }
-        } else {
-          setLoading(false);
+          }, 0);
         }
       }
     );

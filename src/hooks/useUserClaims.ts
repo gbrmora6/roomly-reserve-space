@@ -1,15 +1,27 @@
 
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export function useUserClaims() {
   const refreshUserClaims = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        console.log("No active session found, skipping claims refresh");
+        return;
+      }
       
-      console.log("Refreshing user claims");
+      // Check if user already has the proper claims to avoid unnecessary updates
+      const currentRole = session.user.user_metadata?.role;
+      const currentIsAdmin = !!session.user.user_metadata?.is_admin;
       
+      console.log("Current user metadata:", {
+        role: currentRole,
+        is_admin: currentIsAdmin
+      });
+      
+      // Only fetch profile if we don't have role info or need to verify it
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
@@ -21,33 +33,45 @@ export function useUserClaims() {
         return;
       }
       
-      console.log("Profile data from database:", profile);
+      if (!profile?.role) {
+        console.log("No role found in profile data, skipping claims update");
+        return;
+      }
       
-      if (profile?.role) {
-        // Update user metadata with both role and is_admin flag for RLS policies
-        const isAdmin = profile.role === 'admin';
-        
-        const { data, error: updateError } = await supabase.auth.updateUser({
-          data: { 
-            role: profile.role,
-            is_admin: isAdmin  // Add is_admin flag for RLS policies
-          }
+      // Only update if there's a mismatch or missing data
+      const isAdmin = profile.role === 'admin';
+      if (currentRole === profile.role && currentIsAdmin === isAdmin) {
+        console.log("User claims already up to date, skipping update");
+        return;
+      }
+
+      console.log("Updating user claims to match profile role:", {
+        role: profile.role,
+        is_admin: isAdmin
+      });
+      
+      const { data, error: updateError } = await supabase.auth.updateUser({
+        data: { 
+          role: profile.role,
+          is_admin: isAdmin
+        }
+      });
+      
+      if (updateError) {
+        console.error("Error updating user claims:", updateError);
+        toast({
+          variant: "destructive",
+          title: "Erro de autenticação",
+          description: "Não foi possível atualizar suas permissões. Por favor, tente novamente.",
         });
+        return;
+      }
+      
+      if (data?.user) {
+        console.log("User claims updated successfully:", data.user.user_metadata);
         
-        if (updateError) {
-          console.error("Error updating user claims:", updateError);
-          return;
-        }
-        
-        if (data?.user) {
-          console.log("User claims updated:", data.user.user_metadata);
-          
-          // Refresh session to update JWT with new claims
-          const { error: sessionError } = await supabase.auth.refreshSession();
-          if (sessionError) {
-            console.error("Error refreshing session:", sessionError);
-          }
-        }
+        // Only refresh session if the update was successful
+        await supabase.auth.refreshSession();
       }
     } catch (err) {
       console.error("Error in refreshUserClaims:", err);
