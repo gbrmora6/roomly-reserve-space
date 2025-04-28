@@ -88,47 +88,52 @@ export function EquipmentSelectionDialog({
         ) : (
           <div className="grid gap-4 py-4">
             {availableEquipment.length > 0 ? (
-              availableEquipment.map((equipment) => (
-                <div 
-                  key={equipment.id} 
-                  className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${equipment.available === 0 ? 'opacity-60 bg-gray-100' : ''}`}
-                >
-                  <div>
-                    <h4 className="font-medium">{equipment.name}</h4>
-                    {equipment.description && (
-                      <p className="text-sm text-muted-foreground">{equipment.description}</p>
-                    )}
-                    <p className={`text-sm ${equipment.available === 0 ? 'text-red-500 font-semibold' : ''}`}>
-                      Disponíveis: {equipment.available}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEquipmentChange(
-                        equipment.id,
-                        Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
+              availableEquipment.map((equipment) => {
+                const isAvailable = equipment.available > 0;
+                return (
+                  <div 
+                    key={equipment.id} 
+                    className={`flex items-center justify-between gap-4 p-4 border rounded-lg ${!isAvailable ? 'opacity-60 bg-gray-100' : ''}`}
+                  >
+                    <div>
+                      <h4 className="font-medium">{equipment.name}</h4>
+                      {equipment.description && (
+                        <p className="text-sm text-muted-foreground">{equipment.description}</p>
                       )}
-                      disabled={equipment.available === 0 || !selectedEquipment[equipment.id]}
-                    >
-                      -
-                    </Button>
-                    <span className="w-8 text-center">{selectedEquipment[equipment.id] || 0}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEquipmentChange(
-                        equipment.id,
-                        Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
-                      )}
-                      disabled={equipment.available === 0 || (selectedEquipment[equipment.id] || 0) >= equipment.available}
-                    >
-                      +
-                    </Button>
+                      <p className={`text-sm ${!isAvailable ? 'text-red-500 font-semibold' : ''}`}>
+                        {isAvailable 
+                          ? `Disponíveis: ${equipment.available}` 
+                          : "Indisponível"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEquipmentChange(
+                          equipment.id,
+                          Math.max(0, (selectedEquipment[equipment.id] || 0) - 1)
+                        )}
+                        disabled={!isAvailable || !selectedEquipment[equipment.id]}
+                      >
+                        -
+                      </Button>
+                      <span className="w-8 text-center">{selectedEquipment[equipment.id] || 0}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEquipmentChange(
+                          equipment.id,
+                          Math.min(equipment.available, (selectedEquipment[equipment.id] || 0) + 1)
+                        )}
+                        disabled={!isAvailable || (selectedEquipment[equipment.id] || 0) >= equipment.available}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 Nenhum equipamento disponível para este horário.
