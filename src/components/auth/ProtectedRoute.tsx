@@ -57,6 +57,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  // Check if user is superAdmin, which bypasses all role checks
+  const isSuperAdmin = user.user_metadata?.is_super_admin === true;
+  
+  if (isSuperAdmin) {
+    console.log("SuperAdmin detected - bypassing role checks");
+    return <>{children}</>;
+  }
+
   // Check role requirements using JWT claims
   if (requiredRole) {
     const userRole = user.user_metadata?.role;
