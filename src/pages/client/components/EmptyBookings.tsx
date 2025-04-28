@@ -10,4 +10,3 @@ export const EmptyBookings = () => {
     </TableRow>
   );
 };
-

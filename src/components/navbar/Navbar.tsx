@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center">
           <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-roomly-600">Roomly</span>
+            <span className="text-xl font-bold text-roomly-600">EspaçoPsic</span>
           </Link>
         </div>
         
@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
           ) : (
             <>
               <Link to="/login">
-                <Button variant="outline">Login</Button>
+                <Button variant="outline">Entrar</Button>
               </Link>
               <Link to="/register">
                 <Button>Cadastre-se</Button>
