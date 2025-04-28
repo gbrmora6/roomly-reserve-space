@@ -15,6 +15,11 @@ export function useAuthOperations() {
 
       if (error) {
         console.error("Login error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Erro ao fazer login",
+          description: error.message || "Verifique suas credenciais e tente novamente.",
+        });
         throw error;
       }
       
@@ -101,6 +106,8 @@ export function useAuthOperations() {
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
+      
+      return data;
     } catch (error: any) {
       console.error("Login error (catch):", error);
       toast({
@@ -108,6 +115,7 @@ export function useAuthOperations() {
         title: "Erro ao fazer login",
         description: error.message || "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.",
       });
+      throw error;
     }
   };
 

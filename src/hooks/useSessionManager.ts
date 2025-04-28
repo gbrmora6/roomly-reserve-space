@@ -9,20 +9,26 @@ export function useSessionManager() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("Setting up Supabase auth listener");
+    
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         console.log("Auth state changed:", event);
+        console.log("User data:", currentSession?.user?.id || "No user");
+        
         setSession(currentSession);
         setUser(currentSession?.user || null);
         
         // Update loading state if we have clear auth state information
-        if (!currentSession) {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
           setLoading(false);
         }
         
         // If we have a session and user, check for special admin emails
         if (currentSession?.user) {
+          console.log("User metadata from session:", currentSession.user.user_metadata);
+          
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
             try {
@@ -57,45 +63,42 @@ export function useSessionManager() {
                     console.error("Error refreshing session:", refreshError);
                   }
                 }
+              } else {
+                // For non-admin users, fetch the role from profiles
+                const { data: profile } = await supabase
+                  .from('profiles')
+                  .select('role')
+                  .eq('id', currentSession.user.id)
+                  .single();
                 
-                setLoading(false);
-                return;
-              }
-              
-              // For non-admin users, fetch the role from profiles
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', currentSession.user.id)
-                .single();
-              
-              if (profile?.role) {
-                // Check if claims need updating
-                const isAdmin = profile.role === 'admin';
-                const needsUpdate = 
-                  currentSession.user.user_metadata?.role !== profile.role || 
-                  currentSession.user.user_metadata?.is_admin !== isAdmin;
-                
-                if (needsUpdate) {
-                  console.log("Updating user JWT claims with role:", profile.role, "isAdmin:", isAdmin);
+                if (profile?.role) {
+                  // Check if claims need updating
+                  const isAdmin = profile.role === 'admin';
+                  const needsUpdate = 
+                    currentSession.user.user_metadata?.role !== profile.role || 
+                    currentSession.user.user_metadata?.is_admin !== isAdmin;
                   
-                  const { data, error } = await supabase.auth.updateUser({
-                    data: { 
-                      role: profile.role, 
-                      is_admin: isAdmin
-                    }
-                  });
-                  
-                  if (error) {
-                    console.error("Error updating user claims:", error);
-                  } else if (data?.user) {
-                    console.log("Claims updated:", data.user.user_metadata);
-                    setUser(data.user);
+                  if (needsUpdate) {
+                    console.log("Updating user JWT claims with role:", profile.role, "isAdmin:", isAdmin);
                     
-                    // Refresh session to update JWT claims
-                    const { error: refreshError } = await supabase.auth.refreshSession();
-                    if (refreshError) {
-                      console.error("Error refreshing session:", refreshError);
+                    const { data, error } = await supabase.auth.updateUser({
+                      data: { 
+                        role: profile.role, 
+                        is_admin: isAdmin
+                      }
+                    });
+                    
+                    if (error) {
+                      console.error("Error updating user claims:", error);
+                    } else if (data?.user) {
+                      console.log("Claims updated:", data.user.user_metadata);
+                      setUser(data.user);
+                      
+                      // Refresh session to update JWT claims
+                      const { error: refreshError } = await supabase.auth.refreshSession();
+                      if (refreshError) {
+                        console.error("Error refreshing session:", refreshError);
+                      }
                     }
                   }
                 }
@@ -106,6 +109,8 @@ export function useSessionManager() {
               setLoading(false);
             }
           }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          setLoading(false);
         }
       }
     );
@@ -122,7 +127,10 @@ export function useSessionManager() {
       // If session exists, the auth change handler above will handle loading state
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log("Cleaning up auth subscription");
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { user, session, loading };

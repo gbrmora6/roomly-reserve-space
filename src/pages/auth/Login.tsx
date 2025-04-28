@@ -51,8 +51,15 @@ const Login: React.FC = () => {
     
     setIsLoading(true);
     console.log("Attempting login with email:", email);
-    await signIn(email, password);
-    setIsLoading(false);
+    
+    try {
+      await signIn(email, password);
+      console.log("Login successful");
+      // No need to redirect here as the AuthProvider will handle it
+    } catch (error) {
+      console.error("Login error:", error);
+      setIsLoading(false);
+    }
   };
 
   return (

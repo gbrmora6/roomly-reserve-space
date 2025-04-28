@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -57,7 +56,7 @@ const RoomList: React.FC = () => {
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
 
         // Get weekday from date (monday, tuesday, etc.)
-        const weekday = format(filters.date, "EEEE", { locale: { code: "en" } }).toLowerCase();
+        const weekday = format(filters.date, "EEEE").toLowerCase();
 
         // Get all rooms with matching weekday in open_days
         const { data: allRooms, error: roomsError } = await supabase
