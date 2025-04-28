@@ -14,6 +14,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("Login component - Auth state:", { user: user?.id || null, loading });
@@ -39,6 +40,7 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     
     if (!email || !password) {
       toast({
@@ -55,9 +57,20 @@ const Login: React.FC = () => {
     try {
       await signIn(email, password);
       console.log("Login successful");
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo de volta!",
+      });
       // No need to redirect here as the AuthProvider will handle it
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      setLoginError(error.message || "Falha na autenticação. Verifique suas credenciais.");
+      toast({
+        variant: "destructive",
+        title: "Erro ao fazer login",
+        description: error.message || "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.",
+      });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -103,6 +116,11 @@ const Login: React.FC = () => {
                     disabled={isLoading}
                   />
                 </div>
+                {loginError && (
+                  <div className="text-destructive text-sm font-medium">
+                    {loginError}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="flex flex-col space-y-4">
                 <Button 
