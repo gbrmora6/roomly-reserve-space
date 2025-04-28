@@ -1,54 +1,36 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { BookingsTable } from "@/components/bookings/BookingsTable";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { BookingsTable } from "@/components/bookings/BookingsTable";
+import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { Database } from "@/integrations/supabase/types";
-import { addHours, format } from "date-fns";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-interface Booking {
-  id: string;
-  user_id: string;
-  room_id: string;
-  start_time: string;
-  end_time: string;
-  status: BookingStatus;
-  created_at: string;
-  updated_at: string;
-  total_price: number;
-  user: {
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
-  room: {
-    name: string;
-  } | null;
-}
-
-const AdminBookings: React.FC = () => {
+const AdminBookings = () => {
   const [filter, setFilter] = useState<BookingStatus | "all">("all");
 
-  const { data: bookings = [], isLoading, refetch, isError } = useQuery({
+  const { data: bookings, isLoading, refetch } = useQuery({
     queryKey: ["bookings", filter],
     queryFn: async () => {
       let query = supabase
         .from("bookings")
         .select(`
-          id,
-          user_id,
-          room_id,
-          start_time,
-          end_time,
-          status,
-          created_at,
-          updated_at,
-          total_price,
-          user:user_id(first_name,last_name),
-          room:room_id(name)
+          *,
+          room:rooms(
+            name,
+            price_per_hour
+          ),
+          user:profiles(first_name, last_name),
+          booking_equipment:booking_equipment(
+            quantity,
+            equipment:equipment(
+              name,
+              price_per_hour
+            )
+          )
         `)
         .order("start_time", { ascending: false });
 
@@ -57,16 +39,9 @@ const AdminBookings: React.FC = () => {
       }
 
       const { data, error } = await query;
-      if (error) {
-        throw new Error(error.message);
-      }
 
-      // Corrige horário local na exibição
-      return (data as Booking[]).map((booking) => ({
-        ...booking,
-        start_time: addHours(new Date(booking.start_time), 3).toISOString(),
-        end_time: addHours(new Date(booking.end_time), 3).toISOString(),
-      }));
+      if (error) throw error;
+      return data;
     },
     meta: {
       onError: (err: any) => {
@@ -140,17 +115,7 @@ const AdminBookings: React.FC = () => {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <p>Carregando reservas...</p>
-        </div>
-      ) : isError ? (
-        <div className="flex items-center justify-center py-8">
-          <p>Erro ao carregar reservas.</p>
-        </div>
-      ) : (
-        <BookingsTable bookings={bookings as Booking[]} onUpdateStatus={handleUpdateStatus} />
-      )}
+      <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
     </div>
   );
 };

@@ -5,8 +5,19 @@ import { ptBR } from "date-fns/locale";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingActions } from "./BookingActions";
 import { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
+
+interface Equipment {
+  name: string;
+  price_per_hour: number;
+}
+
+interface BookingEquipment {
+  quantity: number;
+  equipment: Equipment;
+}
 
 interface Booking {
   id: string;
@@ -24,7 +35,9 @@ interface Booking {
   } | null;
   room: {
     name: string;
+    price_per_hour: number;
   } | null;
+  booking_equipment: BookingEquipment[] | null;
 }
 
 interface BookingsTableProps {
@@ -42,6 +55,7 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
             <TableHead>Usuário</TableHead>
             <TableHead>Data</TableHead>
             <TableHead>Horário</TableHead>
+            <TableHead>Equipamentos</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Ações</TableHead>
@@ -62,7 +76,20 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                   {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
                 </TableCell>
                 <TableCell>
-                  R$ {booking.total_price.toFixed(2)}
+                  {booking.booking_equipment && booking.booking_equipment.length > 0 ? (
+                    <ul className="list-disc list-inside">
+                      {booking.booking_equipment.map((item, index) => (
+                        <li key={index} className="text-sm">
+                          {item.quantity}x {item.equipment.name} ({formatCurrency(item.equipment.price_per_hour)}/h)
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {formatCurrency(booking.total_price)}
                 </TableCell>
                 <TableCell>
                   <BookingStatusBadge status={booking.status} />
@@ -78,7 +105,7 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-4">
+              <TableCell colSpan={8} className="text-center py-4">
                 Nenhuma reserva encontrada
               </TableCell>
             </TableRow>

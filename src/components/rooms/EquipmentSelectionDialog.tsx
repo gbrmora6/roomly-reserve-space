@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ export function EquipmentSelectionDialog({
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
   const { toast } = useToast();
   
-  // Reset selections when dialog opens or when available equipment changes
   useEffect(() => {
     setSelectedEquipment({});
   }, [open, availableEquipment]);
@@ -108,6 +106,9 @@ export function EquipmentSelectionDialog({
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h4 className="font-medium text-lg">{equipment.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCurrency(equipment.price_per_hour)}/hora
+                          </p>
                           {equipment.description && (
                             <p className="text-sm text-muted-foreground mt-1">{equipment.description}</p>
                           )}

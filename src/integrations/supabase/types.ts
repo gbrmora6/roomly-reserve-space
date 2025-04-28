@@ -132,6 +132,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          price_per_hour: number
           quantity: number
           updated_at: string
         }
@@ -140,6 +141,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          price_per_hour?: number
           quantity?: number
           updated_at?: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          price_per_hour?: number
           quantity?: number
           updated_at?: string
         }
