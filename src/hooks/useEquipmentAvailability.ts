@@ -22,6 +22,11 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       setLoading(true);
       
       try {
+        console.log("Fetching equipment availability for:", {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString()
+        });
+
         const { data: equipment } = await supabase
           .from("equipment")
           .select("*");
@@ -32,6 +37,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return;
         }
 
+        console.log("All equipment:", equipment);
+
         // Look for bookings that overlap with the requested time period
         const { data: overlappingBookings } = await supabase
           .from('bookings')
@@ -39,6 +46,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           .not('status', 'eq', 'cancelled')
           .lte('start_time', endTime.toISOString())
           .gte('end_time', startTime.toISOString());
+        
+        console.log("Overlapping bookings:", overlappingBookings);
         
         // Extract booking IDs into an array
         const bookingIds = overlappingBookings?.map(booking => booking.id) || [];
@@ -59,8 +68,12 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
             .eq('equipment_id', item.id)
             .in('booking_id', bookingIds);
 
+          console.log(`Booked items for equipment ${item.name}:`, bookedItems);
+
           const totalBooked = bookedItems?.reduce((sum, booking) => sum + booking.quantity, 0) || 0;
           const available = Math.max(0, item.quantity - totalBooked);
+
+          console.log(`Equipment ${item.name}: total=${item.quantity}, booked=${totalBooked}, available=${available}`);
 
           return {
             ...item,
@@ -69,6 +82,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         });
 
         const availabilityResults = await Promise.all(availabilityPromises);
+        console.log("Final availability results:", availabilityResults);
         setAvailableEquipment(availabilityResults);
       } catch (error) {
         console.error("Erro ao buscar disponibilidade dos equipamentos:", error);
