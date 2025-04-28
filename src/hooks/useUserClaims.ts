@@ -26,7 +26,7 @@ export function useUserClaims() {
       // Only fetch profile if we don't have role info or need to verify it
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, email')
+        .select('role')
         .eq('id', session.user.id)
         .single();
       
