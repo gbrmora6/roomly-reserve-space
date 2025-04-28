@@ -36,8 +36,9 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return;
         }
 
-        // Get weekday from startTime
-        const weekday = startTime.toLocaleDateString('en-US', { weekday: 'lowercase' });
+        // Get weekday from startTime as lowercase string: 'monday', 'tuesday', etc.
+        const weekday = startTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() as 
+          'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
         
         // Filter equipment based on open days and hours
         const filteredEquipment = equipment.filter(item => {
