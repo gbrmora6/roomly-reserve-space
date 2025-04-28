@@ -28,9 +28,15 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         });
 
         // First get all equipment
-        const { data: equipment } = await supabase
+        const { data: equipment, error: equipmentError } = await supabase
           .from("equipment")
           .select("*");
+
+        if (equipmentError) {
+          console.error("Error fetching equipment:", equipmentError);
+          setLoading(false);
+          return;
+        }
 
         if (!equipment) {
           setAvailableEquipment([]);
@@ -41,12 +47,19 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("All equipment:", equipment);
 
         // Look for bookings that overlap with the requested time period
-        const { data: overlappingBookings } = await supabase
+        // A booking overlaps if:
+        // 1. It starts before our end time AND
+        // 2. It ends after our start time
+        const { data: overlappingBookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('id, start_time, end_time')
           .not('status', 'eq', 'cancelled')
-          .lte('start_time', endTime.toISOString())
-          .gte('end_time', startTime.toISOString());
+          .lt('start_time', endTime.toISOString())
+          .gt('end_time', startTime.toISOString());
+        
+        if (bookingsError) {
+          console.error("Error fetching overlapping bookings:", bookingsError);
+        }
         
         console.log("Overlapping bookings:", overlappingBookings);
         
@@ -56,6 +69,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         const availabilityPromises = equipment.map(async (item) => {
           // If there are no overlapping bookings, all equipment is available
           if (bookingIds.length === 0) {
+            console.log(`Equipment ${item.name}: No overlapping bookings, all ${item.quantity} available`);
             return {
               ...item,
               available: item.quantity
@@ -63,11 +77,15 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           }
 
           // Get booked quantities for this equipment in the overlapping bookings
-          const { data: bookedItems } = await supabase
+          const { data: bookedItems, error: bookedItemsError } = await supabase
             .from('booking_equipment')
             .select('quantity, booking_id')
             .eq('equipment_id', item.id)
             .in('booking_id', bookingIds);
+
+          if (bookedItemsError) {
+            console.error(`Error fetching booked items for equipment ${item.id}:`, bookedItemsError);
+          }
 
           console.log(`Booked items for equipment ${item.name}:`, bookedItems);
 

@@ -49,6 +49,8 @@ export function EquipmentSelectionDialog({
       quantity
     }));
 
+    console.log("Adding equipment to booking:", equipmentToAdd);
+
     const { error } = await supabase
       .from('booking_equipment')
       .insert(equipmentToAdd);
