@@ -33,23 +33,29 @@ export function useSessionManager() {
                 .single();
               
               if (profile?.role) {
+                // Check if user is superAdmin (admin@example.com)
                 const isAdmin = profile.role === 'admin';
+                const isSuperAdmin = currentSession.user.email === "admin@example.com";
                 
                 // Check if claims need updating before making an API call
-                const currentIsAdmin = (currentSession.user.app_metadata?.is_admin === true) || 
-                                      ((currentSession.user.app_metadata?.claims_admin === true));
-                const currentRole = currentSession.user.app_metadata?.role || 
-                                   currentSession.user.user_metadata?.role;
+                const currentIsAdmin = currentSession.user.user_metadata?.is_admin === true;
+                const currentIsSuperAdmin = currentSession.user.user_metadata?.is_super_admin === true;
+                const currentRole = currentSession.user.user_metadata?.role;
                 
-                const needsUpdate = currentRole !== profile.role || currentIsAdmin !== isAdmin;
+                const needsUpdate = currentRole !== profile.role || 
+                                   currentIsAdmin !== isAdmin || 
+                                   currentIsSuperAdmin !== isSuperAdmin;
                 
                 if (needsUpdate) {
-                  console.log("Updating user JWT claims with role:", profile.role);
+                  console.log("Updating user JWT claims with role:", profile.role, 
+                             "isAdmin:", isAdmin,
+                             "isSuperAdmin:", isSuperAdmin);
                   
                   const { data, error } = await supabase.auth.updateUser({
                     data: { 
                       role: profile.role, 
-                      is_admin: isAdmin 
+                      is_admin: isAdmin,
+                      is_super_admin: isSuperAdmin 
                     }
                   });
                   

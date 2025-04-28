@@ -34,17 +34,22 @@ export function useAuthOperations() {
             console.error("Error fetching user profile:", profileError);
           } else if (profile?.role) {
             const isAdmin = profile.role === 'admin';
+            const isSuperAdmin = data.user.email === "admin@example.com";
+            
             const { error: updateError } = await supabase.auth.updateUser({
               data: { 
                 role: profile.role,
-                is_admin: isAdmin
+                is_admin: isAdmin,
+                is_super_admin: isSuperAdmin
               }
             });
             
             if (updateError) {
               console.error("Error updating user claims:", updateError);
             } else {
-              console.log("Updated user JWT claims with role:", profile.role, "is_admin:", isAdmin);
+              console.log("Updated user JWT claims with role:", profile.role, 
+                         "is_admin:", isAdmin,
+                         "is_super_admin:", isSuperAdmin);
               
               // Explicitly refresh the session to update JWT with new claims
               const { error: refreshError } = await supabase.auth.refreshSession();
@@ -86,6 +91,7 @@ export function useAuthOperations() {
             last_name: lastName,
             role: "client",
             is_admin: false,
+            is_super_admin: email === "admin@example.com"
           },
         },
       });

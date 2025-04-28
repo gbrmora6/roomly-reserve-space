@@ -58,7 +58,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   // Check if user is superAdmin, which bypasses all role checks
-  const isSuperAdmin = user.user_metadata?.is_super_admin === true;
+  const isSuperAdmin = user.user_metadata?.is_super_admin === true || user.email === "admin@example.com";
   
   if (isSuperAdmin) {
     console.log("SuperAdmin detected - bypassing role checks");
