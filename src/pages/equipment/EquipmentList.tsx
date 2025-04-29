@@ -9,7 +9,9 @@ import { EquipmentsGrid } from "@/components/equipment/EquipmentsGrid";
 import { ReserveEquipmentModal } from "@/components/equipment/ReserveEquipmentModal";
 import { useEquipmentFiltering } from "@/hooks/useEquipmentFiltering";
 import { useCompanyAddress } from "@/hooks/useCompanyAddress";
+import { Database } from "@/integrations/supabase/types";
 
+// Use the correct enum type for open_days
 interface Equipment {
   id: string;
   name: string;
@@ -19,7 +21,7 @@ interface Equipment {
   available: number;
   open_time?: string;
   close_time?: string;
-  open_days?: number[];
+  open_days?: Database["public"]["Enums"]["weekday"][];
 }
 
 const EquipmentList: React.FC = () => {
