@@ -58,6 +58,17 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
         }
       });
 
+      // Check if the room is open on this weekday
+      const weekdayNumber = selectedDate.getDay(); // 0-6, where 0 is Sunday
+      
+      // If room has open_days defined and doesn't include this day, block all hours
+      if (room.open_days && room.open_days.length > 0 && !room.open_days.includes(weekdayNumber)) {
+        console.log(`Room ${room.name} closed on day ${weekdayNumber}`);
+        setAvailableHours([]);
+        setBlockedHours(hours);
+        return;
+      }
+
       console.log("Available hours:", hours);
       console.log("Blocked hours:", blocked);
 

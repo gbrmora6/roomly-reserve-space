@@ -57,55 +57,66 @@ const RoomList: React.FC = () => {
         const [endHours, endMinutes] = filters.endTime.split(':');
         endDateTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
-        // Get weekday from date (monday, tuesday, etc.)
-        const weekday = format(filters.date, "EEEE", { locale: ptBR }).toLowerCase();
-
+        // Get weekday number (0-6, where 0 is Sunday)
+        const weekdayNumber = filters.date.getDay();
+        
         console.log("Filtering rooms for date:", filters.date);
         console.log("Start time:", startDateTime.toISOString());
         console.log("End time:", endDateTime.toISOString());
-        console.log("Weekday:", weekday);
+        console.log("Weekday number:", weekdayNumber);
 
-        // Get all rooms with matching weekday in open_days
-        const { data: allRooms, error: roomsError } = await supabase
-          .from('rooms')
-          .select(`
-            *,
-            room_photos (
-              id,
-              url
-            )
-          `)
-          .contains('open_days', [weekday])
-          .order('name');
+        try {
+          // Get all rooms that are open on this weekday
+          const { data: allRooms, error: roomsError } = await supabase
+            .from('rooms')
+            .select(`
+              *,
+              room_photos (
+                id,
+                url
+              )
+            `);
 
-        if (roomsError) {
-          console.error("Error fetching rooms:", roomsError);
-          throw roomsError;
+          if (roomsError) {
+            console.error("Error fetching rooms:", roomsError);
+            throw roomsError;
+          }
+
+          // Filter rooms that are open on the selected weekday
+          const openRooms = allRooms.filter(room => {
+            // If room has no open_days, assume it's open all days
+            if (!room.open_days || room.open_days.length === 0) return true;
+            
+            // Check if the room is open on this day
+            return room.open_days.includes(weekdayNumber);
+          });
+
+          // Get bookings that overlap with the selected time
+          const { data: bookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select('room_id')
+            .not('status', 'eq', 'cancelled')
+            .lte('start_time', endDateTime.toISOString())
+            .gte('end_time', startDateTime.toISOString());
+
+          if (bookingsError) {
+            console.error("Error fetching bookings:", bookingsError);
+            throw bookingsError;
+          }
+
+          console.log("Found bookings:", bookings);
+          const bookedRoomIds = bookings.map(booking => booking.room_id);
+          console.log("Booked room IDs:", bookedRoomIds);
+
+          // Filter out booked rooms
+          const availableRooms = openRooms.filter(room => !bookedRoomIds.includes(room.id));
+          console.log("Available rooms:", availableRooms.length);
+
+          return availableRooms as unknown as Room[];
+        } catch (error) {
+          console.error("Error in room filtering query:", error);
+          throw error;
         }
-
-        // Get bookings that overlap with the selected time
-        // IMPORTANT NOTE: This query has been fixed to correctly check for overlapping bookings
-        const { data: bookings, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('room_id')
-          .not('status', 'eq', 'cancelled')
-          .lte('start_time', endDateTime.toISOString())
-          .gte('end_time', startDateTime.toISOString());
-
-        if (bookingsError) {
-          console.error("Error fetching bookings:", bookingsError);
-          throw bookingsError;
-        }
-
-        console.log("Found bookings:", bookings);
-        const bookedRoomIds = bookings.map(booking => booking.room_id);
-        console.log("Booked room IDs:", bookedRoomIds);
-
-        // Filter out booked rooms
-        const availableRooms = allRooms.filter(room => !bookedRoomIds.includes(room.id));
-        console.log("Available rooms:", availableRooms.length);
-
-        return availableRooms as unknown as Room[];
       }
 
       return roomService.getAllRooms();
