@@ -30,9 +30,9 @@ export const EquipmentsGrid: React.FC<EquipmentsGridProps> = ({
   if (showFilterMessage) {
     return (
       <div className="text-center py-10 border rounded-lg bg-gray-50">
-        <h3 className="text-lg font-medium">Selecione uma data e horário</h3>
+        <h3 className="text-lg font-medium">Selecione uma data e horário completos</h3>
         <p className="text-muted-foreground mt-1">
-          Para ver os equipamentos disponíveis, escolha uma data e um horário
+          Para ver os equipamentos disponíveis, escolha uma data e horários de início e término
         </p>
       </div>
     );
