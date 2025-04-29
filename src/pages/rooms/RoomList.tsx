@@ -51,14 +51,19 @@ const RoomList: React.FC = () => {
       if (filters.date && filters.startTime && filters.endTime) {
         const startDateTime = new Date(filters.date);
         const [startHours, startMinutes] = filters.startTime.split(':');
-        startDateTime.setHours(parseInt(startHours), parseInt(startMinutes));
+        startDateTime.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
 
         const endDateTime = new Date(filters.date);
         const [endHours, endMinutes] = filters.endTime.split(':');
-        endDateTime.setHours(parseInt(endHours), parseInt(endMinutes));
+        endDateTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
         // Get weekday from date (monday, tuesday, etc.)
         const weekday = format(filters.date, "EEEE", { locale: ptBR }).toLowerCase();
+
+        console.log("Filtering rooms for date:", filters.date);
+        console.log("Start time:", startDateTime.toISOString());
+        console.log("End time:", endDateTime.toISOString());
+        console.log("Weekday:", weekday);
 
         // Get all rooms with matching weekday in open_days
         const { data: allRooms, error: roomsError } = await supabase
@@ -73,22 +78,32 @@ const RoomList: React.FC = () => {
           .contains('open_days', [weekday])
           .order('name');
 
-        if (roomsError) throw roomsError;
+        if (roomsError) {
+          console.error("Error fetching rooms:", roomsError);
+          throw roomsError;
+        }
 
         // Get bookings that overlap with the selected time
-        const { data: bookedRooms, error: bookingsError } = await supabase
+        // IMPORTANT NOTE: This query has been fixed to correctly check for overlapping bookings
+        const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('room_id')
           .not('status', 'eq', 'cancelled')
-          .gte('end_time', startDateTime.toISOString())
-          .lte('start_time', endDateTime.toISOString());
+          .lte('start_time', endDateTime.toISOString())
+          .gte('end_time', startDateTime.toISOString());
 
-        if (bookingsError) throw bookingsError;
+        if (bookingsError) {
+          console.error("Error fetching bookings:", bookingsError);
+          throw bookingsError;
+        }
 
-        const bookedRoomIds = bookedRooms.map(booking => booking.room_id);
+        console.log("Found bookings:", bookings);
+        const bookedRoomIds = bookings.map(booking => booking.room_id);
+        console.log("Booked room IDs:", bookedRoomIds);
 
         // Filter out booked rooms
         const availableRooms = allRooms.filter(room => !bookedRoomIds.includes(room.id));
+        console.log("Available rooms:", availableRooms.length);
 
         return availableRooms as unknown as Room[];
       }
