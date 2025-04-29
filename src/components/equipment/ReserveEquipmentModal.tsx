@@ -1,8 +1,10 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ReserveEquipmentForm } from "@/components/equipment/ReserveEquipmentForm";
+import { Database } from "@/integrations/supabase/types";
 
+// Updated Equipment interface to use the correct open_days type
 interface Equipment {
   id: string;
   name: string;
@@ -12,7 +14,7 @@ interface Equipment {
   available: number;
   open_time?: string;
   close_time?: string;
-  open_days?: number[];
+  open_days?: Database["public"]["Enums"]["weekday"][];
 }
 
 interface FilterState {

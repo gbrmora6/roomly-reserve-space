@@ -2,6 +2,23 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type WeekdayEnum = Database["public"]["Enums"]["weekday"];
+
+// Helper function to convert numeric day to weekday enum
+const getWeekdayFromNumber = (day: number): WeekdayEnum => {
+  const weekdays: WeekdayEnum[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday"
+  ];
+  return weekdays[day];
+};
 
 interface Equipment {
   id: string;
@@ -12,7 +29,7 @@ interface Equipment {
   available: number;
   open_time?: string;
   close_time?: string;
-  open_days?: number[];
+  open_days?: WeekdayEnum[];
 }
 
 interface FilterState {
@@ -44,11 +61,13 @@ export const useEquipmentFiltering = () => {
 
           // Get weekday number (0-6, where 0 is Sunday)
           const weekdayNumber = filters.date.getDay();
+          // Convert to weekday enum
+          const weekdayEnum = getWeekdayFromNumber(weekdayNumber);
           
           console.log("Filtering equipments for date:", startDateTime.toISOString().split('T')[0]);
           console.log("Start time:", startDateTime.toISOString());
           console.log("End time:", endDateTime.toISOString());
-          console.log("Weekday number:", weekdayNumber);
+          console.log("Weekday enum:", weekdayEnum);
 
           // Get all equipment
           const { data: allEquipments, error: equipmentsError } = await supabase
@@ -64,7 +83,7 @@ export const useEquipmentFiltering = () => {
             if (!equipment.open_days || equipment.open_days.length === 0) return true;
             
             // Check if the equipment is open on this day
-            return equipment.open_days.includes(weekdayNumber);
+            return equipment.open_days.includes(weekdayEnum);
           });
 
           // Get bookings that overlap with the selected time

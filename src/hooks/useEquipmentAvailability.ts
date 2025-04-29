@@ -1,6 +1,23 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type WeekdayEnum = Database["public"]["Enums"]["weekday"];
+
+// Helper function to convert numeric day to weekday enum
+const getWeekdayFromNumber = (day: number): WeekdayEnum => {
+  const weekdays: WeekdayEnum[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday"
+  ];
+  return weekdays[day];
+};
 
 export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null) {
   const [availableEquipment, setAvailableEquipment] = useState<Array<{
@@ -10,6 +27,9 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     quantity: number;
     available: number;
     price_per_hour: number;
+    open_time?: string;
+    close_time?: string;
+    open_days?: WeekdayEnum[];
   }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -29,11 +49,13 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         
         // Get weekday number (0-6, where 0 is Sunday)
         const weekdayNumber = selectedDate.getDay();
+        // Convert to weekday enum
+        const weekdayEnum = getWeekdayFromNumber(weekdayNumber);
         
         console.log("Filtering equipment for date:", selectedDate);
         console.log("Start time:", startTime.toISOString());
         console.log("End time:", endTime.toISOString());
-        console.log("Weekday number:", weekdayNumber);
+        console.log("Weekday enum:", weekdayEnum);
 
         // Get all equipment
         const { data: allEquipment, error: equipmentError } = await supabase
@@ -55,7 +77,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           if (!equipment.open_days || equipment.open_days.length === 0) return true;
           
           // Check if the equipment is available on this weekday
-          return equipment.open_days.includes(weekdayNumber);
+          return equipment.open_days.includes(weekdayEnum);
         });
 
         // Find overlapping bookings (not cancelled)
