@@ -29,7 +29,7 @@ interface BookingsTableProps {
 
 export const BookingsTable = ({ bookings, onCancelBooking }: BookingsTableProps) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
@@ -38,7 +38,6 @@ export const BookingsTable = ({ bookings, onCancelBooking }: BookingsTableProps)
             <TableHead>Horário</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Chat</TableHead>
             <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -56,4 +55,3 @@ export const BookingsTable = ({ bookings, onCancelBooking }: BookingsTableProps)
     </div>
   );
 };
-

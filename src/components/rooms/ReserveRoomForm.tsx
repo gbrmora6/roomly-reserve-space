@@ -9,7 +9,6 @@ import { TimeSelector } from "./TimeSelector";
 import { useRoomSchedule } from "@/hooks/useRoomSchedule";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useRoomReservation } from "@/hooks/useRoomReservation";
-import { EquipmentSelectionDialog } from "./EquipmentSelectionDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogFooter } from "@/components/ui/dialog";
@@ -24,9 +23,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [startHour, setStartHour] = useState<string>("");
   const [endHour, setEndHour] = useState<string>("");
-  const [showEquipmentDialog, setShowEquipmentDialog] = useState(false);
-  const [currentBookingId, setCurrentBookingId] = useState<string | null>(null);
-  const [wantsEquipment, setWantsEquipment] = useState<boolean | null>(null);
   const startHourRef = useRef<HTMLDivElement>(null);
   const endHourRef = useRef<HTMLDivElement>(null);
 
@@ -42,19 +38,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
     const result = await handleReserve(startTime, endTime);
     if (result?.id) {
-      setCurrentBookingId(result.id);
-      if (wantsEquipment) {
-        setShowEquipmentDialog(true);
-      } else {
-        toast.success("Reserva realizada com sucesso!");
-        onClose();
-      }
-    }
-  };
-
-  const handleEquipmentDialogClose = (open: boolean) => {
-    setShowEquipmentDialog(open);
-    if (!open) {
+      toast.success("Reserva realizada com sucesso!");
       onClose();
     }
   };
@@ -135,27 +119,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
                   />
                 </div>
               )}
-
-              {endHour && wantsEquipment === null && (
-                <div className="bg-card rounded-lg p-4 shadow-sm">
-                  <h3 className="text-lg font-medium mb-4">Deseja adicionar equipamentos?</h3>
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => setWantsEquipment(false)}
-                      className="w-32"
-                    >
-                      Não
-                    </Button>
-                    <Button
-                      onClick={() => setWantsEquipment(true)}
-                      className="w-32"
-                    >
-                      Sim
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -175,7 +138,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             >
               Cancelar
             </Button>
-            {wantsEquipment !== null && (
+            {endHour && (
               <Button
                 onClick={handleConfirmReservation}
                 disabled={!selectedDate || !startHour || !endHour || loading}
@@ -185,14 +148,6 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
               </Button>
             )}
           </DialogFooter>
-
-          <EquipmentSelectionDialog
-            open={showEquipmentDialog}
-            onOpenChange={handleEquipmentDialogClose}
-            startTime={selectedDate ? setHours(selectedDate, parseInt(startHour || "0")) : null}
-            endTime={selectedDate ? setHours(selectedDate, parseInt(endHour || "0")) : null}
-            bookingId={currentBookingId}
-          />
         </CardContent>
       </ScrollArea>
     </Card>

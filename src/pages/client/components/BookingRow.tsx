@@ -1,11 +1,10 @@
 
 import React from "react";
-import { format } from "date-fns";
+import { format, addHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { Button } from "@/components/ui/button";
-import { BookingChat } from "@/components/bookings/BookingChat";
 
 interface BookingRowProps {
   booking: {
@@ -24,7 +23,8 @@ interface BookingRowProps {
 export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
   const formatDateTime = (dateTimeString: string) => {
     try {
-      const date = new Date(dateTimeString);
+      // Adjust time to correct the 3-hour difference
+      const date = addHours(new Date(dateTimeString), 3);
       return format(date, "HH:mm", { locale: ptBR });
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -34,9 +34,9 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
 
   return (
     <TableRow key={booking.id}>
-      <TableCell>{booking.room?.name}</TableCell>
+      <TableCell className="font-medium">{booking.room?.name || "N/A"}</TableCell>
       <TableCell>
-        {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
+        {format(addHours(new Date(booking.start_time), 3), "dd/MM/yyyy", { locale: ptBR })}
       </TableCell>
       <TableCell>
         {formatDateTime(booking.start_time)} - {formatDateTime(booking.end_time)}
@@ -49,9 +49,6 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
       </TableCell>
       <TableCell>
         <BookingStatusBadge status={booking.status as any} />
-      </TableCell>
-      <TableCell>
-        <BookingChat bookingId={booking.id} />
       </TableCell>
       <TableCell>
         {booking.status !== "cancelled" && (
@@ -67,4 +64,3 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
     </TableRow>
   );
 };
-

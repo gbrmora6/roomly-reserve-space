@@ -40,7 +40,9 @@ export const ReserveEquipmentModal: React.FC<ReserveEquipmentModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Reservar Equipamento</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-roomly-600">
+            Reservar Equipamento
+          </DialogTitle>
         </DialogHeader>
         {selectedEquipment && (
           <ReserveEquipmentForm
