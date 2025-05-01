@@ -65,7 +65,7 @@ export function EquipmentSelectionDialog({
 
       const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
         equipment_id: id,
-        booking_id: bookingId,
+        booking_id: bookingId, // This can now be null if needed
         user_id: user.id,
         quantity,
         start_time: utcStartTime.toISOString(),

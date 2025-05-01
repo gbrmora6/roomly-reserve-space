@@ -165,7 +165,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
       const utcStartTime = setHours(startDate, startDate.getHours() - 3);
       const utcEndTime = setHours(endDate, endDate.getHours() - 3);
 
-      // Create equipment booking directly
+      // Create equipment booking with booking_id set to null explicitly
       const { error: equipmentError } = await supabase
         .from("booking_equipment")
         .insert({
@@ -175,7 +175,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
           start_time: utcStartTime.toISOString(),
           end_time: utcEndTime.toISOString(),
           status: "pending",
-          booking_id: null // Add a null booking_id since it's standalone equipment booking
+          booking_id: null // Explicitly set booking_id to null
         });
 
       if (equipmentError) throw equipmentError;

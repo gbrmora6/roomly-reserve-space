@@ -11,7 +11,7 @@ export type Database = {
     Tables: {
       booking_equipment: {
         Row: {
-          booking_id: string
+          booking_id: string | null
           created_at: string
           end_time: string
           equipment_id: string
@@ -24,7 +24,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          booking_id: string
+          booking_id?: string | null
           created_at?: string
           end_time: string
           equipment_id: string
@@ -37,7 +37,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          booking_id?: string
+          booking_id?: string | null
           created_at?: string
           end_time?: string
           equipment_id?: string
