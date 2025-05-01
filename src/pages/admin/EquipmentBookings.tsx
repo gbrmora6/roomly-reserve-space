@@ -77,7 +77,7 @@ const AdminEquipmentBookings: React.FC = () => {
             updated_at,
             total_price,
             user_id,
-            profiles!booking_equipment_user_id_fkey(first_name, last_name),
+            user:profiles(first_name, last_name),
             equipment:equipment(
               name,
               price_per_hour
@@ -97,7 +97,7 @@ const AdminEquipmentBookings: React.FC = () => {
         // Transform data to match BookingsTable component expectations
         const transformedBookings: Booking[] = data.map(item => {
           // Safe access to user fields
-          const userProfile = item.profiles;
+          const userProfile = item.user;
           
           return {
             id: item.id,
