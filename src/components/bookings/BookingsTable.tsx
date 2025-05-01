@@ -97,6 +97,7 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                 <TableCell>
                   <BookingActions 
                     bookingId={booking.id} 
+                    userId={booking.user_id}
                     status={booking.status} 
                     onUpdateStatus={onUpdateStatus}
                   />

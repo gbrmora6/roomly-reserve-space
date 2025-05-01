@@ -67,19 +67,17 @@ const AdminEquipmentBookings: React.FC = () => {
           .from("booking_equipment")
           .select(`
             id,
-            user_id,
             booking_id,
             equipment_id,
+            quantity,
             start_time,
             end_time,
             status,
             created_at,
             updated_at,
             total_price,
-            user:profiles(
-              first_name,
-              last_name
-            ),
+            user_id,
+            profiles!booking_equipment_user_id_fkey(first_name, last_name),
             equipment:equipment(
               name,
               price_per_hour
@@ -94,31 +92,37 @@ const AdminEquipmentBookings: React.FC = () => {
         
         if (error) throw error;
         
+        console.log("Equipment booking data:", data);
+        
         // Transform data to match BookingsTable component expectations
-        const transformedBookings: Booking[] = data.map(item => ({
-          id: item.id,
-          user_id: item.user_id,
-          room_id: null,
-          start_time: item.start_time,
-          end_time: item.end_time,
-          status: item.status as BookingStatus,
-          created_at: item.created_at,
-          updated_at: item.updated_at,
-          total_price: item.total_price,
-          // Make sure user is safely accessed
-          user: item.user ? {
-            first_name: (item.user as any).first_name,
-            last_name: (item.user as any).last_name
-          } : null,
-          room: null,
-          booking_equipment: [{
-            quantity: 1, // Default quantity
-            equipment: {
-              name: (item.equipment as any).name,
-              price_per_hour: (item.equipment as any).price_per_hour
-            }
-          }]
-        }));
+        const transformedBookings: Booking[] = data.map(item => {
+          // Safe access to user fields
+          const userProfile = item.profiles;
+          
+          return {
+            id: item.id,
+            user_id: item.user_id,
+            room_id: null,
+            start_time: item.start_time,
+            end_time: item.end_time,
+            status: item.status as BookingStatus,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            total_price: item.total_price,
+            user: userProfile ? {
+              first_name: userProfile.first_name,
+              last_name: userProfile.last_name
+            } : null,
+            room: null,
+            booking_equipment: [{
+              quantity: item.quantity,
+              equipment: {
+                name: (item.equipment as any).name,
+                price_per_hour: (item.equipment as any).price_per_hour
+              }
+            }]
+          };
+        });
         
         return transformedBookings;
       } catch (error) {

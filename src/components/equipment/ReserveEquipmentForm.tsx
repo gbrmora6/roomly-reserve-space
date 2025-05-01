@@ -165,26 +165,10 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
       const utcStartTime = setHours(startDate, startDate.getHours() - 3);
       const utcEndTime = setHours(endDate, endDate.getHours() - 3);
 
-      // Create booking first
-      const { data: booking, error: bookingError } = await supabase
-        .from("bookings")
-        .insert({
-          user_id: user.id,
-          room_id: null, // No room for equipment-only booking
-          start_time: utcStartTime.toISOString(),
-          end_time: utcEndTime.toISOString(),
-          status: "pending",
-        })
-        .select()
-        .single();
-
-      if (bookingError) throw bookingError;
-
-      // Then create equipment booking
+      // Create equipment booking directly without linking to a room booking
       const { error: equipmentError } = await supabase
         .from("booking_equipment")
         .insert({
-          booking_id: booking.id,
           equipment_id: equipment.id,
           quantity: quantity,
           user_id: user.id,
