@@ -11,7 +11,23 @@ import { Database } from "@/integrations/supabase/types";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-interface EquipmentBooking {
+// Define types to match BookingTable component expectations
+interface User {
+  first_name: string | null;
+  last_name: string | null;
+}
+
+interface Equipment {
+  name: string;
+  price_per_hour: number;
+}
+
+interface BookingEquipment {
+  quantity: number;
+  equipment: Equipment;
+}
+
+interface Booking {
   id: string;
   user_id: string;
   room_id: string | null;
@@ -21,17 +37,12 @@ interface EquipmentBooking {
   created_at: string;
   updated_at: string;
   total_price: number;
-  user: {
-    first_name: string | null;
-    last_name: string | null;
+  user: User | null;
+  room: {
+    name: string;
+    price_per_hour: number;
   } | null;
-  booking_equipment: {
-    quantity: number;
-    equipment: {
-      name: string;
-      price_per_hour: number;
-    };
-  }[] | null;
+  booking_equipment: BookingEquipment[] | null;
 }
 
 const AdminEquipmentBookings: React.FC = () => {
@@ -84,17 +95,21 @@ const AdminEquipmentBookings: React.FC = () => {
         if (error) throw error;
         
         // Transform data to match BookingsTable component expectations
-        const transformedData = data.map(item => ({
+        const transformedBookings: Booking[] = data.map(item => ({
           id: item.id,
           user_id: item.user_id,
           room_id: null,
           start_time: item.start_time,
           end_time: item.end_time,
-          status: item.status,
+          status: item.status as BookingStatus,
           created_at: item.created_at,
           updated_at: item.updated_at,
           total_price: item.total_price,
-          user: item.user,
+          // Ensure user is correctly formatted
+          user: item.user ? {
+            first_name: item.user.first_name,
+            last_name: item.user.last_name
+          } : null,
           room: null,
           booking_equipment: [{
             quantity: 1, // Default quantity
@@ -105,7 +120,7 @@ const AdminEquipmentBookings: React.FC = () => {
           }]
         }));
         
-        return transformedData;
+        return transformedBookings;
       } catch (error) {
         console.error("Error fetching equipment bookings:", error);
         throw error;

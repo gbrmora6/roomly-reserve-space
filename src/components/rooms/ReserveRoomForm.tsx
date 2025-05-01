@@ -80,10 +80,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
               blockedHours={blockedHours}
               selectedStartTime={selectedStartTime}
               selectedEndTime={selectedEndTime}
-              onSelectStartTime={(time) => {
-                setSelectedStartTime(time);
-                setSelectedEndTime(null);
-              }}
+              onSelectStartTime={setSelectedStartTime}
               onSelectEndTime={setSelectedEndTime}
             />
           </div>

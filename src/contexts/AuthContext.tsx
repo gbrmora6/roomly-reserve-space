@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Wrap the signIn function to match the AuthContextType
   const signIn = async (email: string, password: string): Promise<void> => {
     await authSignIn(email, password);
-    // Return type is now void, which matches the AuthContextType
   };
 
   return (
