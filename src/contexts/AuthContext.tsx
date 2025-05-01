@@ -1,5 +1,5 @@
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { useSessionManager } from "@/hooks/useSessionManager";
 import { useAuthOperations } from "@/hooks/useAuthOperations";
@@ -18,9 +18,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // Get session state from the session manager
   const { user, session, loading } = useSessionManager();
   const { signIn: authSignIn, signUp, signOut } = useAuthOperations();
   const { refreshUserClaims } = useUserClaims();
+  
+  // Log auth state on changes for debugging
+  useEffect(() => {
+    console.log("AuthContext state changed:", {
+      authenticated: !!user,
+      userId: user?.id || "none",
+      loading,
+    });
+  }, [user, loading]);
   
   // Wrap the signIn function to match the AuthContextType
   const signIn = async (email: string, password: string): Promise<void> => {

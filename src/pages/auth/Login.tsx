@@ -17,6 +17,7 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  // Log component state for debugging
   useEffect(() => {
     console.log("Login component - Auth state:", { user: user?.id || null, loading });
   }, [user, loading]);
@@ -85,22 +86,22 @@ const Login: React.FC = () => {
     <MainLayout>
       <div className="container mx-auto flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
-              <CardDescription className="text-center">
+          <Card className="border-2 border-roomly-200 shadow-lg">
+            <CardHeader className="space-y-1 bg-gradient-to-r from-roomly-50 to-roomly-100 rounded-t-lg pb-4">
+              <CardTitle className="text-2xl font-bold text-center text-roomly-800">Login</CardTitle>
+              <CardDescription className="text-center text-roomly-600">
                 Entre com suas credenciais para acessar sua conta
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 {loginError && (
                   <Alert variant="destructive">
                     <AlertDescription>{loginError}</AlertDescription>
                   </Alert>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="font-medium text-roomly-700">Email</Label>
                   <Input 
                     id="email" 
                     type="email" 
@@ -110,12 +111,13 @@ const Login: React.FC = () => {
                     required 
                     disabled={isLoading}
                     autoComplete="email"
+                    className="border-roomly-300 focus:border-roomly-500 focus:ring-roomly-500"
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Senha</Label>
-                    <Link to="/forgot-password" className="text-sm text-roomly-600 hover:underline">
+                    <Label htmlFor="password" className="font-medium text-roomly-700">Senha</Label>
+                    <Link to="/forgot-password" className="text-sm text-roomly-600 hover:underline font-medium">
                       Esqueceu sua senha?
                     </Link>
                   </div>
@@ -127,13 +129,14 @@ const Login: React.FC = () => {
                     required
                     disabled={isLoading}
                     autoComplete="current-password"
+                    className="border-roomly-300 focus:border-roomly-500 focus:ring-roomly-500"
                   />
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
+              <CardFooter className="flex flex-col space-y-4 pt-2 pb-6">
                 <Button 
                   type="submit" 
-                  className="w-full bg-roomly-600 hover:bg-roomly-700"
+                  className="w-full bg-roomly-600 hover:bg-roomly-700 text-white font-medium text-base py-5"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -145,17 +148,17 @@ const Login: React.FC = () => {
                 </Button>
                 <div className="text-center text-sm">
                   Não tem uma conta?{" "}
-                  <Link to="/register" className="text-roomly-600 hover:underline">
+                  <Link to="/register" className="text-roomly-600 hover:underline font-medium">
                     Cadastre-se
                   </Link>
                 </div>
               </CardFooter>
             </form>
           </Card>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Credenciais de teste:</p>
-            <p>Cliente: client@example.com / password</p>
-            <p>Admin: admin@example.com / password</p>
+          <div className="mt-6 p-4 bg-roomly-50 rounded-lg border border-roomly-200 text-center">
+            <p className="text-sm font-medium text-roomly-800 mb-1">Credenciais de teste:</p>
+            <p className="text-sm text-roomly-600">Cliente: client@example.com / password</p>
+            <p className="text-sm text-roomly-600">Admin: admin@example.com / password</p>
           </div>
         </div>
       </div>

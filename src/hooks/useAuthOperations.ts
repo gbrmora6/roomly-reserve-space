@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -71,6 +72,8 @@ export function useAuthOperations() {
             if (profileError) {
               console.error("Error fetching user profile:", profileError);
             } else if (profile?.role) {
+              console.log("Role from profile database:", profile.role);
+              
               const isAdmin = profile.role === 'admin';
               
               const { error: updateError } = await supabase.auth.updateUser({

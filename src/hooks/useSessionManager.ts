@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export function useSessionManager() {
   const [user, setUser] = useState<User | null>(null);
@@ -14,10 +15,16 @@ export function useSessionManager() {
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       console.log("Auth state changed:", event);
-      console.log("User data:", currentSession?.user?.id || "No user");
       
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        console.log("User data:", currentSession.user.id);
+        setSession(currentSession);
+        setUser(currentSession.user);
+      } else {
+        console.log("No user in session");
+        setSession(null);
+        setUser(null);
+      }
       
       // Update loading state if we have clear auth state information
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
@@ -49,6 +56,10 @@ export function useSessionManager() {
                   .eq('id', currentSession.user.id)
                   .maybeSingle();
                 
+                if (profileError) {
+                  console.error("Error fetching admin profile:", profileError);
+                }
+                
                 // If profile doesn't exist or doesn't have admin role, update it
                 if (profileError || !profile || profile?.role !== 'admin') {
                   // Create or update profile with admin role
@@ -66,10 +77,14 @@ export function useSessionManager() {
                   } else {
                     console.log("Admin profile updated for special account");
                   }
+                } else {
+                  console.log("Admin profile already exists for special account");
                 }
               } catch (updateError) {
                 console.error("Error in admin profile update:", updateError);
               }
+            } else {
+              console.log("Regular user account");
             }
           } catch (error) {
             console.error("Error processing user session:", error);
@@ -83,19 +98,32 @@ export function useSessionManager() {
     });
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession?.user?.id || "No session");
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-      
-      if (!currentSession) {
+    const initializeSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting initial session:", error);
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Initial session check:", currentSession?.user?.id || "No session");
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          setLoading(false);
+        }
+        // If session exists, the auth change handler above will handle loading state
+      } catch (err) {
+        console.error("Unexpected error during session initialization:", err);
         setLoading(false);
       }
-      // If session exists, the auth change handler above will handle loading state
-    }).catch(error => {
-      console.error("Error getting session:", error);
-      setLoading(false);
-    });
+    };
+    
+    initializeSession();
 
     return () => {
       console.log("Cleaning up auth subscription");

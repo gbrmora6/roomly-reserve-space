@@ -30,7 +30,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           id: user.id, 
           email: user.email,
           metadata: user.user_metadata,
-          app_metadata: user.app_metadata,
           requiredRole
         });
       }
@@ -79,8 +78,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       userRole, 
       requiredRole, 
       isAdmin,
-      metadata: user.user_metadata,
-      app_metadata: user.app_metadata
+      metadata: user.user_metadata
     });
     
     // Simple permission check based on required role
