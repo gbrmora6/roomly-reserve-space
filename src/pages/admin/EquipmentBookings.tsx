@@ -76,11 +76,11 @@ const AdminEquipmentBookings: React.FC = () => {
             created_at,
             updated_at,
             total_price,
-            user:profiles!booking_equipment_user_id_fkey(
+            user:profiles(
               first_name,
               last_name
             ),
-            equipment:equipment!booking_equipment_equipment_id_fkey(
+            equipment:equipment(
               name,
               price_per_hour
             )
@@ -105,17 +105,17 @@ const AdminEquipmentBookings: React.FC = () => {
           created_at: item.created_at,
           updated_at: item.updated_at,
           total_price: item.total_price,
-          // Ensure user is correctly formatted
+          // Make sure user is safely accessed
           user: item.user ? {
-            first_name: item.user.first_name,
-            last_name: item.user.last_name
+            first_name: (item.user as any).first_name,
+            last_name: (item.user as any).last_name
           } : null,
           room: null,
           booking_equipment: [{
             quantity: 1, // Default quantity
             equipment: {
-              name: item.equipment.name,
-              price_per_hour: item.equipment.price_per_hour
+              name: (item.equipment as any).name,
+              price_per_hour: (item.equipment as any).price_per_hour
             }
           }]
         }));
