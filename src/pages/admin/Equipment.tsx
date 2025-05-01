@@ -5,16 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash } from "lucide-react";
+import { Plus, Pencil, Trash, PowerOff, Power } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 interface Equipment {
   id: string;
   name: string;
   description: string | null;
   quantity: number;
+  is_active: boolean;
 }
 
 const AdminEquipment: React.FC = () => {
@@ -72,6 +74,28 @@ const AdminEquipment: React.FC = () => {
     }
   };
 
+  const toggleEquipmentStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("equipment")
+        .update({ is_active: !currentStatus })
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: currentStatus ? "Equipamento desativado com sucesso" : "Equipamento ativado com sucesso",
+      });
+      refetch();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar status do equipamento",
+        description: err.message,
+      });
+    }
+  };
+
   console.log("AdminEquipment render state:", { isLoading, isError, equipmentCount: equipment?.length });
 
   return (
@@ -105,6 +129,7 @@ const AdminEquipment: React.FC = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Quantidade</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -115,11 +140,27 @@ const AdminEquipment: React.FC = () => {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="max-w-[300px] truncate">{item.description}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.is_active ? "default" : "outline"}>
+                        {item.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="ghost" size="icon" asChild>
                         <Link to={`/admin/equipment/${item.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => toggleEquipmentStatus(item.id, item.is_active)}
+                        title={item.is_active ? "Desativar equipamento" : "Ativar equipamento"}
+                      >
+                        {item.is_active ? 
+                          <PowerOff className="h-4 w-4 text-red-500" /> : 
+                          <Power className="h-4 w-4 text-green-500" />
+                        }
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -133,7 +174,7 @@ const AdminEquipment: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4">
+                  <TableCell colSpan={5} className="text-center py-4">
                     Nenhum equipamento cadastrado
                   </TableCell>
                 </TableRow>

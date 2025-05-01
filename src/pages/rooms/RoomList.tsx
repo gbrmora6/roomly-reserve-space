@@ -66,7 +66,7 @@ const RoomList: React.FC = () => {
         console.log("Weekday number:", weekdayNumber);
 
         try {
-          // Get all rooms that are open on this weekday
+          // Get all active rooms that are open on this weekday
           const { data: allRooms, error: roomsError } = await supabase
             .from('rooms')
             .select(`
@@ -75,7 +75,8 @@ const RoomList: React.FC = () => {
                 id,
                 url
               )
-            `);
+            `)
+            .eq('is_active', true);
 
           if (roomsError) {
             console.error("Error fetching rooms:", roomsError);
@@ -119,7 +120,20 @@ const RoomList: React.FC = () => {
         }
       }
 
-      return roomService.getAllRooms();
+      // Get all active rooms
+      const { data, error } = await supabase
+        .from('rooms')
+        .select(`
+          *,
+          room_photos (
+            id,
+            url
+          )
+        `)
+        .eq('is_active', true);
+        
+      if (error) throw error;
+      return data as unknown as Room[];
     },
   });
 

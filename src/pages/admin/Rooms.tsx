@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Link } from "react-router-dom";
-import { Plus, Pencil, Trash } from "lucide-react";
+import { Plus, Pencil, Trash, PowerOff, Power } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 interface Room {
   id: string;
@@ -18,6 +19,7 @@ interface Room {
   has_ac: boolean | null;
   has_chairs: boolean | null;
   has_tables: boolean | null;
+  is_active: boolean;
 }
 
 const AdminRooms: React.FC = () => {
@@ -75,6 +77,28 @@ const AdminRooms: React.FC = () => {
     }
   };
 
+  const toggleRoomStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("rooms")
+        .update({ is_active: !currentStatus })
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: currentStatus ? "Sala desativada com sucesso" : "Sala ativada com sucesso",
+      });
+      refetch();
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar status da sala",
+        description: err.message,
+      });
+    }
+  };
+
   console.log("AdminRooms render state:", { isLoading, isError, roomsCount: rooms?.length });
 
   return (
@@ -112,6 +136,7 @@ const AdminRooms: React.FC = () => {
                 <TableHead>Ar-Condic.</TableHead>
                 <TableHead>Cadeiras</TableHead>
                 <TableHead>Mesas</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -125,11 +150,27 @@ const AdminRooms: React.FC = () => {
                     <TableCell>{room.has_ac ? "Sim" : "Não"}</TableCell>
                     <TableCell>{room.has_chairs ? "Sim" : "Não"}</TableCell>
                     <TableCell>{room.has_tables ? "Sim" : "Não"}</TableCell>
+                    <TableCell>
+                      <Badge variant={room.is_active ? "default" : "outline"}>
+                        {room.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="ghost" size="icon" asChild>
                         <Link to={`/admin/rooms/${room.id}`}>
                           <Pencil className="h-4 w-4" />
                         </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => toggleRoomStatus(room.id, room.is_active)}
+                        title={room.is_active ? "Desativar sala" : "Ativar sala"}
+                      >
+                        {room.is_active ? 
+                          <PowerOff className="h-4 w-4 text-red-500" /> : 
+                          <Power className="h-4 w-4 text-green-500" />
+                        }
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -143,7 +184,7 @@ const AdminRooms: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
+                  <TableCell colSpan={8} className="text-center py-4">
                     Nenhuma sala cadastrada
                   </TableCell>
                 </TableRow>

@@ -150,6 +150,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_active: boolean
           name: string
           open_days: Database["public"]["Enums"]["weekday"][] | null
           open_time: string | null
@@ -162,6 +163,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean
           name: string
           open_days?: Database["public"]["Enums"]["weekday"][] | null
           open_time?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean
           name?: string
           open_days?: Database["public"]["Enums"]["weekday"][] | null
           open_time?: string | null
@@ -287,42 +290,60 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cep: string | null
+          city: string | null
           cnpj: string | null
           cpf: string | null
           created_at: string
           crp: string | null
           first_name: string | null
+          house_number: string | null
           id: string
           last_name: string | null
+          neighborhood: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           specialty: string | null
+          state: string | null
+          street: string | null
           updated_at: string
         }
         Insert: {
+          cep?: string | null
+          city?: string | null
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
           crp?: string | null
           first_name?: string | null
+          house_number?: string | null
           id: string
           last_name?: string | null
+          neighborhood?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           specialty?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
         }
         Update: {
+          cep?: string | null
+          city?: string | null
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
           crp?: string | null
           first_name?: string | null
+          house_number?: string | null
           id?: string
           last_name?: string | null
+          neighborhood?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           specialty?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -436,6 +457,7 @@ export type Database = {
           has_tables: boolean | null
           has_wifi: boolean | null
           id: string
+          is_active: boolean
           name: string
           open_days: number[] | null
           open_time: string | null
@@ -451,6 +473,7 @@ export type Database = {
           has_tables?: boolean | null
           has_wifi?: boolean | null
           id?: string
+          is_active?: boolean
           name: string
           open_days?: number[] | null
           open_time?: string | null
@@ -466,6 +489,7 @@ export type Database = {
           has_tables?: boolean | null
           has_wifi?: boolean | null
           id?: string
+          is_active?: boolean
           name?: string
           open_days?: number[] | null
           open_time?: string | null

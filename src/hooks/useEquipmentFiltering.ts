@@ -30,6 +30,7 @@ interface Equipment {
   open_time?: string;
   close_time?: string;
   open_days?: WeekdayEnum[];
+  is_active: boolean;
 }
 
 interface FilterState {
@@ -69,10 +70,11 @@ export const useEquipmentFiltering = () => {
           console.log("End time:", endDateTime.toISOString());
           console.log("Weekday enum:", weekdayEnum);
 
-          // Get all equipment
+          // Get all active equipment
           const { data: allEquipments, error: equipmentsError } = await supabase
             .from('equipment')
             .select('*')
+            .eq('is_active', true)
             .order('name');
 
           if (equipmentsError) throw equipmentsError;
@@ -129,10 +131,11 @@ export const useEquipmentFiltering = () => {
           return availableEquipments;
         }
 
-        // If no filters, get all equipment
+        // If no filters, get all active equipment
         const { data, error } = await supabase
           .from('equipment')
           .select('*')
+          .eq('is_active', true)
           .order('name');
           
         if (error) throw error;

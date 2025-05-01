@@ -24,6 +24,7 @@ import {
   Bed,
   Mic,
   BookOpen,
+  Package,
   Users,
   LogOut,
   Home,
@@ -103,7 +104,19 @@ const AdminLayout: React.FC = () => {
                       className={isActive("/admin/bookings") ? "bg-muted" : ""}
                     >
                       <BookOpen className="mr-2 h-4 w-4" />
-                      <span>Reservas</span>
+                      <span>Reservas de Salas</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to="/admin/equipment-bookings"
+                      className={isActive("/admin/equipment-bookings") ? "bg-muted" : ""}
+                    >
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Reservas de Equipamentos</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

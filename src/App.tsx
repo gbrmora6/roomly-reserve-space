@@ -18,6 +18,7 @@ import AdminRoomForm from "./pages/admin/RoomForm";
 import AdminEquipment from "./pages/admin/Equipment";
 import AdminEquipmentForm from "./pages/admin/EquipmentForm";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminEquipmentBookings from "./pages/admin/EquipmentBookings";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import Clients from "./pages/admin/Clients";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -72,6 +73,7 @@ const App = () => {
                 <Route path="equipment/new" element={<AdminEquipmentForm />} />
                 <Route path="equipment/:id" element={<AdminEquipmentForm />} />
                 <Route path="bookings" element={<AdminBookings />} />
+                <Route path="equipment-bookings" element={<AdminEquipmentBookings />} />
                 <Route path="clients" element={<Clients />} />
               </Route>
               

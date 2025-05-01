@@ -1,18 +1,15 @@
 
-import React, { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { format, setHours, setMinutes } from "date-fns";
+import React, { useState } from "react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Room } from "@/types/room";
-import { TimeSelector } from "./TimeSelector";
-import { useRoomSchedule } from "@/hooks/useRoomSchedule";
+import { Calendar } from "@/components/ui/calendar";
+import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { Button } from "@/components/ui/button";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useRoomReservation } from "@/hooks/useRoomReservation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 interface ReserveRoomFormProps {
   room: Room;
@@ -21,136 +18,124 @@ interface ReserveRoomFormProps {
 
 const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [startHour, setStartHour] = useState<string>("");
-  const [endHour, setEndHour] = useState<string>("");
-  const startHourRef = useRef<HTMLDivElement>(null);
-  const endHourRef = useRef<HTMLDivElement>(null);
-
-  const schedules = useRoomSchedule(room.id);
+  const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
+  const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
   const { availableHours, blockedHours } = useRoomAvailability(room, selectedDate);
   const { handleReserve, loading } = useRoomReservation(room, onClose);
 
-  const handleConfirmReservation = async () => {
-    if (!selectedDate || !startHour || !endHour) return;
+  const handleSubmit = async () => {
+    if (!selectedDate || !selectedStartTime || !selectedEndTime) {
+      toast({
+        variant: "destructive",
+        title: "Dados incompletos",
+        description: "Por favor preencha todos os campos",
+      });
+      return;
+    }
 
-    let startTime = setMinutes(setHours(selectedDate, parseInt(startHour)), 0);
-    let endTime = setMinutes(setHours(selectedDate, parseInt(endHour)), 0);
+    const startDate = new Date(selectedDate);
+    const [startHour, startMinute] = selectedStartTime.split(":");
+    startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
 
-    const result = await handleReserve(startTime, endTime);
-    if (result?.id) {
-      toast.success("Reserva realizada com sucesso!");
+    const endDate = new Date(selectedDate);
+    const [endHour, endMinute] = selectedEndTime.split(":");
+    endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
+
+    const booking = await handleReserve(startDate, endDate);
+
+    if (booking) {
+      toast({
+        title: "Reserva realizada com sucesso!",
+        description: "Você receberá uma confirmação em breve.",
+      });
       onClose();
     }
   };
 
-  const isDateDisabled = (date: Date) => {
-    const weekday = format(date, "eeee", { locale: ptBR }).toLowerCase();
-    const weekdayEnglish = {
-      'segunda-feira': 'monday',
-      'terça-feira': 'tuesday',
-      'quarta-feira': 'wednesday',
-      'quinta-feira': 'thursday',
-      'sexta-feira': 'friday',
-      'sábado': 'saturday',
-      'domingo': 'sunday'
-    }[weekday] || weekday;
-    
-    return !schedules.some((sch) => sch.weekday === weekdayEnglish);
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date && !isDateDisabled(date)) {
-      setSelectedDate(date);
-      setStartHour("");
-      setEndHour("");
-      setTimeout(() => startHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  };
-
-  const handleStartHourSelect = (hour: string) => {
-    setStartHour(hour);
-    setEndHour("");
-    setTimeout(() => endHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-  };
-
   return (
-    <Card className="w-full max-w-xl mx-auto">
-      <CardHeader className="sticky top-0 z-10 bg-card border-b">
-        <CardTitle className="text-2xl font-bold text-primary">
-          Reservar {room.name}
-        </CardTitle>
-      </CardHeader>
-      <ScrollArea className="h-[80vh] overflow-auto">
-        <CardContent className="space-y-6 p-6">
-          <div className="bg-card rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-medium mb-3">Selecione uma data</h3>
-            <Calendar
-              mode="single"
-              selected={selectedDate!}
-              onSelect={handleDateSelect}
-              className="rounded-md border pointer-events-auto mx-auto"
-              disabled={isDateDisabled}
-              locale={ptBR}
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-medium mb-2">Selecione a data</h3>
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          locale={ptBR}
+          className="border rounded-md p-2"
+          disabled={(date) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return date < today;
+          }}
+        />
+      </div>
+
+      {selectedDate && (
+        <>
+          <Separator />
+          <div className="flex flex-col space-y-2">
+            <h3 className="font-medium">Horário</h3>
+            <TimeSelector
+              availableHours={availableHours}
+              blockedHours={blockedHours}
+              selectedStartTime={selectedStartTime}
+              selectedEndTime={selectedEndTime}
+              onSelectStartTime={(time) => {
+                setSelectedStartTime(time);
+                setSelectedEndTime(null);
+              }}
+              onSelectEndTime={setSelectedEndTime}
             />
           </div>
 
-          {selectedDate && availableHours.length > 0 && (
-            <div className="space-y-4">
-              <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
-                <h3 className="text-lg font-medium mb-3">Horário de início</h3>
-                <TimeSelector
-                  hours={availableHours}
-                  blockedHours={blockedHours}
-                  selectedHour={startHour}
-                  onSelectHour={handleStartHourSelect}
-                />
+          <div className="space-y-3">
+            <Separator />
+            <div className="pt-2 space-y-4">
+              <div>
+                <h3 className="font-medium mb-2">Resumo da reserva</h3>
+                <div className="bg-muted p-3 rounded-md">
+                  <p>
+                    <strong>Sala:</strong> {room.name}
+                  </p>
+                  <p>
+                    <strong>Data:</strong>{" "}
+                    {selectedDate &&
+                      format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
+                        locale: ptBR,
+                      })}
+                  </p>
+                  <p>
+                    <strong>Horário:</strong>{" "}
+                    {selectedStartTime &&
+                      selectedEndTime &&
+                      `${selectedStartTime} - ${selectedEndTime}`}
+                  </p>
+                </div>
               </div>
 
-              {startHour && (
-                <div ref={endHourRef} className="bg-card rounded-lg p-4 shadow-sm">
-                  <h3 className="text-lg font-medium mb-3">Horário de término</h3>
-                  <TimeSelector
-                    hours={availableHours}
-                    blockedHours={blockedHours}
-                    selectedHour={endHour}
-                    onSelectHour={setEndHour}
-                    isEndTime
-                    startHour={startHour}
-                  />
-                </div>
-              )}
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    !selectedDate || !selectedStartTime || !selectedEndTime || loading
+                  }
+                  className="bg-roomly-600 hover:bg-roomly-700"
+                >
+                  {loading ? "Reservando..." : "Confirmar Reserva"}
+                </Button>
+              </div>
             </div>
-          )}
-
-          {selectedDate && availableHours.length === 0 && (
-            <div className="text-center py-6">
-              <p className="text-red-500 font-medium">
-                Nenhum horário disponível para esta sala.
-              </p>
-            </div>
-          )}
-
-          <DialogFooter className="flex justify-end gap-3 pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-32"
-            >
-              Cancelar
-            </Button>
-            {endHour && (
-              <Button
-                onClick={handleConfirmReservation}
-                disabled={!selectedDate || !startHour || !endHour || loading}
-                className="w-32"
-              >
-                {loading ? "Reservando..." : "Confirmar"}
-              </Button>
-            )}
-          </DialogFooter>
-        </CardContent>
-      </ScrollArea>
-    </Card>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

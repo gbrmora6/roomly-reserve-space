@@ -24,12 +24,12 @@ const MyAccount = () => {
             <div className="p-6 sm:p-8">
               {user && (
                 <div className="mb-6">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="h-16 w-16 rounded-full bg-roomly-100 flex items-center justify-center border-2 border-roomly-300 text-roomly-700 text-xl font-bold">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="h-20 w-20 rounded-full bg-roomly-100 flex items-center justify-center border-2 border-roomly-300 text-roomly-700 text-2xl font-bold">
                       {user.user_metadata?.first_name?.[0] || user.email?.[0]}
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-roomly-800">
+                      <h2 className="text-2xl font-semibold text-roomly-800">
                         {user.user_metadata?.first_name} {user.user_metadata?.last_name}
                       </h2>
                       <p className="text-roomly-500">{user.email}</p>
@@ -38,11 +38,13 @@ const MyAccount = () => {
                 </div>
               )}
               
-              <div>
-                <h2 className="text-xl font-medium mb-6 text-roomly-800 border-b border-roomly-200 pb-2">
-                  Informações Pessoais
-                </h2>
-                <ProfileForm />
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-medium mb-6 text-roomly-800 border-b border-roomly-200 pb-2">
+                    Informações Pessoais
+                  </h2>
+                  <ProfileForm />
+                </div>
               </div>
             </div>
           </Card>

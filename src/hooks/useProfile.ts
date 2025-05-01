@@ -19,7 +19,13 @@ export const useProfile = () => {
         crp: "",
         specialty: "",
         cpf: "",
-        cnpj: ""
+        cnpj: "",
+        cep: "",
+        state: "",
+        city: "",
+        neighborhood: "",
+        street: "",
+        house_number: ""
       };
       
       try {
@@ -41,7 +47,13 @@ export const useProfile = () => {
           crp: data?.crp || "",
           specialty: data?.specialty || "",
           cpf: data?.cpf || "",
-          cnpj: data?.cnpj || ""
+          cnpj: data?.cnpj || "",
+          cep: data?.cep || "",
+          state: data?.state || "",
+          city: data?.city || "",
+          neighborhood: data?.neighborhood || "",
+          street: data?.street || "",
+          house_number: data?.house_number || ""
         };
       } catch (error) {
         console.error('Erro ao buscar dados do perfil:', error);
@@ -58,7 +70,13 @@ export const useProfile = () => {
           crp: "",
           specialty: "",
           cpf: "",
-          cnpj: ""
+          cnpj: "",
+          cep: "",
+          state: "",
+          city: "",
+          neighborhood: "",
+          street: "",
+          house_number: ""
         };
       }
     }
@@ -82,10 +100,16 @@ export const useProfile = () => {
         first_name: data.first_name,
         last_name: data.last_name,
         phone: data.phone,
-        crp: data.crp === "" ? null : data.crp,  // Explicitly handle empty string
+        crp: data.crp === "" ? null : data.crp,
         specialty: data.specialty,
         cpf: data.cpf === "" ? null : data.cpf,
-        cnpj: data.cnpj === "" ? null : data.cnpj
+        cnpj: data.cnpj === "" ? null : data.cnpj,
+        cep: data.cep,
+        state: data.state,
+        city: data.city,
+        neighborhood: data.neighborhood,
+        street: data.street,
+        house_number: data.house_number
       };
       
       const { error } = await supabase

@@ -27,13 +27,13 @@ const Navbar: React.FC = () => {
         
         <div className="flex items-center gap-3">
           <Link to="/rooms">
-            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-md">
+            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
               Salas
             </Button>
           </Link>
           
           <Link to="/equipment">
-            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-md">
+            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
               Equipamentos
             </Button>
           </Link>
@@ -42,19 +42,19 @@ const Navbar: React.FC = () => {
             <>
               {user.user_metadata?.role === "admin" ? (
                 <Link to="/admin">
-                  <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-md">
+                  <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
                     Painel Admin
                   </Button>
                 </Link>
               ) : (
                 <>
                   <Link to="/my-bookings">
-                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-md">
+                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
                       Minhas Reservas
                     </Button>
                   </Link>
                   <Link to="/my-account">
-                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-md">
+                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
                       Minha Conta
                     </Button>
                   </Link>
@@ -80,7 +80,7 @@ const Navbar: React.FC = () => {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white shadow-md text-base px-5 py-5">
+                <Button className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white shadow-lg text-base px-5 py-5">
                   Cadastre-se
                 </Button>
               </Link>
