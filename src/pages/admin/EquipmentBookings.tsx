@@ -63,6 +63,7 @@ const AdminEquipmentBookings: React.FC = () => {
     queryFn: async () => {
       console.log(`Fetching ${activeTab} equipment bookings`);
       try {
+        // Query the booking_equipment table with a proper join to profiles
         let query = supabase
           .from("booking_equipment")
           .select(`
@@ -77,7 +78,6 @@ const AdminEquipmentBookings: React.FC = () => {
             updated_at,
             total_price,
             user_id,
-            user:profiles(first_name, last_name),
             equipment:equipment(
               name,
               price_per_hour
@@ -88,41 +88,48 @@ const AdminEquipmentBookings: React.FC = () => {
           query = query.eq("status", activeTab);
         }
         
-        const { data, error } = await query.order("created_at", { ascending: false });
+        const { data: equipmentBookingsData, error: equipmentError } = await query.order("created_at", { ascending: false });
         
-        if (error) throw error;
+        if (equipmentError) throw equipmentError;
         
-        console.log("Equipment booking data:", data);
+        console.log("Equipment booking data:", equipmentBookingsData);
         
-        // Transform data to match BookingsTable component expectations
-        const transformedBookings: Booking[] = data.map(item => {
-          // Safe access to user fields
-          const userProfile = item.user;
-          
-          return {
-            id: item.id,
-            user_id: item.user_id,
-            room_id: null,
-            start_time: item.start_time,
-            end_time: item.end_time,
-            status: item.status as BookingStatus,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            total_price: item.total_price,
-            user: userProfile ? {
-              first_name: userProfile.first_name,
-              last_name: userProfile.last_name
-            } : null,
-            room: null,
-            booking_equipment: [{
-              quantity: item.quantity,
-              equipment: {
-                name: (item.equipment as any).name,
-                price_per_hour: (item.equipment as any).price_per_hour
-              }
-            }]
-          };
-        });
+        // Fetch user profiles separately for each booking
+        const transformedBookings: Booking[] = await Promise.all(
+          equipmentBookingsData.map(async (item) => {
+            // Fetch user profile
+            const { data: userProfile, error: userError } = await supabase
+              .from("profiles")
+              .select("first_name, last_name")
+              .eq("id", item.user_id)
+              .single();
+            
+            if (userError) {
+              console.error("Error fetching user profile:", userError);
+            }
+            
+            return {
+              id: item.id,
+              user_id: item.user_id,
+              room_id: null,
+              start_time: item.start_time,
+              end_time: item.end_time,
+              status: item.status as BookingStatus,
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              total_price: item.total_price,
+              user: userProfile || null,
+              room: null,
+              booking_equipment: [{
+                quantity: item.quantity,
+                equipment: {
+                  name: (item.equipment as any).name,
+                  price_per_hour: (item.equipment as any).price_per_hour
+                }
+              }]
+            };
+          })
+        );
         
         return transformedBookings;
       } catch (error) {
