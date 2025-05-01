@@ -39,8 +39,15 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     enabled: isOpen && !!userId,
   });
 
+  // Função para lidar com o fechamento de forma consistente
+  const handleClose = () => {
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleClose();
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Detalhes do Cliente</DialogTitle>
@@ -48,7 +55,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <Button
               variant="ghost"
               className="h-8 w-8 p-0 absolute right-4 top-4"
-              onClick={onClose}
+              onClick={handleClose}
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Fechar</span>
