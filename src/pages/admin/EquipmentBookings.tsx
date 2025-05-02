@@ -8,6 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/integrations/supabase/types";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
+import { format } from "date-fns";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -161,14 +165,92 @@ const AdminEquipmentBookings: React.FC = () => {
       });
     }
   };
+
+  const downloadReport = () => {
+    if (!bookings || bookings.length === 0) {
+      toast({
+        title: "Sem dados para exportar",
+        description: "Não há reservas de equipamentos para gerar o relatório."
+      });
+      return;
+    }
+
+    try {
+      // Prepare data for export
+      const exportData = bookings.map(booking => {
+        const startDate = new Date(booking.start_time);
+        const endDate = new Date(booking.end_time);
+        
+        const equipmentText = booking.booking_equipment && booking.booking_equipment.length > 0
+          ? booking.booking_equipment.map(item => 
+              `${item.quantity}x ${item.equipment.name}`
+            ).join("; ")
+          : "Nenhum";
+        
+        return {
+          "ID": booking.id,
+          "Cliente": booking.user 
+            ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
+            : "-",
+          "Data": format(startDate, "dd/MM/yyyy"),
+          "Horário Início": format(startDate, "HH:mm"),
+          "Horário Fim": format(endDate, "HH:mm"),
+          "Equipamentos": equipmentText,
+          "Valor Total": `R$ ${booking.total_price.toFixed(2)}`,
+          "Status": translateStatus(booking.status)
+        };
+      });
+
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Reservas de Equipamentos");
+      
+      // Generate filename with current date
+      const fileName = `Relatório_Reservas_Equipamentos_${format(new Date(), "dd-MM-yyyy")}.xlsx`;
+      
+      // Write and download
+      XLSX.writeFile(workbook, fileName);
+      
+      toast({
+        title: "Relatório gerado com sucesso",
+        description: `O arquivo ${fileName} foi baixado.`
+      });
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar relatório",
+        description: "Ocorreu um erro durante a geração do relatório. Tente novamente."
+      });
+    }
+  };
+
+  const translateStatus = (status: BookingStatus): string => {
+    switch (status) {
+      case "pending": return "Pendente";
+      case "confirmed": return "Confirmada";
+      case "cancelled": return "Cancelada";
+      default: return status;
+    }
+  };
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>
-        <p className="text-muted-foreground mt-2">
-          Gerencie todas as reservas de equipamentos
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie todas as reservas de equipamentos
+          </p>
+        </div>
+        
+        <Button variant="outline" onClick={downloadReport}>
+          <Download className="mr-2 h-4 w-4" />
+          Baixar Relatório
+        </Button>
       </div>
       
       <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>

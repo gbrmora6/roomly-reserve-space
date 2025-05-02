@@ -5,10 +5,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface ClientDetailsModalProps {
   isOpen: boolean;
@@ -43,7 +45,7 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" hideCloseButton>
         <DialogHeader>
           <DialogTitle>Detalhes do Cliente</DialogTitle>
         </DialogHeader>
@@ -102,6 +104,12 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
             <p className="text-muted-foreground">Detalhes do cliente não encontrados</p>
           </div>
         )}
+
+        <DialogFooter className="mt-6 flex justify-center">
+          <Button onClick={onClose} className="w-full">
+            OK
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
