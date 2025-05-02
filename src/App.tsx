@@ -26,6 +26,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import MyAccount from "./pages/client/MyAccount";
 import MyBookings from "./pages/client/MyBookings";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
+import BookingDetails from "./pages/BookingDetails";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App: React.FC = () => {
               <Route path="/rooms" element={<RoomList />} />
               <Route path="/equipment" element={<EquipmentList />} />
               <Route path="/create-superadmin" element={<CreateSuperAdmin />} />
+              <Route path="/booking/:id" element={<BookingDetails />} />
               
               {/* Client Routes */}
               <Route path="/my-account" element={

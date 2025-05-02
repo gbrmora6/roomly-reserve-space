@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,9 +7,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, Info, X } from "lucide-react";
+import { Check, ChevronDown, ExternalLink, X } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
-import { ClientDetailsModal } from "./ClientDetailsModal";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -22,14 +21,11 @@ interface BookingActionsProps {
 
 export const BookingActions = ({
   bookingId,
-  userId,
   status,
   onUpdateStatus,
 }: BookingActionsProps) => {
-  const [clientDetailsOpen, setClientDetailsOpen] = useState(false);
-
-  const handleCloseDetails = () => {
-    setClientDetailsOpen(false);
+  const handleViewDetails = () => {
+    window.open(`/booking/${bookingId}`, '_blank');
   };
 
   return (
@@ -42,6 +38,11 @@ export const BookingActions = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={handleViewDetails}>
+            <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
+            <span>Ver Detalhes</span>
+          </DropdownMenuItem>
+          
           {status === "pending" && (
             <DropdownMenuItem
               onClick={() => onUpdateStatus(bookingId, "confirmed")}
@@ -50,28 +51,15 @@ export const BookingActions = ({
               <span>Confirmar</span>
             </DropdownMenuItem>
           )}
+          
           {status !== "cancelled" && (
             <DropdownMenuItem onClick={() => onUpdateStatus(bookingId, "cancelled")}>
               <X className="mr-2 h-4 w-4 text-red-500" />
               <span>Cancelar</span>
             </DropdownMenuItem>
           )}
-          {userId && (
-            <DropdownMenuItem onClick={() => setClientDetailsOpen(true)}>
-              <Info className="mr-2 h-4 w-4 text-blue-500" />
-              <span>Detalhes do Cliente</span>
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
-      
-      {userId && clientDetailsOpen && (
-        <ClientDetailsModal 
-          isOpen={clientDetailsOpen}
-          onClose={handleCloseDetails}
-          userId={userId}
-        />
-      )}
     </>
   );
 };
