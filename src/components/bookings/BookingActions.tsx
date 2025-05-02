@@ -28,6 +28,10 @@ export const BookingActions = ({
 }: BookingActionsProps) => {
   const [clientDetailsOpen, setClientDetailsOpen] = useState(false);
 
+  const handleCloseDetails = () => {
+    setClientDetailsOpen(false);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -61,10 +65,10 @@ export const BookingActions = ({
         </DropdownMenuContent>
       </DropdownMenu>
       
-      {userId && (
+      {userId && clientDetailsOpen && (
         <ClientDetailsModal 
           isOpen={clientDetailsOpen}
-          onClose={() => setClientDetailsOpen(false)}
+          onClose={handleCloseDetails}
           userId={userId}
         />
       )}

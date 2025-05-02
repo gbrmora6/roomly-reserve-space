@@ -36,16 +36,11 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     enabled: isOpen && !!userId,
   });
 
-  // Function to handle closing consistently
-  const handleClose = () => {
-    onClose();
-  };
-
   return (
     <Dialog 
       open={isOpen} 
       onOpenChange={(open) => {
-        if (!open) handleClose();
+        if (!open) onClose();
       }}
     >
       <DialogContent className="sm:max-w-md">
