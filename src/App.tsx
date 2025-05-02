@@ -27,10 +27,10 @@ import MyAccount from "./pages/client/MyAccount";
 import MyBookings from "./pages/client/MyBookings";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 
-// Create a new QueryClient instance outside of the component
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
