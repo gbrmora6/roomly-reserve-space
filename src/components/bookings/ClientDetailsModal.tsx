@@ -5,10 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,28 +36,21 @@ export const ClientDetailsModal: React.FC<ClientDetailsModalProps> = ({
     enabled: isOpen && !!userId,
   });
 
-  // Função para lidar com o fechamento de forma consistente
+  // Function to handle closing consistently
   const handleClose = () => {
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) handleClose();
-    }}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Detalhes do Cliente</DialogTitle>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0 absolute right-4 top-4"
-              onClick={handleClose}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Fechar</span>
-            </Button>
-          </DialogClose>
         </DialogHeader>
 
         {isLoading ? (
