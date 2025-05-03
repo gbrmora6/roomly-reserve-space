@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center">
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-roomly-600">EspaçoPsic</span>
+            <span className="text-2xl font-bold text-roomly-600">Psico Flex</span>
           </Link>
         </div>
         
