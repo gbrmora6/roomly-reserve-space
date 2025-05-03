@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -59,46 +58,6 @@ export function useAuthOperations() {
             }
           } catch (adminError) {
             console.error("Error in admin privileges update:", adminError);
-          }
-        } else {
-          // For non-admin users, get profile role
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', data.user.id)
-              .single();
-              
-            if (profileError) {
-              console.error("Error fetching user profile:", profileError);
-            } else if (profile?.role) {
-              console.log("Role from profile database:", profile.role);
-              
-              const isAdmin = profile.role === 'admin';
-              
-              const { error: updateError } = await supabase.auth.updateUser({
-                data: { 
-                  role: profile.role,
-                  is_admin: isAdmin
-                }
-              });
-              
-              if (updateError) {
-                console.error("Error updating user claims:", updateError);
-              } else {
-                console.log("Updated user JWT claims with role:", profile.role, "is_admin:", isAdmin);
-                
-                // Refresh session to update JWT with new claims
-                const { error: refreshError } = await supabase.auth.refreshSession();
-                if (refreshError) {
-                  console.error("Error refreshing session:", refreshError);
-                } else {
-                  console.log("Session refreshed with new claims");
-                }
-              }
-            }
-          } catch (profileError) {
-            console.error("Error in profile update process:", profileError);
           }
         }
       }
@@ -196,21 +155,34 @@ export function useAuthOperations() {
 
   const signOut = async () => {
     try {
+      console.log("Attempting to sign out");
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
       
+      if (error) {
+        console.error("Logout error:", error.message);
+        toast({
+          variant: "destructive",
+          title: "Erro ao fazer logout",
+          description: error.message,
+        });
+        throw error;
+      }
+      
+      console.log("Logout successful");
       navigate("/login");
       toast({
         title: "Logout realizado com sucesso!",
       });
     } catch (error: any) {
+      console.error("Logout error (catch):", error);
       toast({
         variant: "destructive",
         title: "Erro ao fazer logout",
         description: error.message,
       });
+      throw error;
     }
   };
 
-  return { signIn, signUp, signOut, createSuperAdmin };
+  return { signIn, signUp, createSuperAdmin, signOut };
 }

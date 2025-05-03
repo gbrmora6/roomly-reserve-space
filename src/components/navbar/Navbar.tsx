@@ -10,6 +10,7 @@ const Navbar: React.FC = () => {
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
+      console.log("Initiating logout from navbar");
       await signOut();
     } catch (error) {
       console.error("Erro ao fazer logout:", error);

@@ -2,10 +2,8 @@
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 
 export function useSessionManager() {
-  // Make sure useState is called directly inside the component function body
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,11 +30,8 @@ export function useSessionManager() {
         setLoading(false);
       }
       
-      // If we have a session and user, check user role from profiles table
+      // Process special admin accounts
       if (currentSession?.user) {
-        console.log("User metadata from session:", currentSession.user.user_metadata);
-        
-        // Use setTimeout to avoid potential deadlocks with Supabase client
         setTimeout(async () => {
           try {
             const userEmail = currentSession.user.email;
@@ -84,8 +79,6 @@ export function useSessionManager() {
               } catch (updateError) {
                 console.error("Error in admin profile update:", updateError);
               }
-            } else {
-              console.log("Regular user account");
             }
           } catch (error) {
             console.error("Error processing user session:", error);
@@ -117,7 +110,6 @@ export function useSessionManager() {
         } else {
           setLoading(false);
         }
-        // If session exists, the auth change handler above will handle loading state
       } catch (err) {
         console.error("Unexpected error during session initialization:", err);
         setLoading(false);

@@ -19,7 +19,12 @@ const Login: React.FC = () => {
 
   // Log component state for debugging
   useEffect(() => {
-    console.log("Login component - Auth state:", { user: user?.id || null, loading });
+    console.log("Login component - Auth state:", { 
+      userId: user?.id || null, 
+      loading,
+      userEmail: user?.email || null,
+      userMeta: user?.user_metadata || null
+    });
   }, [user, loading]);
 
   if (loading) {
@@ -59,17 +64,20 @@ const Login: React.FC = () => {
     try {
       await signIn(email, password);
       console.log("Login successful");
-      // No need to redirect here as the AuthProvider will handle it
+      // Não é necessário redirecionar aqui, o AuthProvider lidará com isso
     } catch (error: any) {
       console.error("Login error:", error);
-      setLoginError(error.message || "Falha na autenticação. Verifique suas credenciais.");
       
       let errorMessage = "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.";
       
       if (error.message && error.message.includes("Invalid login credentials")) {
         errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
+        setLoginError(errorMessage);
       } else if (error.message && error.message.includes("Email not confirmed")) {
         errorMessage = "Email não confirmado. Por favor, verifique seu email para ativar sua conta.";
+        setLoginError(errorMessage);
+      } else {
+        setLoginError(error.message || errorMessage);
       }
       
       toast({
