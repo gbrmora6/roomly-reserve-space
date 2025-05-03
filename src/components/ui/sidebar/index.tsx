@@ -20,7 +20,7 @@ import {
   SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel 
-} from "./sidebar-group"
+} from "./group"
 
 // Menu components
 import { SidebarMenu, SidebarMenuItem } from "./sidebar-menu"
@@ -39,7 +39,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem
-} from "./sidebar-menu-extras"
+} from "./menu"
 
 export {
   Sidebar,
