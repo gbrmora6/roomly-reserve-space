@@ -13,10 +13,11 @@ export function useSessionManager() {
     
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, currentSession?.user?.id || "no user");
       
       if (currentSession?.user) {
-        console.log("User data:", currentSession.user.id);
+        console.log("User data in auth change:", currentSession.user.id);
+        console.log("User metadata from session:", currentSession.user.user_metadata);
         setSession(currentSession);
         setUser(currentSession.user);
       } else {
@@ -107,7 +108,9 @@ export function useSessionManager() {
         if (currentSession) {
           setSession(currentSession);
           setUser(currentSession.user);
+          setLoading(false);
         } else {
+          console.log("No existing session found");
           setLoading(false);
         }
       } catch (err) {

@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -62,12 +63,14 @@ export function useAuthOperations() {
         }
       }
       
-      // Navigate and show success toast
-      navigate("/rooms");
+      // Toast de sucesso
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
+      
+      // Navegação para a página principal depois que todos os processos estiverem concluídos
+      navigate("/rooms");
       
       return data;
     } catch (error: any) {
@@ -169,10 +172,14 @@ export function useAuthOperations() {
       }
       
       console.log("Logout successful");
-      navigate("/login");
-      toast({
-        title: "Logout realizado com sucesso!",
-      });
+      
+      // Aguarde um curto período para garantir que a sessão seja atualizada
+      setTimeout(() => {
+        navigate("/login");
+        toast({
+          title: "Logout realizado com sucesso!",
+        });
+      }, 100);
     } catch (error: any) {
       console.error("Logout error (catch):", error);
       toast({

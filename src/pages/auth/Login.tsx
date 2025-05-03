@@ -63,10 +63,10 @@ const Login: React.FC = () => {
     
     try {
       await signIn(email, password);
-      console.log("Login successful");
-      // Não é necessário redirecionar aqui, o AuthProvider lidará com isso
+      console.log("Login successful in Login component");
+      // O redirecionamento acontecerá no signIn
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Login error in component:", error);
       
       let errorMessage = "Ocorreu um erro ao tentar fazer login. Verifique suas credenciais.";
       
@@ -79,12 +79,6 @@ const Login: React.FC = () => {
       } else {
         setLoginError(error.message || errorMessage);
       }
-      
-      toast({
-        variant: "destructive",
-        title: "Erro ao fazer login",
-        description: errorMessage,
-      });
     } finally {
       setIsLoading(false);
     }

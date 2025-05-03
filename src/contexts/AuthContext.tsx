@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext } from "react";
 import { useSessionManager } from "@/hooks/useSessionManager";
 import { useAuthOperations } from "@/hooks/useAuthOperations";
@@ -17,14 +18,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, session, loading } = useSessionManager();
-  const { signIn, signOut } = useAuthOperations();
+  const { signIn, signUp: authSignUp, signOut } = useAuthOperations();
   const { refreshUserClaims } = useUserClaims();
   
-  // Placeholder para manter a API consistente, implementar se necessário
+  // Encapsulamento do método signUp para manter a API consistente
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
-    // Esta função est�� implementada no useAuthOperations mas não está sendo usada aqui
-    // Mantemos como placeholder para não quebrar as interfaces
-    console.warn("signUp not fully implemented in AuthContext");
+    await authSignUp(email, password, firstName, lastName);
   };
 
   // Log auth state on changes for debugging
