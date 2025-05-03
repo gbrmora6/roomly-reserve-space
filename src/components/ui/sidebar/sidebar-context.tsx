@@ -1,9 +1,19 @@
 
 import * as React from "react"
-import { SidebarContext, SidebarState } from "./types"
+import { SidebarState } from "./types"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
+
+export interface SidebarContext {
+  state: SidebarState
+  open: boolean
+  setOpen: (open: boolean) => void
+  openMobile: boolean
+  setOpenMobile: (open: boolean) => void
+  isMobile: boolean
+  toggleSidebar: () => void
+}
 
 export const SIDEBAR_COOKIE_NAME = "sidebar:state"
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
