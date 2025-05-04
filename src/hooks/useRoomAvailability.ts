@@ -51,18 +51,30 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
 
         // Mark booked hours
         const blocked: string[] = [];
-        bookingsData?.forEach((booking: any) => {
-          const start = new Date(booking.start_time);
-          const end = new Date(booking.end_time);
-          
-          // Get hours between start and end time
-          const startHourLocal = start.getHours();
-          const endHourLocal = end.getHours();
-          
-          for (let h = startHourLocal; h < endHourLocal; h++) {
-            blocked.push(`${h.toString().padStart(2, "0")}:00`);
-          }
-        });
+        
+        // Process each booking to block the appropriate hours
+        if (bookingsData && bookingsData.length > 0) {
+          bookingsData.forEach((booking: any) => {
+            // Convert to local date objects for accurate hour extraction
+            const start = new Date(booking.start_time);
+            const end = new Date(booking.end_time);
+            
+            // Get hours between start and end time
+            const startHourLocal = start.getHours();
+            const endHourLocal = end.getHours();
+            
+            // Add all hours in the range to blocked list
+            for (let h = startHourLocal; h < endHourLocal; h++) {
+              const formattedHour = `${h.toString().padStart(2, "0")}:00`;
+              if (!blocked.includes(formattedHour)) {
+                blocked.push(formattedHour);
+              }
+            }
+          });
+        }
+        
+        console.log("All hours:", hours);
+        console.log("Blocked hours:", blocked);
 
         // Check if the room is open on this weekday
         const weekdayNumber = selectedDate.getDay(); // 0-6, where 0 is Sunday
@@ -74,9 +86,6 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
           setBlockedHours(hours);
           return;
         }
-
-        console.log("Available hours:", hours);
-        console.log("Blocked hours:", blocked);
 
         setAvailableHours(hours);
         setBlockedHours(blocked);

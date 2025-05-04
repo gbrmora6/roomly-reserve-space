@@ -20,7 +20,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
-  const { availableHours, blockedHours } = useRoomAvailability(room, selectedDate);
+  const { availableHours, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
   const { handleReserve, loading } = useRoomReservation(room, onClose);
 
   const handleSubmit = async () => {
@@ -59,7 +59,11 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         <Calendar
           mode="single"
           selected={selectedDate}
-          onSelect={setSelectedDate}
+          onSelect={(date) => {
+            setSelectedDate(date);
+            setSelectedStartTime(null);
+            setSelectedEndTime(null);
+          }}
           locale={ptBR}
           className="border rounded-md p-2"
           disabled={(date) => {
@@ -70,7 +74,14 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
         />
       </div>
 
-      {selectedDate && (
+      {isLoading && (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm text-muted-foreground mt-2">Carregando disponibilidade...</p>
+        </div>
+      )}
+
+      {selectedDate && !isLoading && (
         <>
           <Separator />
           <div className="flex flex-col space-y-2">
@@ -85,51 +96,49 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             />
           </div>
 
-          <div className="space-y-3">
-            <Separator />
-            <div className="pt-2 space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Resumo da reserva</h3>
-                <div className="bg-muted p-3 rounded-md">
-                  <p>
-                    <strong>Sala:</strong> {room.name}
-                  </p>
-                  <p>
-                    <strong>Data:</strong>{" "}
-                    {selectedDate &&
-                      format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
-                        locale: ptBR,
-                      })}
-                  </p>
-                  <p>
-                    <strong>Horário:</strong>{" "}
-                    {selectedStartTime &&
-                      selectedEndTime &&
-                      `${selectedStartTime} - ${selectedEndTime}`}
-                  </p>
+          {selectedStartTime && selectedEndTime && (
+            <div className="space-y-3">
+              <Separator />
+              <div className="pt-2 space-y-4">
+                <div>
+                  <h3 className="font-medium mb-2">Resumo da reserva</h3>
+                  <div className="bg-muted p-3 rounded-md">
+                    <p>
+                      <strong>Sala:</strong> {room.name}
+                    </p>
+                    <p>
+                      <strong>Data:</strong>{" "}
+                      {selectedDate &&
+                        format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
+                          locale: ptBR,
+                        })}
+                    </p>
+                    <p>
+                      <strong>Horário:</strong>{" "}
+                      {`${selectedStartTime} - ${selectedEndTime}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="bg-roomly-600 hover:bg-roomly-700"
+                  >
+                    {loading ? "Reservando..." : "Confirmar Reserva"}
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={
-                    !selectedDate || !selectedStartTime || !selectedEndTime || loading
-                  }
-                  className="bg-roomly-600 hover:bg-roomly-700"
-                >
-                  {loading ? "Reservando..." : "Confirmar Reserva"}
-                </Button>
-              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>

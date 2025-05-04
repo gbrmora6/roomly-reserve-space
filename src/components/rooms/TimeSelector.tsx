@@ -45,14 +45,14 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
               return (
                 <Button
                   key={hour}
-                  variant={selectedHour === hour ? "default" : (isBlocked ? "destructive" : "outline")}
+                  variant={selectedHour === hour ? "default" : "outline"}
                   onClick={() => {
                     if (!isBlocked) {
                       onSelectHour(hour);
                     }
                   }}
                   disabled={isBlocked}
-                  className={isBlocked ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                  className={isBlocked ? "bg-red-500 hover:bg-red-600 text-white cursor-not-allowed" : ""}
                 >
                   {hour}
                 </Button>
@@ -72,20 +72,19 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
             const isBlocked = blockedHours?.includes(hour);
             // Don't allow selecting the last hour as a start time
             const isLastHour = index === hours.length - 1;
+            const isDisabled = isBlocked || isLastHour;
             
             return (
               <Button
                 key={hour}
-                variant={selectedHour === hour ? "default" : (isBlocked || isLastHour) ? "destructive" : "outline"}
+                variant={selectedHour === hour ? "default" : "outline"}
                 onClick={() => {
-                  if (!isBlocked && !isLastHour) {
+                  if (!isDisabled) {
                     onSelectHour(hour);
                   }
                 }}
-                disabled={isBlocked || isLastHour}
-                className={cn(
-                  (isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""
-                )}
+                disabled={isDisabled}
+                className={isDisabled ? "bg-red-500 hover:bg-red-600 text-white cursor-not-allowed" : ""}
               >
                 {hour}
               </Button>
@@ -115,16 +114,14 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
             return (
               <Button
                 key={hour}
-                variant={selectedEndTime === hour ? "default" : (isBlocked ? "destructive" : "outline")}
+                variant={selectedEndTime === hour ? "default" : "outline"}
                 onClick={() => {
                   if (!isBlocked) {
                     onSelectEndTime(hour);
                   }
                 }}
                 disabled={isBlocked}
-                className={cn(
-                  isBlocked ? "bg-red-500 hover:bg-red-600 text-white" : ""
-                )}
+                className={isBlocked ? "bg-red-500 hover:bg-red-600 text-white cursor-not-allowed" : ""}
               >
                 {hour}
               </Button>
@@ -144,20 +141,19 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
           const isBlocked = blockedHours.includes(hour);
           // Don't allow selecting the last hour as a start time
           const isLastHour = index === availableHours.length - 1;
+          const isDisabled = isBlocked || isLastHour;
           
           return (
             <Button
               key={hour}
-              variant={selectedStartTime === hour ? "default" : (isBlocked || isLastHour) ? "destructive" : "outline"}
+              variant={selectedStartTime === hour ? "default" : "outline"}
               onClick={() => {
-                if (!isBlocked && !isLastHour) {
+                if (!isDisabled) {
                   onSelectStartTime(hour);
                 }
               }}
-              disabled={isBlocked || isLastHour}
-              className={cn(
-                (isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""
-              )}
+              disabled={isDisabled}
+              className={isDisabled ? "bg-red-500 hover:bg-red-600 text-white cursor-not-allowed" : ""}
             >
               {hour}
             </Button>

@@ -1,7 +1,9 @@
+
 import { useState } from "react";
-import { format, subHours } from "date-fns";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Room } from "@/types/room";
+import { toast } from "@/hooks/use-toast";
 
 export function useRoomReservation(room: Room, onClose: () => void) {
   const [loading, setLoading] = useState(false);
@@ -12,45 +14,63 @@ export function useRoomReservation(room: Room, onClose: () => void) {
     const user = (await supabase.auth.getUser()).data.user;
 
     if (!user) {
-      alert("Usuário não autenticado.");
+      toast({
+        variant: "destructive",
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado."
+      });
       setLoading(false);
       return null;
     }
 
-    // Convert times to UTC-3
-    startTime = subHours(startTime, 3);
-    endTime = subHours(endTime, 3);
+    try {
+      // Check for overlapping bookings
+      const { data: existingBookings, error: queryError } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("room_id", room.id)
+        .not("status", "eq", "cancelled")
+        .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
 
-    const { data: existingBookings } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("room_id", room.id)
-      .not("status", "eq", "cancelled")
-      .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+      if (queryError) {
+        throw queryError;
+      }
 
-    if (existingBookings && existingBookings.length > 0) {
-      alert("Horário já reservado! Escolha outro horário.");
-      setLoading(false);
+      if (existingBookings && existingBookings.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Horário indisponível",
+          description: "Horário já reservado! Escolha outro horário."
+        });
+        setLoading(false);
+        return null;
+      }
+
+      // Create the booking
+      const { data, error } = await supabase.from("bookings").insert({
+        user_id: user.id,
+        room_id: room.id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: "pending",
+      }).select().single();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error("Error creating booking:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao reservar",
+        description: error.message || "Ocorreu um erro ao reservar a sala."
+      });
       return null;
-    }
-
-    const { data, error } = await supabase.from("bookings").insert({
-      user_id: user.id,
-      room_id: room.id,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
-      status: "pending",
-    }).select().single();
-
-    if (error) {
-      console.error(error);
-      alert("Erro ao reservar a sala.");
+    } finally {
       setLoading(false);
-      return null;
     }
-
-    setLoading(false);
-    return data;
   };
 
   return { handleReserve, loading };
