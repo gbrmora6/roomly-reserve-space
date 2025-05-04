@@ -56,9 +56,8 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
           const end = new Date(booking.end_time);
           
           // Get hours between start and end time
-          // Adjust to handle bookings that span multiple hours
-          const startHourLocal = new Date(start).getHours();
-          const endHourLocal = new Date(end).getHours();
+          const startHourLocal = start.getHours();
+          const endHourLocal = end.getHours();
           
           for (let h = startHourLocal; h < endHourLocal; h++) {
             blocked.push(`${h.toString().padStart(2, "0")}:00`);

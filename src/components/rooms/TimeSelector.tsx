@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface TimeSelectorProps {
   availableHours: string[];
@@ -82,7 +83,9 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
                   }
                 }}
                 disabled={isBlocked || isLastHour}
-                className={(isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                className={cn(
+                  (isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""
+                )}
               >
                 {hour}
               </Button>
@@ -119,7 +122,9 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
                   }
                 }}
                 disabled={isBlocked}
-                className={isBlocked ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                className={cn(
+                  isBlocked ? "bg-red-500 hover:bg-red-600 text-white" : ""
+                )}
               >
                 {hour}
               </Button>
@@ -150,7 +155,9 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
                 }
               }}
               disabled={isBlocked || isLastHour}
-              className={(isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+              className={cn(
+                (isBlocked || isLastHour) ? "bg-red-500 hover:bg-red-600 text-white" : ""
+              )}
             >
               {hour}
             </Button>
