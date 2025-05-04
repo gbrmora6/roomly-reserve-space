@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { useEquipmentAvailability } from "@/hooks/useEquipmentAvailability";
 
 interface Equipment {
   id: string;
@@ -47,6 +48,13 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   const [bookingTotal, setBookingTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Create dummy dates for equipment availability hook
+  const startTimeDate = selectedDate ? new Date(selectedDate) : null;
+  const endTimeDate = selectedDate ? new Date(selectedDate) : null;
+  
+  // Use the equipment availability hook to get blocked hours
+  const { blockedHours, loading } = useEquipmentAvailability(startTimeDate, endTimeDate);
+  
   const startHourRef = useRef<HTMLDivElement>(null);
   const endHourRef = useRef<HTMLDivElement>(null);
   
@@ -69,6 +77,12 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   };
 
   const availableHours = getAvailableHours();
+
+  // Reset time selections when date changes
+  React.useEffect(() => {
+    setStartHour("");
+    setEndHour("");
+  }, [selectedDate]);
 
   // Calculate booking price when relevant fields change
   React.useEffect(() => {
@@ -108,8 +122,6 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      setStartHour("");
-      setEndHour("");
     }
   };
 
@@ -161,10 +173,6 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
       startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
       endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
 
-      // Convert times to UTC-3
-      const utcStartTime = setHours(startDate, startDate.getHours() - 3);
-      const utcEndTime = setHours(endDate, endDate.getHours() - 3);
-
       // Create equipment booking with booking_id set to null explicitly
       const { error: equipmentError } = await supabase
         .from("booking_equipment")
@@ -172,8 +180,8 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
           equipment_id: equipment.id,
           quantity: quantity,
           user_id: user.id,
-          start_time: utcStartTime.toISOString(),
-          end_time: utcEndTime.toISOString(),
+          start_time: startDate.toISOString(),
+          end_time: endDate.toISOString(),
           status: "pending",
           booking_id: null // Explicitly set booking_id to null
         });
@@ -210,13 +218,20 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
             />
           </div>
 
-          {selectedDate && availableHours.length > 0 && (
+          {loading && selectedDate && (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Verificando disponibilidade...</p>
+            </div>
+          )}
+
+          {selectedDate && !loading && availableHours.length > 0 && (
             <div className="space-y-4">
               <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
                 <h3 className="text-lg font-medium mb-3">Horário de início</h3>
                 <TimeSelector
                   hours={availableHours}
-                  blockedHours={[]}
+                  blockedHours={blockedHours || []}
                   selectedHour={startHour}
                   onSelectHour={handleStartHourSelect}
                 />
@@ -227,7 +242,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                   <h3 className="text-lg font-medium mb-3">Horário de término</h3>
                   <TimeSelector
                     hours={availableHours}
-                    blockedHours={[]}
+                    blockedHours={blockedHours || []}
                     selectedHour={endHour}
                     onSelectHour={setEndHour}
                     isEndTime

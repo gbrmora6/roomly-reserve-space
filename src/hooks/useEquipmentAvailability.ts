@@ -32,11 +32,13 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     open_days?: WeekdayEnum[];
   }>>([]);
   const [loading, setLoading] = useState(false);
+  const [blockedHours, setBlockedHours] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchEquipment = async () => {
       if (!startTime || !endTime) {
         setAvailableEquipment([]);
+        setBlockedHours([]);
         return;
       }
 
@@ -86,25 +88,47 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           .select(`
             equipment_id,
             quantity,
-            bookings (
-              start_time,
-              end_time,
-              status
-            )
+            start_time,
+            end_time,
+            status
           `)
-          .not('bookings.status', 'eq', 'cancelled')
-          .lte('bookings.start_time', endTime.toISOString())
-          .gte('bookings.end_time', startTime.toISOString());
+          .not('status', 'eq', 'cancelled')
+          .lte('start_time', endTime.toISOString())
+          .gte('end_time', startTime.toISOString());
 
         if (bookingsError) throw bookingsError;
+
+        // Extract blocked hours from bookings
+        const blocked: string[] = [];
+        if (bookings && bookings.length > 0) {
+          bookings.forEach((booking) => {
+            // Convert to local date objects
+            const start = new Date(booking.start_time);
+            const end = new Date(booking.end_time);
+            
+            // Get hours between start and end time
+            const startHourLocal = start.getHours();
+            const endHourLocal = end.getHours();
+            
+            // Add all hours in the range to blocked list
+            for (let h = startHourLocal; h < endHourLocal; h++) {
+              const formattedHour = `${h.toString().padStart(2, "0")}:00`;
+              if (!blocked.includes(formattedHour)) {
+                blocked.push(formattedHour);
+              }
+            }
+          });
+        }
+        
+        setBlockedHours(blocked);
+        console.log("Blocked hours:", blocked);
 
         // Calculate availability for each equipment
         const availabilityResults = await Promise.all(openEquipment.map(equipment => {
           // Get bookings for this equipment
           const equipmentBookings = bookings?.filter(booking => 
             booking.equipment_id === equipment.id && 
-            booking.bookings && 
-            booking.bookings.status !== 'cancelled'
+            booking.status !== 'cancelled'
           ) || [];
           
           // Calculate total booked quantity
@@ -132,5 +156,5 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     fetchEquipment();
   }, [startTime, endTime]);
 
-  return { availableEquipment, loading };
+  return { availableEquipment, blockedHours, loading };
 }

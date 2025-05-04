@@ -35,7 +35,7 @@ export function EquipmentSelectionDialog({
   bookingId
 }: EquipmentSelectionDialogProps) {
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
-  const { availableEquipment, loading } = useEquipmentAvailability(startTime, endTime);
+  const { availableEquipment, loading, blockedHours } = useEquipmentAvailability(startTime, endTime);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -59,17 +59,13 @@ export function EquipmentSelectionDialog({
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      // Convert times to UTC-3
-      const utcStartTime = new Date(startTime!.getTime() - (3 * 60 * 60 * 1000));
-      const utcEndTime = new Date(endTime!.getTime() - (3 * 60 * 60 * 1000));
-
       const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
         equipment_id: id,
         booking_id: bookingId, // This can now be null if needed
         user_id: user.id,
         quantity,
-        start_time: utcStartTime.toISOString(),
-        end_time: utcEndTime.toISOString(),
+        start_time: startTime!.toISOString(),
+        end_time: endTime!.toISOString(),
         status: 'pending' as const // Type assertion to match the enum
       }));
 
