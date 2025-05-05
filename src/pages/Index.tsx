@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -9,40 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
-  const [heroImageUrl, setHeroImageUrl] = useState<string>("https://images.unsplash.com/photo-1581091226825-a6a2a5aee158");
+  const [heroImageUrl, setHeroImageUrl] = useState<string>("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
 
   // Fetch hero image from Supabase storage
   useEffect(() => {
-    const fetchHeroImage = async () => {
-      try {
-        const { data, error } = await supabase
-          .storage
-          .from('site-photos')
-          .list();
-
-        if (error) {
-          console.error('Error fetching images:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          // Get the first image from the bucket
-          const imageFile = data[0];
-          const { data: publicUrlData } = supabase
-            .storage
-            .from('site-photos')
-            .getPublicUrl(imageFile.name);
-
-          if (publicUrlData && publicUrlData.publicUrl) {
-            setHeroImageUrl(publicUrlData.publicUrl);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching hero image:', error);
-      }
-    };
-
-    fetchHeroImage();
+    // Image URL is now hardcoded to the specific image
+    setHeroImageUrl("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
   }, []);
 
   return (
@@ -324,4 +295,3 @@ const Index: React.FC = () => {
 };
 
 export default Index;
-

@@ -61,4 +61,4 @@ export const BookingStatusManager = ({ refetch }: BookingStatusManagerProps) => 
   };
 
   return { handleUpdateStatus };
-}
+};

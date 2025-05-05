@@ -7,6 +7,7 @@ interface CompanyAddress {
   number: string;
   neighborhood: string;
   city: string;
+  name: string;
 }
 
 export const useCompanyAddress = () => {
@@ -15,13 +16,14 @@ export const useCompanyAddress = () => {
     number: "",
     neighborhood: "",
     city: "",
+    name: ""
   });
 
   useEffect(() => {
     const fetchCompanyProfile = async () => {
       const { data, error } = await supabase
         .from("company_profile")
-        .select("street, number, neighborhood, city")
+        .select("street, number, neighborhood, city, name")
         .single();
       
       if (data && !error) {

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Check, ChevronDown, ExternalLink, X } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -24,8 +25,10 @@ export const BookingActions = ({
   status,
   onUpdateStatus,
 }: BookingActionsProps) => {
+  const navigate = useNavigate();
+
   const handleViewDetails = () => {
-    window.open(`/booking/${bookingId}`, '_blank');
+    navigate(`/booking/${bookingId}`);
   };
 
   return (
