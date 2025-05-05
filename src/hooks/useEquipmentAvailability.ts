@@ -65,7 +65,11 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           .select("*")
           .order("name");
 
-        if (equipmentError) throw equipmentError;
+        if (equipmentError) {
+          console.error("Error fetching equipment:", equipmentError);
+          setLoading(false);
+          return;
+        }
 
         if (!allEquipment || allEquipment.length === 0) {
           setAvailableEquipment([]);
@@ -96,7 +100,11 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           .lte('start_time', endTime.toISOString())
           .gte('end_time', startTime.toISOString());
 
-        if (bookingsError) throw bookingsError;
+        if (bookingsError) {
+          console.error("Error fetching bookings:", bookingsError);
+          setLoading(false);
+          return;
+        }
 
         // Extract blocked hours from bookings
         const blocked: string[] = [];
@@ -124,7 +132,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("Blocked hours:", blocked);
 
         // Calculate availability for each equipment
-        const availabilityResults = await Promise.all(openEquipment.map(equipment => {
+        const availabilityResults = openEquipment.map(equipment => {
           // Get bookings for this equipment
           const equipmentBookings = bookings?.filter(booking => 
             booking.equipment_id === equipment.id && 
@@ -138,7 +146,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           const available = Math.max(0, equipment.quantity - totalBooked);
           
           return { ...equipment, available };
-        }));
+        });
 
         // Filter to only show equipment with available quantities
         const availableItems = availabilityResults.filter(item => item.available > 0);
@@ -153,7 +161,11 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       }
     };
 
-    fetchEquipment();
+    if (startTime && endTime) {
+      fetchEquipment();
+    } else {
+      setLoading(false);
+    }
   }, [startTime, endTime]);
 
   return { availableEquipment, blockedHours, loading };

@@ -17,15 +17,17 @@ export const EquipmentDateSelector: React.FC<EquipmentDateSelectorProps> = ({
 }) => {
   return (
     <div className="bg-card rounded-lg p-4 shadow-sm">
-      <h3 className="text-lg font-medium mb-3">Selecione uma data</h3>
-      <Calendar
-        mode="single"
-        selected={selectedDate!}
-        onSelect={onDateSelect}
-        className="rounded-md border pointer-events-auto mx-auto"
-        disabled={isDateDisabled}
-        locale={ptBR}
-      />
+      <h3 className="text-lg font-medium mb-3 text-center">Selecione uma data</h3>
+      <div className="flex justify-center">
+        <Calendar
+          mode="single"
+          selected={selectedDate!}
+          onSelect={onDateSelect}
+          className="rounded-md border mx-auto max-w-full"
+          disabled={isDateDisabled}
+          locale={ptBR}
+        />
+      </div>
     </div>
   );
 };

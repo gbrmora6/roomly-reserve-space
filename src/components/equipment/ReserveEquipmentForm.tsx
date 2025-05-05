@@ -1,7 +1,6 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useEquipmentAvailability } from "@/hooks/useEquipmentAvailability";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -58,8 +57,19 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   const startTimeDate = selectedDate ? new Date(selectedDate) : null;
   const endTimeDate = selectedDate ? new Date(selectedDate) : null;
   
-  // Use the equipment availability hook to get blocked hours
-  const { blockedHours, loading } = useEquipmentAvailability(startTimeDate, endTimeDate);
+  // Auto scroll to start hour selection after date is selected
+  useEffect(() => {
+    if (selectedDate && startHourRef.current) {
+      startHourRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedDate]);
+
+  // Auto scroll to end hour selection after start hour is selected
+  useEffect(() => {
+    if (startHour && endHourRef.current) {
+      endHourRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [startHour]);
 
   return (
     <Card className="w-full max-w-xl mx-auto">
@@ -68,7 +78,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
           Reservar {equipment.name}
         </CardTitle>
       </CardHeader>
-      <ScrollArea className="h-[80vh] overflow-auto">
+      <ScrollArea className="h-[70vh] max-h-[600px] overflow-auto">
         <CardContent className="space-y-6 p-6">
           <EquipmentDateSelector 
             selectedDate={selectedDate}
@@ -76,23 +86,24 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
             isDateDisabled={isDateDisabled}
           />
 
-          {loading && selectedDate && (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Verificando disponibilidade...</p>
-            </div>
-          )}
-
-          {selectedDate && !loading && availableHours.length > 0 && (
+          {selectedDate && (
             <div className="space-y-4">
               <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
                 <h3 className="text-lg font-medium mb-3">Horário de início</h3>
-                <TimeSelector
-                  hours={availableHours}
-                  blockedHours={blockedHours || []}
-                  selectedHour={startHour}
-                  onSelectHour={handleStartHourSelect}
-                />
+                {!availableHours.length ? (
+                  <div className="text-center py-4">
+                    <p className="text-red-500 font-medium">
+                      Nenhum horário disponível para este equipamento.
+                    </p>
+                  </div>
+                ) : (
+                  <TimeSelector
+                    hours={availableHours}
+                    blockedHours={[]}
+                    selectedHour={startHour}
+                    onSelectHour={handleStartHourSelect}
+                  />
+                )}
               </div>
 
               {startHour && (
@@ -100,7 +111,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                   <h3 className="text-lg font-medium mb-3">Horário de término</h3>
                   <TimeSelector
                     hours={availableHours}
-                    blockedHours={blockedHours || []}
+                    blockedHours={[]}
                     selectedHour={endHour}
                     onSelectHour={setEndHour}
                     isEndTime
@@ -122,35 +133,26 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
               )}
             </div>
           )}
-
-          {selectedDate && availableHours.length === 0 && (
-            <div className="text-center py-6">
-              <p className="text-red-500 font-medium">
-                Nenhum horário disponível para este equipamento.
-              </p>
-            </div>
-          )}
-
-          <DialogFooter className="flex justify-end gap-3 pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="w-32"
-            >
-              Cancelar
-            </Button>
-            {startHour && endHour && (
-              <Button
-                onClick={handleSubmit}
-                disabled={!selectedDate || !startHour || !endHour || isSubmitting}
-                className="w-32"
-              >
-                {isSubmitting ? "Reservando..." : "Confirmar"}
-              </Button>
-            )}
-          </DialogFooter>
         </CardContent>
       </ScrollArea>
+      <DialogFooter className="flex justify-end gap-3 p-4 border-t">
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="w-32"
+        >
+          Cancelar
+        </Button>
+        {startHour && endHour && (
+          <Button
+            onClick={handleSubmit}
+            disabled={!selectedDate || !startHour || !endHour || isSubmitting}
+            className="w-32"
+          >
+            {isSubmitting ? "Reservando..." : "Confirmar"}
+          </Button>
+        )}
+      </DialogFooter>
     </Card>
   );
 };
