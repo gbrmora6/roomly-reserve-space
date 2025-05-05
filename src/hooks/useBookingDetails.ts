@@ -7,6 +7,7 @@ type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
 export interface BookingDetailsData {
   id: string;
+  user_id: string; // Added user_id
   status: BookingStatus;
   start_time: string;
   end_time: string;

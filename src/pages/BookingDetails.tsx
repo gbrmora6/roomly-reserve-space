@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +12,16 @@ import { BookingEquipmentDetails } from "@/components/bookings/BookingEquipmentD
 import { BookingAdditionalEquipment } from "@/components/bookings/BookingAdditionalEquipment";
 import { useBookingDetails } from "@/hooks/useBookingDetails";
 import { Database } from "@/integrations/supabase/types";
+import { ClientDetailsModal } from "@/components/bookings/ClientDetailsModal";
+import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
 const BookingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { booking, loading, error, bookingType } = useBookingDetails(id);
+  const [showClientModal, setShowClientModal] = useState(false);
 
   // Show loading or error states
   if (loading || error || !booking) {
@@ -48,6 +52,18 @@ const BookingDetails = () => {
               totalPrice={booking.total_price}
             />
 
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowClientModal(true)}
+                className="flex items-center gap-2"
+              >
+                <User size={16} />
+                Ver Detalhes do Cliente
+              </Button>
+            </div>
+
             <Separator />
 
             {bookingType === "room" && booking.room && (
@@ -67,6 +83,14 @@ const BookingDetails = () => {
           </CardContent>
         </Card>
       </div>
+
+      {booking.user_id && (
+        <ClientDetailsModal 
+          isOpen={showClientModal} 
+          onClose={() => setShowClientModal(false)} 
+          userId={booking.user_id}
+        />
+      )}
     </MainLayout>
   );
 };

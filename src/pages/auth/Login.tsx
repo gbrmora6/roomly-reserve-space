@@ -157,11 +157,6 @@ const Login: React.FC = () => {
               </CardFooter>
             </form>
           </Card>
-          <div className="mt-6 p-4 bg-roomly-50 rounded-lg border border-roomly-200 text-center">
-            <p className="text-sm font-medium text-roomly-800 mb-1">Credenciais de teste:</p>
-            <p className="text-sm text-roomly-600">Cliente: client@example.com / password</p>
-            <p className="text-sm text-roomly-600">Admin: admin@example.com / password</p>
-          </div>
         </div>
       </div>
     </MainLayout>
