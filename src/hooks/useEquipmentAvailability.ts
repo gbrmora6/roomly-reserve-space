@@ -63,6 +63,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         const { data: allEquipment, error: equipmentError } = await supabase
           .from("equipment")
           .select("*")
+          .eq("is_active", true)
           .order("name");
 
         if (equipmentError) {
@@ -86,19 +87,17 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return equipment.open_days.includes(weekdayEnum);
         });
 
-        // Find overlapping bookings (not cancelled)
+        // Get equipment bookings for the selected date
+        const startOfDay = new Date(selectedDate);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
         const { data: bookings, error: bookingsError } = await supabase
           .from('booking_equipment')
-          .select(`
-            equipment_id,
-            quantity,
-            start_time,
-            end_time,
-            status
-          `)
+          .select('equipment_id, quantity, start_time, end_time, status')
           .not('status', 'eq', 'cancelled')
-          .lte('start_time', endTime.toISOString())
-          .gte('end_time', startTime.toISOString());
+          .gte('start_time', startOfDay.toISOString())
+          .lte('start_time', endOfDay.toISOString());
 
         if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);
@@ -106,31 +105,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return;
         }
 
-        // Extract blocked hours from bookings
-        const blocked: string[] = [];
-        if (bookings && bookings.length > 0) {
-          bookings.forEach((booking) => {
-            // Convert to local date objects
-            const start = new Date(booking.start_time);
-            const end = new Date(booking.end_time);
-            
-            // Get hours between start and end time
-            const startHourLocal = start.getHours();
-            const endHourLocal = end.getHours();
-            
-            // Add all hours in the range to blocked list
-            for (let h = startHourLocal; h < endHourLocal; h++) {
-              const formattedHour = `${h.toString().padStart(2, "0")}:00`;
-              if (!blocked.includes(formattedHour)) {
-                blocked.push(formattedHour);
-              }
-            }
-          });
-        }
+        console.log("Bookings found:", bookings);
         
-        setBlockedHours(blocked);
-        console.log("Blocked hours:", blocked);
-
         // Calculate availability for each equipment
         const availabilityResults = openEquipment.map(equipment => {
           // Get bookings for this equipment
@@ -139,17 +115,59 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
             booking.status !== 'cancelled'
           ) || [];
           
-          // Calculate total booked quantity
-          const totalBooked = equipmentBookings.reduce((sum, booking) => sum + booking.quantity, 0);
+          // Group bookings by hour to track availability per hour
+          const hourlyBookings: Record<string, number> = {};
+          equipmentBookings.forEach(booking => {
+            const startDate = new Date(booking.start_time);
+            const endDate = new Date(booking.end_time);
+            
+            // For each hour in the booking, add the booked quantity
+            for (let hour = startDate.getHours(); hour < endDate.getHours(); hour++) {
+              const hourKey = `${hour.toString().padStart(2, "0")}:00`;
+              hourlyBookings[hourKey] = (hourlyBookings[hourKey] || 0) + booking.quantity;
+            }
+          });
+
+          // For equipment, we consider it available if there's at least one unit free
+          const available = equipment.quantity - (equipmentBookings.length > 0 ? 
+            Math.max(...Object.values(hourlyBookings)) : 0);
           
-          // Calculate available quantity
-          const available = Math.max(0, equipment.quantity - totalBooked);
-          
-          return { ...equipment, available };
+          return { 
+            ...equipment, 
+            available: Math.max(0, available),
+            hourlyBookings
+          };
         });
 
+        // Extract blocked hours - hours where all equipment is fully booked
+        const blocked: string[] = [];
+        
+        // Get operating hours based on equipment
+        const startHour = 8; // Default open time if not specified
+        const endHour = 18; // Default close time if not specified
+        
+        // For each hour in the operating range, check if any equipment is fully booked
+        for (let hour = startHour; hour < endHour; hour++) {
+          const hourKey = `${hour.toString().padStart(2, "0")}:00`;
+          
+          // If all equipment is fully booked for this hour, block it
+          const isHourBlocked = availabilityResults.every(equip => {
+            const hourlyBooked = (equip as any).hourlyBookings?.[hourKey] || 0;
+            return hourlyBooked >= equip.quantity;
+          });
+          
+          if (isHourBlocked && !blocked.includes(hourKey)) {
+            blocked.push(hourKey);
+          }
+        }
+        
+        setBlockedHours(blocked);
+        console.log("Blocked hours:", blocked);
+
         // Filter to only show equipment with available quantities
-        const availableItems = availabilityResults.filter(item => item.available > 0);
+        const availableItems = availabilityResults
+          .filter(item => item.available > 0)
+          .map(({ hourlyBookings, ...rest }) => rest); // Remove hourlyBookings from result
         
         console.log("Available equipment:", availableItems.length);
         setAvailableEquipment(availableItems);

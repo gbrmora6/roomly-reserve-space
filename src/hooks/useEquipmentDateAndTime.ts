@@ -1,15 +1,28 @@
 
-import { useState, useEffect, useRef } from "react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useState, useRef, useEffect } from "react";
+import { addDays } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];
 
+// Helper function to convert numeric day to weekday enum
+const getWeekdayFromNumber = (day: number): WeekdayEnum => {
+  const weekdays: WeekdayEnum[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday"
+  ];
+  return weekdays[day];
+};
+
 interface Equipment {
   id: string;
   name: string;
-  description: string | null;
   quantity: number;
   price_per_hour: number;
   open_time?: string;
@@ -24,104 +37,149 @@ interface UseEquipmentDateAndTimeProps {
   initialEndTime?: string | null;
 }
 
-export function useEquipmentDateAndTime({ 
-  equipment, 
-  initialDate,
-  initialStartTime, 
-  initialEndTime
+export function useEquipmentDateAndTime({
+  equipment,
+  initialDate = null,
+  initialStartTime = null,
+  initialEndTime = null,
 }: UseEquipmentDateAndTimeProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate || null);
-  const [startHour, setStartHour] = useState<string>(initialStartTime || "");
-  const [endHour, setEndHour] = useState<string>(initialEndTime || "");
-  
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
+  const [startHour, setStartHour] = useState<string | null>(initialStartTime);
+  const [endHour, setEndHour] = useState<string | null>(initialEndTime);
+  const [availableHours, setAvailableHours] = useState<string[]>([]);
+  const [blockedHours, setBlockedHours] = useState<string[]>([]);
   const startHourRef = useRef<HTMLDivElement>(null);
   const endHourRef = useRef<HTMLDivElement>(null);
 
-  // Generate available hours based on equipment settings
-  const getAvailableHours = () => {
-    if (!equipment.open_time || !equipment.close_time) {
-      return Array.from({ length: 16 }, (_, i) => {
-        const hour = i + 7;
-        return `${hour.toString().padStart(2, '0')}:00`;
-      });
+  // Function to check if a date should be disabled
+  const isDateDisabled = (date: Date) => {
+    // Disable dates in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      return true;
     }
 
-    const startHour = parseInt(equipment.open_time.split(":")[0]);
-    const endHour = parseInt(equipment.close_time.split(":")[0]);
-    
-    return Array.from({ length: endHour - startHour }, (_, i) => {
-      const hour = i + startHour;
-      return `${hour.toString().padStart(2, '0')}:00`;
-    });
+    // Check if equipment is available on this weekday
+    if (equipment.open_days && equipment.open_days.length > 0) {
+      const weekdayNumber = date.getDay();
+      const weekdayEnum = getWeekdayFromNumber(weekdayNumber);
+      return !equipment.open_days.includes(weekdayEnum);
+    }
+
+    return false;
   };
 
-  const availableHours = getAvailableHours();
-
-  // Reset time selections when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      setStartHour("");
-      setEndHour("");
-    }
-  }, [selectedDate]);
-
-  // Scroll to sections when selections are made
-  useEffect(() => {
-    if (selectedDate && !startHour) {
-      setTimeout(() => startHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
-    if (startHour) {
-      setTimeout(() => endHourRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  }, [startHour]);
-
+  // Handle date selection
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
+      setStartHour(null);
+      setEndHour(null);
     }
   };
 
+  // Handle start hour selection
   const handleStartHourSelect = (hour: string) => {
     setStartHour(hour);
-    setEndHour("");
+    setEndHour(null);
   };
 
-  const setEndHourValue = (hour: string) => {
-    setEndHour(hour);
-  };
+  // Fetch available hours when date changes
+  useEffect(() => {
+    const fetchAvailableHours = async () => {
+      if (!selectedDate) {
+        setAvailableHours([]);
+        setBlockedHours([]);
+        return;
+      }
 
-  const isDateDisabled = (date: Date) => {
-    if (!equipment.open_days || equipment.open_days.length === 0) {
-      return false;
-    }
-    
-    const weekday = format(date, "eeee", { locale: ptBR }).toLowerCase();
-    const weekdayEnglish = {
-      'segunda-feira': 'monday',
-      'terça-feira': 'tuesday',
-      'quarta-feira': 'wednesday',
-      'quinta-feira': 'thursday',
-      'sexta-feira': 'friday',
-      'sábado': 'saturday',
-      'domingo': 'sunday'
-    }[weekday] || weekday;
-    
-    return !equipment.open_days.includes(weekdayEnglish as WeekdayEnum);
-  };
+      try {
+        // Extract hours from equipment's open/close times or use defaults
+        const openTime = equipment.open_time ? equipment.open_time.split(":")[0] : "08";
+        const closeTime = equipment.close_time ? equipment.close_time.split(":")[0] : "18";
+
+        // Generate all possible hours
+        const hours: string[] = [];
+        for (let hour = parseInt(openTime); hour < parseInt(closeTime); hour++) {
+          hours.push(`${hour.toString().padStart(2, "0")}:00`);
+        }
+
+        // Get bookings for this equipment on the selected date
+        const dayStart = new Date(selectedDate);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        const dayEnd = new Date(selectedDate);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const { data: bookings, error } = await supabase
+          .from('booking_equipment')
+          .select('start_time, end_time, quantity, status')
+          .eq('equipment_id', equipment.id)
+          .not('status', 'eq', 'cancelled')
+          .gte('start_time', dayStart.toISOString())
+          .lte('start_time', dayEnd.toISOString());
+
+        if (error) {
+          console.error("Error fetching equipment bookings:", error);
+          throw error;
+        }
+
+        console.log("Equipment bookings for day:", bookings);
+
+        // Calculate blocked hours based on bookings and equipment quantity
+        const blocked: string[] = [];
+        const hourlyBookings: Record<string, number> = {};
+
+        if (bookings && bookings.length > 0) {
+          bookings.forEach(booking => {
+            // Convert to date objects
+            const start = new Date(booking.start_time);
+            const end = new Date(booking.end_time);
+            
+            // Get hours between start and end time
+            const startHourLocal = start.getHours();
+            const endHourLocal = end.getHours();
+            
+            // Add booked quantity to each hour
+            for (let h = startHourLocal; h < endHourLocal; h++) {
+              const hourKey = `${h.toString().padStart(2, "0")}:00`;
+              hourlyBookings[hourKey] = (hourlyBookings[hourKey] || 0) + booking.quantity;
+              
+              // If all units of this equipment are booked for this hour, block it
+              if (hourlyBookings[hourKey] >= equipment.quantity) {
+                blocked.push(hourKey);
+              }
+            }
+          });
+        }
+
+        console.log("Hourly bookings:", hourlyBookings);
+        console.log("Blocked hours:", blocked);
+        setAvailableHours(hours);
+        setBlockedHours(blocked);
+
+      } catch (error) {
+        console.error("Error calculating available hours:", error);
+        setAvailableHours([]);
+        setBlockedHours([]);
+      }
+    };
+
+    fetchAvailableHours();
+  }, [selectedDate, equipment]);
 
   return {
     selectedDate,
     startHour,
     endHour,
+    setEndHour,
+    availableHours,
+    blockedHours,
     startHourRef,
     endHourRef,
-    availableHours,
     handleDateSelect,
     handleStartHourSelect,
-    setEndHour: setEndHourValue,
-    isDateDisabled
+    isDateDisabled,
   };
 }

@@ -80,6 +80,7 @@ export function useEquipmentBooking({
       endHourRef: dateAndTime.endHourRef 
     },
     availableHours: dateAndTime.availableHours,
+    blockedHours: dateAndTime.blockedHours,  // Include blockedHours in the return value
     handlers: {
       handleDateSelect: dateAndTime.handleDateSelect,
       handleStartHourSelect: dateAndTime.handleStartHourSelect,

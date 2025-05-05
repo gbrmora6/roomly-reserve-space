@@ -43,6 +43,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
     state: { selectedDate, startHour, endHour, quantity, bookingTotal, isSubmitting },
     refs: { startHourRef, endHourRef },
     availableHours,
+    blockedHours,
     handlers: { 
       handleDateSelect, 
       handleStartHourSelect, 
@@ -78,7 +79,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
           Reservar {equipment.name}
         </CardTitle>
       </CardHeader>
-      <ScrollArea className="h-[70vh] max-h-[600px] overflow-auto">
+      <ScrollArea className="h-[70vh] max-h-[500px] overflow-auto">
         <CardContent className="space-y-6 p-6">
           <EquipmentDateSelector 
             selectedDate={selectedDate}
@@ -99,7 +100,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                 ) : (
                   <TimeSelector
                     hours={availableHours}
-                    blockedHours={[]}
+                    blockedHours={blockedHours}
                     selectedHour={startHour}
                     onSelectHour={handleStartHourSelect}
                   />
@@ -111,7 +112,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                   <h3 className="text-lg font-medium mb-3">Horário de término</h3>
                   <TimeSelector
                     hours={availableHours}
-                    blockedHours={[]}
+                    blockedHours={blockedHours}
                     selectedHour={endHour}
                     onSelectHour={setEndHour}
                     isEndTime
