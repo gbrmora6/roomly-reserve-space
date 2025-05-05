@@ -1,19 +1,55 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, CheckCircle, Clock, HelpCircle, User } from "lucide-react";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
+  const [heroImageUrl, setHeroImageUrl] = useState<string>("https://images.unsplash.com/photo-1581091226825-a6a2a5aee158");
+
+  // Fetch hero image from Supabase storage
+  useEffect(() => {
+    const fetchHeroImage = async () => {
+      try {
+        const { data, error } = await supabase
+          .storage
+          .from('site-photos')
+          .list();
+
+        if (error) {
+          console.error('Error fetching images:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Get the first image from the bucket
+          const imageFile = data[0];
+          const { data: publicUrlData } = supabase
+            .storage
+            .from('site-photos')
+            .getPublicUrl(imageFile.name);
+
+          if (publicUrlData && publicUrlData.publicUrl) {
+            setHeroImageUrl(publicUrlData.publicUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching hero image:', error);
+      }
+    };
+
+    fetchHeroImage();
+  }, []);
 
   return (
     <MainLayout>
       {/* Hero Section - Updated with gradient and better styling */}
       <section className="relative bg-gradient-to-r from-blue-50 to-indigo-50 py-20 md:py-28">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158')] bg-cover opacity-5"></div>
+        <div className="absolute inset-0 bg-cover opacity-5" style={{ backgroundImage: `url('${heroImageUrl}')` }}></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="text-center md:text-left">
@@ -50,7 +86,7 @@ const Index: React.FC = () => {
             <div className="flex justify-center">
               <div className="rounded-lg overflow-hidden shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
                 <img
-                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d"
+                  src={heroImageUrl}
                   alt="Reserva de salas para psicólogos"
                   className="h-auto w-full object-cover"
                   width={600}
@@ -288,3 +324,4 @@ const Index: React.FC = () => {
 };
 
 export default Index;
+

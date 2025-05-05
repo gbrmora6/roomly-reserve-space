@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
@@ -10,6 +10,7 @@ type BookingStatus = Database["public"]["Enums"]["booking_status"];
 export const useBookings = (userId: string | undefined) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"rooms" | "equipment">("rooms");
+  const queryClient = useQueryClient();
 
   // Fetch room bookings
   const { 
@@ -118,6 +119,10 @@ export const useBookings = (userId: string | undefined) => {
           title: "Sucesso",
           description: "Reserva de sala cancelada com sucesso.",
         });
+        
+        // Invalidate related queries to update notifications immediately
+        queryClient.invalidateQueries({ queryKey: ["pending-room-bookings"] });
+        
         refetchRooms();
       } else {
         const { error } = await supabase
@@ -131,6 +136,10 @@ export const useBookings = (userId: string | undefined) => {
           title: "Sucesso",
           description: "Reserva de equipamento cancelada com sucesso.",
         });
+        
+        // Invalidate related queries to update notifications immediately
+        queryClient.invalidateQueries({ queryKey: ["pending-equipment-bookings"] });
+        
         refetchEquipment();
       }
     } catch (error: any) {

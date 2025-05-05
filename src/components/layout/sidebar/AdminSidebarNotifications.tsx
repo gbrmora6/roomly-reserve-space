@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Circle } from "lucide-react";
 
@@ -10,6 +10,7 @@ export const useNotifications = () => {
   const [notificationSound] = useState<HTMLAudioElement | null>(
     typeof window !== "undefined" ? new Audio("/notification.mp3") : null
   );
+  const queryClient = useQueryClient();
   
   // Query to get pending room bookings
   const { data: pendingRoomBookings } = useQuery({
@@ -48,15 +49,19 @@ export const useNotifications = () => {
       .on(
         'postgres_changes',
         { 
-          event: 'INSERT', 
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'bookings',
-          filter: 'status=eq.pending'
         },
         (payload) => {
-          console.log('New room booking received!', payload);
-          setRoomNotificationCount(prev => prev + 1);
-          notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
+          console.log('Room booking change received:', payload);
+          // Invalidate the query to force a refetch of the data
+          queryClient.invalidateQueries({ queryKey: ["pending-room-bookings"] });
+          
+          // If it's a new pending booking, play notification sound
+          if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+            notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
+          }
         }
       )
       .subscribe();
@@ -66,15 +71,19 @@ export const useNotifications = () => {
       .on(
         'postgres_changes',
         { 
-          event: 'INSERT', 
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'booking_equipment',
-          filter: 'status=eq.pending'
         },
         (payload) => {
-          console.log('New equipment booking received!', payload);
-          setEquipmentNotificationCount(prev => prev + 1);
-          notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
+          console.log('Equipment booking change received:', payload);
+          // Invalidate the query to force a refetch of the data
+          queryClient.invalidateQueries({ queryKey: ["pending-equipment-bookings"] });
+          
+          // If it's a new pending booking, play notification sound
+          if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+            notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
+          }
         }
       )
       .subscribe();
@@ -83,7 +92,7 @@ export const useNotifications = () => {
       supabase.removeChannel(roomBookingsChannel);
       supabase.removeChannel(equipmentBookingsChannel);
     };
-  }, [notificationSound]);
+  }, [notificationSound, queryClient]);
   
   // Update notification counts when data changes
   useEffect(() => {

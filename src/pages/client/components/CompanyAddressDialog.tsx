@@ -43,7 +43,7 @@ export const CompanyAddressDialog = ({
             </div>
             <div className="aspect-video w-full">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3665.669201737705!2d-51.146633123694864!3d-23.327584484793713!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94eb430cb6418799%3A0xb53bc453948260de!2sR.%20Augusto%20Severo%2C%2010%20-%20Santos%20Dumont%2C%20Londrina%20-%20PR%2C%2086039-650!5e0!3m2!1spt-BR!2sbr!4v1708436845599!5m2!1spt-BR!2sbr"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3689.8263069580846!2d-41.666389920769814!3d-22.376948224084473!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x96555c87db01c9%3A0x816525f6a7e6a1b5!2sIcaraizinho%2C%20RJ!5e0!3m2!1spt-BR!2sbr!4v1704316863576!5m2!1spt-BR!2sbr"
                 className="w-full h-full rounded-md border-0"
                 allowFullScreen
                 loading="lazy"
@@ -56,3 +56,4 @@ export const CompanyAddressDialog = ({
     </Dialog>
   );
 };
+
