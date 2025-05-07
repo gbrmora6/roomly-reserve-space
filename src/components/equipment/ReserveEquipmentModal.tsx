@@ -38,7 +38,7 @@ export const ReserveEquipmentModal: React.FC<ReserveEquipmentModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] p-0" hideCloseButton>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0" hideCloseButton>
         {selectedEquipment && (
           <ReserveEquipmentForm
             equipment={selectedEquipment}

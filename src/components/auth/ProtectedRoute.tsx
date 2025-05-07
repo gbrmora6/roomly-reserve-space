@@ -13,7 +13,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
 
-  // Refresh claims only once when component mounts
+  // Refresh claims when component mounts and user is authenticated
   useEffect(() => {
     if (user && !loading) {
       console.log("ProtectedRoute - Refreshing user claims on initial mount");
