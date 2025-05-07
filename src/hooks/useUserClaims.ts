@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { encryptData, decryptData } from "@/utils/encryption";
 
 export function useUserClaims() {
   const refreshUserClaims = useCallback(async () => {
@@ -9,6 +10,17 @@ export function useUserClaims() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         console.log("No active session found, skipping claims refresh");
+        return;
+      }
+      
+      // Check if we have a cached timestamp to prevent too frequent refreshes
+      const lastRefreshStr = localStorage.getItem('last_claims_refresh');
+      const lastRefresh = lastRefreshStr ? parseInt(decryptData(lastRefreshStr)) : 0;
+      const now = Date.now();
+      
+      // Don't refresh claims more than once every 60 seconds unless forced
+      if (lastRefresh && (now - lastRefresh < 60000)) {
+        console.log("Claims were refreshed recently, skipping refresh");
         return;
       }
       
@@ -44,6 +56,8 @@ export function useUserClaims() {
             console.error("Error refreshing session after superadmin claims update:", refreshError);
           } else {
             console.log("Session refreshed with new superadmin JWT claims");
+            // Store encrypted timestamp of last refresh
+            localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
           }
         }
         
@@ -79,6 +93,8 @@ export function useUserClaims() {
       // Only update if there's a mismatch
       if (currentRole === profile.role && currentIsAdmin === isAdmin && currentIsSuperAdmin === isSuperAdmin) {
         console.log("User claims already up to date, skipping update");
+        // Still update the refresh timestamp
+        localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
         return;
       }
 
@@ -115,6 +131,7 @@ export function useUserClaims() {
           console.error("Error refreshing session after claims update:", refreshError);
         } else {
           console.log("Session refreshed with new JWT claims");
+          localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
         }
       }
     } catch (err) {

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { secureSessionStore } from "@/utils/encryption";
 
 export function useSessionManager() {
   const [user, setUser] = useState<User | null>(null);
@@ -20,10 +21,25 @@ export function useSessionManager() {
         console.log("User metadata from session:", currentSession.user.user_metadata);
         setSession(currentSession);
         setUser(currentSession.user);
+        
+        // Store session info securely
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          const isAdmin = 
+            currentSession.user.user_metadata?.is_admin === true || 
+            currentSession.user.user_metadata?.role === "admin" ||
+            currentSession.user.email === "admin@example.com" ||
+            currentSession.user.email === "cpd@sapiens-psi.com.br";
+            
+          if (isAdmin) {
+            secureSessionStore("admin_access_validated", "true");
+            secureSessionStore("admin_email", currentSession.user.email || "");
+          }
+        }
       } else {
         console.log("No user in session");
         setSession(null);
         setUser(null);
+        sessionStorage.clear(); // Clear any secure session data
       }
       
       // Update loading state if we have clear auth state information
@@ -108,6 +124,19 @@ export function useSessionManager() {
         if (currentSession) {
           setSession(currentSession);
           setUser(currentSession.user);
+          
+          // Check if user is admin and store securely
+          const isAdmin = 
+            currentSession.user.user_metadata?.is_admin === true || 
+            currentSession.user.user_metadata?.role === "admin" ||
+            currentSession.user.email === "admin@example.com" ||
+            currentSession.user.email === "cpd@sapiens-psi.com.br";
+            
+          if (isAdmin) {
+            secureSessionStore("admin_access_validated", "true");
+            secureSessionStore("admin_email", currentSession.user.email || "");
+          }
+          
           setLoading(false);
         } else {
           console.log("No existing session found");
