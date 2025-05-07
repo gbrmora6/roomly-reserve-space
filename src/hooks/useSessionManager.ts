@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { secureSessionStore } from "@/utils/encryption";
+import { devLog, errorLog } from "@/utils/logger";
 
 export function useSessionManager() {
   const [user, setUser] = useState<User | null>(null);
@@ -10,15 +11,16 @@ export function useSessionManager() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Setting up Supabase auth listener");
+    devLog("Setting up Supabase auth listener");
     
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      console.log("Auth state changed:", event, currentSession?.user?.id || "no user");
+      devLog("Auth state changed", { event, userId: currentSession?.user?.id || "no user" });
       
       if (currentSession?.user) {
-        console.log("User data in auth change:", currentSession.user.id);
-        console.log("User metadata from session:", currentSession.user.user_metadata);
+        devLog("User data in auth change", currentSession.user.id);
+        // Don't log user metadata in production (using devLog)
+        devLog("User metadata from session", currentSession.user.user_metadata);
         setSession(currentSession);
         setUser(currentSession.user);
         
@@ -36,7 +38,7 @@ export function useSessionManager() {
           }
         }
       } else {
-        console.log("No user in session");
+        devLog("No user in session");
         setSession(null);
         setUser(null);
         sessionStorage.clear(); // Clear any secure session data
@@ -59,7 +61,7 @@ export function useSessionManager() {
               userEmail === "cpd@sapiens-psi.com.br";
               
             if (isSpecialAdmin) {
-              console.log("Special admin account detected:", userEmail);
+              devLog("Special admin account detected", userEmail);
               
               try {
                 // Get the current user's profile from the database
@@ -70,7 +72,7 @@ export function useSessionManager() {
                   .maybeSingle();
                 
                 if (profileError) {
-                  console.error("Error fetching admin profile:", profileError);
+                  errorLog("Error fetching admin profile", profileError);
                 }
                 
                 // If profile doesn't exist or doesn't have admin role, update it
@@ -86,19 +88,19 @@ export function useSessionManager() {
                     });
                   
                   if (upsertError) {
-                    console.error("Error updating admin profile:", upsertError);
+                    errorLog("Error updating admin profile", upsertError);
                   } else {
-                    console.log("Admin profile updated for special account");
+                    devLog("Admin profile updated for special account");
                   }
                 } else {
-                  console.log("Admin profile already exists for special account");
+                  devLog("Admin profile already exists for special account");
                 }
               } catch (updateError) {
-                console.error("Error in admin profile update:", updateError);
+                errorLog("Error in admin profile update", updateError);
               }
             }
           } catch (error) {
-            console.error("Error processing user session:", error);
+            errorLog("Error processing user session", error);
           } finally {
             setLoading(false);
           }
@@ -114,12 +116,12 @@ export function useSessionManager() {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Error getting initial session:", error);
+          errorLog("Error getting initial session", error);
           setLoading(false);
           return;
         }
         
-        console.log("Initial session check:", currentSession?.user?.id || "No session");
+        devLog("Initial session check", currentSession?.user?.id || "No session");
         
         if (currentSession) {
           setSession(currentSession);
@@ -139,11 +141,11 @@ export function useSessionManager() {
           
           setLoading(false);
         } else {
-          console.log("No existing session found");
+          devLog("No existing session found");
           setLoading(false);
         }
       } catch (err) {
-        console.error("Unexpected error during session initialization:", err);
+        errorLog("Unexpected error during session initialization", err);
         setLoading(false);
       }
     };
@@ -151,7 +153,7 @@ export function useSessionManager() {
     initializeSession();
 
     return () => {
-      console.log("Cleaning up auth subscription");
+      devLog("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, []);

@@ -1,8 +1,8 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { secureSessionStore } from "@/utils/encryption";
+import { devLog, errorLog } from "@/utils/logger";
 
 // Maximum number of login attempts to track
 const MAX_TRACKED_ATTEMPTS = 5;
@@ -17,14 +17,14 @@ export function useAuthOperations() {
       // Check for previous login attempts
       checkForRateLimiting(email);
       
-      console.log("Attempting to sign in with:", email);
+      devLog("Attempting to sign in with", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error("Login error:", error.message);
+        errorLog("Login error", error.message);
         // Record failed attempt
         recordFailedLoginAttempt(email);
         
@@ -36,7 +36,7 @@ export function useAuthOperations() {
         throw error;
       }
       
-      console.log("Login successful, user:", data?.user?.id);
+      devLog("Login successful, user", data?.user?.id);
       
       // Clear any failed attempt records on successful login
       clearFailedLoginAttempts(email);
@@ -48,7 +48,7 @@ export function useAuthOperations() {
           data.user.email === "cpd@sapiens-psi.com.br";
         
         if (isSuperAdmin) {
-          console.log("Special admin account detected, setting full admin privileges");
+          devLog("Special admin account detected, setting full admin privileges");
           
           try {
             const { error: updateError } = await supabase.auth.updateUser({
@@ -60,23 +60,23 @@ export function useAuthOperations() {
             });
             
             if (updateError) {
-              console.error("Error setting admin privileges:", updateError);
+              errorLog("Error setting admin privileges", updateError);
             } else {
-              console.log("Admin privileges successfully set for", data.user.email);
+              devLog("Admin privileges successfully set for", data.user.email);
               
               // Force refresh the session
               const { error: refreshError } = await supabase.auth.refreshSession();
               if (refreshError) {
-                console.error("Error refreshing session after admin privileges update:", refreshError);
+                errorLog("Error refreshing session after admin privileges update", refreshError);
               } else {
-                console.log("Session refreshed with admin privileges");
+                devLog("Session refreshed with admin privileges");
                 // Securely store admin status in session
                 secureSessionStore("admin_access_validated", "true");
                 secureSessionStore("admin_email", data.user.email || "");
               }
             }
           } catch (adminError) {
-            console.error("Error in admin privileges update:", adminError);
+            errorLog("Error in admin privileges update", adminError);
           }
         }
       }
@@ -92,7 +92,7 @@ export function useAuthOperations() {
       
       return data;
     } catch (error: any) {
-      console.error("Login error (catch):", error);
+      errorLog("Login error (catch)", error);
       throw error;
     }
   };
@@ -176,11 +176,11 @@ export function useAuthOperations() {
 
   const signOut = async () => {
     try {
-      console.log("Attempting to sign out");
+      devLog("Attempting to sign out");
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error("Logout error:", error.message);
+        errorLog("Logout error", error.message);
         toast({
           variant: "destructive",
           title: "Erro ao fazer logout",
@@ -189,7 +189,7 @@ export function useAuthOperations() {
         throw error;
       }
       
-      console.log("Logout successful");
+      devLog("Logout successful");
       
       // Clear any cached security tokens
       sessionStorage.clear();
@@ -202,7 +202,7 @@ export function useAuthOperations() {
         });
       }, 100);
     } catch (error: any) {
-      console.error("Logout error (catch):", error);
+      errorLog("Logout error (catch)", error);
       toast({
         variant: "destructive",
         title: "Erro ao fazer logout",

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { devLog, errorLog } from "@/utils/logger";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,7 +22,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       if (loading) return;
 
       if (!user) {
-        console.log("ProtectedRoute - No authenticated user found");
+        devLog("ProtectedRoute - No authenticated user found");
         setIsAuthorized(false);
         setAuthChecked(true);
         return;
@@ -29,7 +30,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
 
       try {
         // Always refresh claims when accessing protected routes to ensure we have the latest permissions
-        console.log("ProtectedRoute - Refreshing user claims");
+        devLog("ProtectedRoute - Refreshing user claims");
         await refreshUserClaims();
         
         // Check if user is superAdmin, which bypasses all role checks
@@ -39,7 +40,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           user.email === "cpd@sapiens-psi.com.br";
         
         if (isSuperAdmin) {
-          console.log("SuperAdmin detected - bypassing role checks");
+          devLog("SuperAdmin detected - bypassing role checks");
           setIsAuthorized(true);
           setAuthChecked(true);
           return;
@@ -52,7 +53,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
             user.user_metadata?.is_admin === true || 
             user.user_metadata?.role === "admin";
           
-          console.log("Verificando permissões:", { 
+          devLog("Verificando permissões", { 
             userRole, 
             requiredRole, 
             isAdmin,
@@ -61,10 +62,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           
           // Check if user has the required role
           if (requiredRole === "admin" && !isAdmin) {
-            console.error(`Acesso negado: Usuário não tem permissão de administrador`);
+            errorLog(`Acesso negado: Usuário não tem permissão de administrador`);
             setIsAuthorized(false);
           } else if (requiredRole !== "admin" && requiredRole !== userRole) {
-            console.error(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${requiredRole}`);
+            errorLog(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${requiredRole}`);
             setIsAuthorized(false);
           } else {
             setIsAuthorized(true);
@@ -74,7 +75,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           setIsAuthorized(true);
         }
       } catch (error) {
-        console.error("Error verifying user access:", error);
+        errorLog("Error verifying user access", error);
         setIsAuthorized(false);
       } finally {
         setAuthChecked(true);

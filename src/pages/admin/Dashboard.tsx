@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -9,13 +8,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { devLog } from "@/utils/logger";
 
 const AdminDashboard: React.FC = () => {
   const { refreshUserClaims } = useAuth();
   
   // Execute refresh claims on component mount
   useEffect(() => {
-    console.log("AdminDashboard component mounted, refreshing user claims");
+    devLog("AdminDashboard component mounted, refreshing user claims");
     const refreshClaims = async () => {
       await refreshUserClaims();
     };
@@ -25,17 +25,16 @@ const AdminDashboard: React.FC = () => {
   const { data: roomsCount, isLoading: roomsLoading } = useQuery({
     queryKey: ["roomsCount"],
     queryFn: async () => {
-      console.log("Fetching rooms count");
+      devLog("Fetching rooms count");
       const { count, error } = await supabase
         .from("rooms")
         .select("*", { count: "exact", head: true });
       
       if (error) {
-        console.error("Error fetching rooms count:", error);
         throw error;
       }
       
-      console.log("Rooms count received:", count);
+      devLog("Rooms count received", count);
       return count || 0;
     },
   });
@@ -43,17 +42,16 @@ const AdminDashboard: React.FC = () => {
   const { data: equipmentCount, isLoading: equipmentLoading } = useQuery({
     queryKey: ["equipmentCount"],
     queryFn: async () => {
-      console.log("Fetching equipment count");
+      devLog("Fetching equipment count");
       const { count, error } = await supabase
         .from("equipment")
         .select("*", { count: "exact", head: true });
       
       if (error) {
-        console.error("Error fetching equipment count:", error);
         throw error;
       }
       
-      console.log("Equipment count received:", count);
+      devLog("Equipment count received", count);
       return count || 0;
     },
   });
@@ -61,17 +59,16 @@ const AdminDashboard: React.FC = () => {
   const { data: bookingsCount, isLoading: bookingsLoading } = useQuery({
     queryKey: ["bookingsCount"],
     queryFn: async () => {
-      console.log("Fetching bookings count");
+      devLog("Fetching bookings count");
       const { count, error } = await supabase
         .from("bookings")
         .select("*", { count: "exact", head: true });
       
       if (error) {
-        console.error("Error fetching bookings count:", error);
         throw error;
       }
       
-      console.log("Bookings count received:", count);
+      devLog("Bookings count received", count);
       return count || 0;
     },
   });
@@ -79,18 +76,17 @@ const AdminDashboard: React.FC = () => {
   const { data: clientsCount, isLoading: clientsLoading } = useQuery({
     queryKey: ["clientsCount"],
     queryFn: async () => {
-      console.log("Fetching clients count");
+      devLog("Fetching clients count");
       const { count, error } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
         .eq("role", "client");
       
       if (error) {
-        console.error("Error fetching clients count:", error);
         throw error;
       }
       
-      console.log("Clients count received:", count);
+      devLog("Clients count received", count);
       return count || 0;
     },
   });
@@ -106,7 +102,6 @@ const AdminDashboard: React.FC = () => {
         .order("start_time");
       
       if (error) {
-        console.error("Error fetching recent bookings:", error);
         throw error;
       }
       
@@ -148,7 +143,6 @@ const AdminDashboard: React.FC = () => {
         .neq("status", "cancelled");
       
       if (error) {
-        console.error("Error fetching monthly revenue:", error);
         throw error;
       }
       
@@ -157,7 +151,7 @@ const AdminDashboard: React.FC = () => {
     },
   });
 
-  console.log("AdminDashboard render state:", { roomsLoading, equipmentLoading, bookingsLoading });
+  devLog("AdminDashboard render state", { roomsLoading, equipmentLoading, bookingsLoading });
 
   return (
     <div className="space-y-6">

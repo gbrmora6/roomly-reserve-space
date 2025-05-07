@@ -14,6 +14,7 @@ import { AdminSidebarFooter } from "./sidebar/AdminSidebarFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { secureSessionStore, getSecureSessionItem } from "@/utils/encryption";
+import { devLog, errorLog } from "@/utils/logger";
 
 const ADMIN_ACCESS_KEY = "admin_access_validated";
 
@@ -33,7 +34,7 @@ const AdminLayout: React.FC = () => {
         const cachedEmail = getSecureSessionItem("admin_email");
         
         if (sessionValidated === "true" && cachedEmail === user?.email) {
-          console.log("Admin access previously validated this session");
+          devLog("Admin access previously validated this session");
           setIsAuthorized(true);
           setIsVerifying(false);
           return;
@@ -43,7 +44,7 @@ const AdminLayout: React.FC = () => {
         await refreshUserClaims();
         
         // Log debug information
-        console.log("AdminLayout mounted, user permissions:", {
+        devLog("AdminLayout mounted, user permissions", {
           isAdmin: user?.user_metadata?.is_admin, 
           role: user?.user_metadata?.role,
           email: user?.email
@@ -57,7 +58,7 @@ const AdminLayout: React.FC = () => {
           user?.email === "cpd@sapiens-psi.com.br";
         
         if (!isAdmin) {
-          console.error("Access attempt to admin area by non-admin user");
+          errorLog("Access attempt to admin area by non-admin user");
           toast({
             variant: "destructive",
             title: "Acesso não autorizado",
@@ -71,7 +72,7 @@ const AdminLayout: React.FC = () => {
           setIsAuthorized(true);
         }
       } catch (error) {
-        console.error("Error verifying admin access:", error);
+        errorLog("Error verifying admin access", error);
         setIsAuthorized(false);
       } finally {
         setIsVerifying(false);

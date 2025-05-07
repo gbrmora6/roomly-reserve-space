@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { devLog } from "@/utils/logger";
 
 const Login: React.FC = () => {
   const { signIn, user, loading } = useAuth();
@@ -19,7 +20,7 @@ const Login: React.FC = () => {
 
   // Log component state for debugging
   useEffect(() => {
-    console.log("Login component - Auth state:", { 
+    devLog("Login component - Auth state", { 
       userId: user?.id || null, 
       loading,
       userEmail: user?.email || null,

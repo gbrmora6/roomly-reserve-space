@@ -3,13 +3,14 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { encryptData, decryptData } from "@/utils/encryption";
+import { devLog, errorLog } from "@/utils/logger";
 
 export function useUserClaims() {
   const refreshUserClaims = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        console.log("No active session found, skipping claims refresh");
+        devLog("No active session found, skipping claims refresh");
         return;
       }
       
@@ -20,7 +21,7 @@ export function useUserClaims() {
       
       // Don't refresh claims more than once every 60 seconds unless forced
       if (lastRefresh && (now - lastRefresh < 60000)) {
-        console.log("Claims were refreshed recently, skipping refresh");
+        devLog("Claims were refreshed recently, skipping refresh");
         return;
       }
       
@@ -32,7 +33,7 @@ export function useUserClaims() {
       
       // Force admin status for superadmins
       if (isSuperAdmin) {
-        console.log("SuperAdmin detected by email, setting admin privileges");
+        devLog("SuperAdmin detected by email, setting admin privileges");
         
         const { data, error: updateError } = await supabase.auth.updateUser({
           data: { 
@@ -43,19 +44,19 @@ export function useUserClaims() {
         });
         
         if (updateError) {
-          console.error("Error updating superadmin claims:", updateError);
+          errorLog("Error updating superadmin claims", updateError);
           return;
         }
         
         if (data?.user) {
-          console.log("SuperAdmin claims updated successfully:", data.user.user_metadata);
+          devLog("SuperAdmin claims updated successfully", data.user.user_metadata);
           
           // Refresh session to update JWT claims
           const { error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError) {
-            console.error("Error refreshing session after superadmin claims update:", refreshError);
+            errorLog("Error refreshing session after superadmin claims update", refreshError);
           } else {
-            console.log("Session refreshed with new superadmin JWT claims");
+            devLog("Session refreshed with new superadmin JWT claims");
             // Store encrypted timestamp of last refresh
             localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
           }
@@ -65,7 +66,7 @@ export function useUserClaims() {
       }
       
       // For regular users, check if we need to update based on profile
-      console.log("Current user metadata:", session.user.user_metadata);
+      devLog("Current user metadata", session.user.user_metadata);
       
       // Fetch profile data to verify role
       const { data: profile, error: profileError } = await supabase
@@ -75,12 +76,12 @@ export function useUserClaims() {
         .single();
       
       if (profileError) {
-        console.error("Error fetching user profile for claims refresh:", profileError);
+        errorLog("Error fetching user profile for claims refresh", profileError);
         return;
       }
       
       if (!profile?.role) {
-        console.log("No role found in profile data, skipping claims update");
+        devLog("No role found in profile data, skipping claims update");
         return;
       }
 
@@ -92,13 +93,13 @@ export function useUserClaims() {
       
       // Only update if there's a mismatch
       if (currentRole === profile.role && currentIsAdmin === isAdmin && currentIsSuperAdmin === isSuperAdmin) {
-        console.log("User claims already up to date, skipping update");
+        devLog("User claims already up to date, skipping update");
         // Still update the refresh timestamp
         localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
         return;
       }
 
-      console.log("Updating user JWT claims to match profile role:", {
+      devLog("Updating user JWT claims to match profile role", {
         role: profile.role,
         is_admin: isAdmin,
         is_super_admin: isSuperAdmin
@@ -113,7 +114,7 @@ export function useUserClaims() {
       });
       
       if (updateError) {
-        console.error("Error updating user claims:", updateError);
+        errorLog("Error updating user claims", updateError);
         toast({
           variant: "destructive",
           title: "Erro de autenticação",
@@ -123,19 +124,19 @@ export function useUserClaims() {
       }
       
       if (data?.user) {
-        console.log("User claims updated successfully:", data.user.user_metadata);
+        devLog("User claims updated successfully", data.user.user_metadata);
         
         // Refresh session to update JWT claims
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
-          console.error("Error refreshing session after claims update:", refreshError);
+          errorLog("Error refreshing session after claims update", refreshError);
         } else {
-          console.log("Session refreshed with new JWT claims");
+          devLog("Session refreshed with new JWT claims");
           localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
         }
       }
     } catch (err) {
-      console.error("Error in refreshUserClaims:", err);
+      errorLog("Error in refreshUserClaims", err);
     }
   }, []);
 
