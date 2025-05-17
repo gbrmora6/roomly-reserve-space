@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0.01, "Preço deve ser maior que zero"),
   model: z.string().optional(),
   quantity: z.coerce.number().min(0, "Quantidade não pode ser negativa"),
-  equipment_id: z.string().optional(),
+  equipment_id: z.string().nullable().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -72,7 +73,7 @@ const AdminProducts = () => {
       price: 0,
       model: "",
       quantity: 0,
-      equipment_id: undefined,
+      equipment_id: null,
     },
   });
 
@@ -247,7 +248,7 @@ const AdminProducts = () => {
       price: 0,
       model: "",
       quantity: 0,
-      equipment_id: undefined,
+      equipment_id: null,
     });
     setEditingProductId(null);
   };
@@ -259,7 +260,7 @@ const AdminProducts = () => {
       price: product.price,
       model: product.model || "",
       quantity: product.quantity || 0,
-      equipment_id: product.equipment_id || undefined,
+      equipment_id: product.equipment_id || null,
     });
     setEditingProductId(product.id);
     setOpenDialog(true);
@@ -484,8 +485,8 @@ const AdminProducts = () => {
                       <FormLabel>Equipamento relacionado</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
+                        defaultValue={field.value || "null"}
+                        value={field.value || "null"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -493,7 +494,7 @@ const AdminProducts = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Nenhum</SelectItem>
+                          <SelectItem value="null">Nenhum</SelectItem>
                           {equipment?.map((item) => (
                             <SelectItem key={item.id} value={item.id}>
                               {item.name}
