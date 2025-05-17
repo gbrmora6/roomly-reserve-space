@@ -23,7 +23,6 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
               name,
               price_per_hour
             ),
-            user:profiles(first_name, last_name),
             booking_equipment:booking_equipment(
               quantity,
               equipment:equipment(
@@ -38,16 +37,30 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
           query = query.eq("status", filter);
         }
 
-        const { data, error } = await query;
+        const { data: bookingData, error } = await query;
 
         if (error) throw error;
         
-        // Processar os resultados para garantir que user tenha sempre a estrutura correta
-        return data?.map(booking => ({
-          ...booking,
-          user: booking.user || { first_name: '', last_name: '' },
-          booking_equipment: booking.booking_equipment || []
-        })) || [];
+        if (!bookingData) return [];
+        
+        // For each booking, fetch the user profile information separately
+        const bookingsWithProfiles = await Promise.all(
+          bookingData.map(async (booking) => {
+            const { data: profileData, error: profileError } = await supabase
+              .from("profiles")
+              .select("first_name, last_name")
+              .eq("id", booking.user_id)
+              .single();
+              
+            return {
+              ...booking,
+              user: profileError ? { first_name: '', last_name: '' } : profileData,
+              booking_equipment: booking.booking_equipment || []
+            };
+          })
+        );
+        
+        return bookingsWithProfiles;
       } catch (error: any) {
         console.error("Erro ao buscar reservas:", error);
         toast({

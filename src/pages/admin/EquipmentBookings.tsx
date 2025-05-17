@@ -242,12 +242,12 @@ const AdminEquipmentBookings: React.FC = () => {
     }
   };
   
-  // Garantir que bookings é um array válido antes de passar para o componente
-  const safeBookings = (bookings || []).map(booking => ({
+  // Garantir que bookings é um array válido antes de passar para os componentes
+  const safeBookings = Array.isArray(bookings) ? bookings.map(booking => ({
     ...booking,
     user: booking.user || { first_name: '', last_name: '' },
     booking_equipment: booking.booking_equipment || []
-  }));
+  })) : [];
   
   return (
     <div className="space-y-6">

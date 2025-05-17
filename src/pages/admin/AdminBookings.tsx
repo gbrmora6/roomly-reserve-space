@@ -41,10 +41,8 @@ const AdminBookings = () => {
   // Garantir que bookings seja um array válido antes de passar para os componentes
   const safeBookings = Array.isArray(bookings) ? bookings.map(booking => ({
     ...booking,
-    // Garantir que user sempre tenha first_name e last_name válidos
-    user: booking.user && typeof booking.user === 'object' && !('error' in booking.user) 
-      ? booking.user 
-      : { first_name: '', last_name: '' }
+    user: booking.user || { first_name: '', last_name: '' },
+    booking_equipment: booking.booking_equipment || []
   })) : [];
 
   return (

@@ -13,17 +13,12 @@ interface Client {
   first_name: string;
   last_name: string;
   phone: string;
-  email: string;
+  email: string | null;
   crp: string;
   cpf: string | null;
   cnpj: string | null;
   specialty: string | null;
 }
-
-type AuthUser = {
-  id: string;
-  email: string;
-};
 
 const isValidCRP = (crp: string) => /^[0-9]{7,9}$/.test(crp);
 
@@ -35,10 +30,11 @@ const Clients: React.FC = () => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
+        console.log("Fetching client profiles...");
         // Busca os perfis primeiro
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
+          .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj,email');
         
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);
@@ -50,34 +46,17 @@ const Clients: React.FC = () => {
           setLoading(false);
           return;
         }
-
-        // Tenta buscar os emails dos usuários através da API de admin do auth
-        let userEmails: Map<string, string> = new Map();
-        try {
-          // Essa chamada pode falhar se o usuário não tiver permissões de admin
-          const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-          
-          if (!authError && authUsers?.users) {
-            authUsers.users.forEach((user: AuthUser) => {
-              if (user && user.id && user.email) {
-                userEmails.set(user.id, user.email);
-              }
-            });
-          } else {
-            console.log("Não foi possível acessar os dados de autenticação, emails podem estar ausentes");
-          }
-        } catch (authErr) {
-          console.log("Erro ao acessar dados de autenticação:", authErr);
-        }
         
-        // Combinar os dados dos perfis com os e-mails
+        console.log(`Fetched ${profiles?.length || 0} client profiles`);
+        
+        // Processar os perfis que foram retornados com sucesso
         const clientsData = profiles ? profiles.map(profile => {
           return {
             id: profile.id,
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             phone: profile.phone || '',
-            email: userEmails.get(profile.id) || '',
+            email: profile.email || '',
             crp: profile.crp || '',
             cpf: profile.cpf,
             cnpj: profile.cnpj,
@@ -181,7 +160,7 @@ const Clients: React.FC = () => {
                     <TableCell>{client.first_name}</TableCell>
                     <TableCell>{client.last_name}</TableCell>
                     <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.email || '-'}</TableCell>
                     <TableCell>{client.crp}</TableCell>
                     <TableCell>{client.cpf || client.cnpj || '-'}</TableCell>
                     <TableCell>{client.specialty || '-'}</TableCell>
