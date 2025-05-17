@@ -6,12 +6,37 @@ import { BookingExport } from "@/components/bookings/BookingExport";
 import { useBookingData } from "@/hooks/useBookingData";
 import { BookingStatusManager } from "@/components/bookings/BookingStatusManager";
 import { Database } from "@/integrations/supabase/types";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
 const AdminBookings = () => {
   const { bookings, isLoading, refetch, filter, setFilter } = useBookingData();
   const { handleUpdateStatus } = BookingStatusManager({ refetch });
+  const { toast } = useToast();
+
+  // Verificar se temos acesso às reservas no carregamento inicial
+  useEffect(() => {
+    const checkAccess = async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id")
+        .limit(1);
+
+      if (error) {
+        console.error("Erro ao acessar reservas:", error);
+        toast({
+          title: "Erro de acesso",
+          description: "Não foi possível acessar as reservas. Verifique as permissões no banco de dados.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    checkAccess();
+  }, [toast]);
 
   return (
     <div className="space-y-6">
@@ -22,7 +47,13 @@ const AdminBookings = () => {
 
       <BookingFilters filter={filter} onFilterChange={setFilter} />
 
-      <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
+      )}
     </div>
   );
 };

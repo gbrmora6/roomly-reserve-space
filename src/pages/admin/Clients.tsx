@@ -9,6 +9,7 @@ import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Client {
+  id: string;
   first_name: string;
   last_name: string;
   phone: string;
@@ -27,41 +28,127 @@ const Clients: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('first_name,last_name,phone,crp,specialty,cpf,cnpj')
-      .then(({ data, error }) => {
+    const fetchClients = async () => {
+      try {
+        // Busca os usuários da autenticação para obter os emails
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error("Error fetching auth users:", authError);
+          // Tenta buscar apenas os perfis se não conseguir acessar usuários de autenticação
+          const { data: profilesOnly, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
+            
+          if (profilesError) {
+            console.error("Error fetching profiles:", profilesError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível carregar os clientes.",
+              variant: "destructive",
+            });
+            setLoading(false);
+            return;
+          }
+          
+          const clientsData = profilesOnly ? profilesOnly.map(profile => ({
+            id: profile.id,
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            phone: profile.phone || '',
+            email: '', // Email não disponível sem acesso à autenticação
+            crp: profile.crp || '',
+            cpf: profile.cpf,
+            cnpj: profile.cnpj,
+            specialty: profile.specialty
+          })) : [];
+          
+          setClients(clientsData);
+          setLoading(false);
+          return;
+        }
+        
+        // Se tiver acesso aos usuários de autenticação, busca os perfis
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
+        
         if (error) {
-          console.error("Error fetching clients:", error);
+          console.error("Error fetching profiles:", error);
           toast({
             title: "Erro",
             description: "Não foi possível carregar os clientes.",
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
         
-        const clientsWithDefaults = data ? data.map(client => ({
-          first_name: client.first_name || '',
-          last_name: client.last_name || '',
-          phone: client.phone || '',
-          email: '', // Add empty email since it's not in the profiles table
-          crp: client.crp || '',
-          cpf: client.cpf,
-          cnpj: client.cnpj,
-          specialty: client.specialty
+        // Mapeia os emails dos usuários para os perfis
+        const userEmails = new Map();
+        if (authUsers?.users) {
+          authUsers.users.forEach(user => {
+            userEmails.set(user.id, user.email);
+          });
+        }
+        
+        // Combina os dados dos perfis com os emails
+        const clientsWithData = profiles ? profiles.map(profile => ({
+          id: profile.id,
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          phone: profile.phone || '',
+          email: userEmails.get(profile.id) || '',
+          crp: profile.crp || '',
+          cpf: profile.cpf,
+          cnpj: profile.cnpj,
+          specialty: profile.specialty
         })) : [];
         
-        setClients(clientsWithDefaults);
+        setClients(clientsWithData);
+      } catch (error) {
+        console.error("Error in fetchClients:", error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao buscar os dados dos clientes.",
+          variant: "destructive",
+        });
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+    
+    fetchClients();
+  }, [toast]);
 
   const exportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(clients);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
-    XLSX.writeFile(wb, 'clientes.xlsx');
+    if (!clients.length) {
+      toast({
+        title: "Sem dados",
+        description: "Não há clientes para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const ws = XLSX.utils.json_to_sheet(clients);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+      XLSX.writeFile(wb, 'clientes.xlsx');
+      
+      toast({
+        title: "Sucesso",
+        description: "Lista de clientes exportada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível exportar os dados para Excel.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -84,6 +171,7 @@ const Clients: React.FC = () => {
           onClick={exportExcel}
           variant="outline"
           className="flex items-center gap-2"
+          disabled={clients.length === 0}
         >
           <Download className="h-4 w-4" />
           Exportar Excel
@@ -97,25 +185,35 @@ const Clients: React.FC = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Sobrenome</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>CRP</TableHead>
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Especialidade</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clients.map((client, index) => (
-                <TableRow 
-                  key={index}
-                  className={!isValidCRP(client.crp) ? 'bg-destructive/10' : ''}
-                >
-                  <TableCell>{client.first_name}</TableCell>
-                  <TableCell>{client.last_name}</TableCell>
-                  <TableCell>{client.phone}</TableCell>
-                  <TableCell>{client.crp}</TableCell>
-                  <TableCell>{client.cpf || client.cnpj || '-'}</TableCell>
-                  <TableCell>{client.specialty || '-'}</TableCell>
+              {clients.length > 0 ? (
+                clients.map((client, index) => (
+                  <TableRow 
+                    key={client.id || index}
+                    className={client.crp && !isValidCRP(client.crp) ? 'bg-destructive/10' : ''}
+                  >
+                    <TableCell>{client.first_name}</TableCell>
+                    <TableCell>{client.last_name}</TableCell>
+                    <TableCell>{client.phone}</TableCell>
+                    <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.crp}</TableCell>
+                    <TableCell>{client.cpf || client.cnpj || '-'}</TableCell>
+                    <TableCell>{client.specialty || '-'}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6">
+                    Nenhum cliente encontrado
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

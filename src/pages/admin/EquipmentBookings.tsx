@@ -96,11 +96,11 @@ const AdminEquipmentBookings: React.FC = () => {
         
         if (equipmentError) throw equipmentError;
         
-        console.log("Equipment booking data:", equipmentBookingsData);
+        console.log("Equipment booking data retrieved:", equipmentBookingsData?.length || 0, "records");
         
         // Fetch user profiles separately for each booking
         const transformedBookings: Booking[] = await Promise.all(
-          equipmentBookingsData.map(async (item) => {
+          (equipmentBookingsData || []).map(async (item) => {
             // Fetch user profile
             const { data: userProfile, error: userError } = await supabase
               .from("profiles")
@@ -109,7 +109,7 @@ const AdminEquipmentBookings: React.FC = () => {
               .single();
             
             if (userError) {
-              console.error("Error fetching user profile:", userError);
+              console.error("Error fetching user profile for", item.user_id, ":", userError);
             }
             
             return {
@@ -127,14 +127,15 @@ const AdminEquipmentBookings: React.FC = () => {
               booking_equipment: [{
                 quantity: item.quantity,
                 equipment: {
-                  name: (item.equipment as any).name,
-                  price_per_hour: (item.equipment as any).price_per_hour
+                  name: (item.equipment as any)?.name || "Equipamento não encontrado",
+                  price_per_hour: (item.equipment as any)?.price_per_hour || 0
                 }
               }]
             };
           })
         );
         
+        console.log("Transformed bookings:", transformedBookings.length);
         return transformedBookings;
       } catch (error) {
         console.error("Error fetching equipment bookings:", error);
@@ -196,7 +197,7 @@ const AdminEquipmentBookings: React.FC = () => {
           "Horário Início": format(startDate, "HH:mm"),
           "Horário Fim": format(endDate, "HH:mm"),
           "Equipamentos": equipmentText,
-          "Valor Total": `R$ ${booking.total_price.toFixed(2)}`,
+          "Valor Total": `R$ ${booking.total_price?.toFixed(2) || "0.00"}`,
           "Status": translateStatus(booking.status)
         };
       });
@@ -274,6 +275,10 @@ const AdminEquipmentBookings: React.FC = () => {
               <p className="text-sm text-muted-foreground mt-2">
                 {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
               </p>
+            </div>
+          ) : !bookings || bookings.length === 0 ? (
+            <div className="text-center py-10 border rounded-lg">
+              <p className="text-muted-foreground">Nenhuma reserva de equipamento encontrada</p>
             </div>
           ) : (
             <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />

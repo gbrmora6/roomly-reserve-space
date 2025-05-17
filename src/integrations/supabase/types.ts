@@ -12,41 +12,41 @@ export type Database = {
       booking_equipment: {
         Row: {
           booking_id: string | null
-          created_at: string
+          created_at: string | null
           end_time: string
           equipment_id: string
           id: string
           quantity: number
           start_time: string
-          status: Database["public"]["Enums"]["booking_status"]
-          total_price: number
-          updated_at: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          total_price: number | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           booking_id?: string | null
-          created_at?: string
+          created_at?: string | null
           end_time: string
           equipment_id: string
           id?: string
           quantity?: number
           start_time: string
-          status?: Database["public"]["Enums"]["booking_status"]
-          total_price?: number
-          updated_at?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          total_price?: number | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           booking_id?: string | null
-          created_at?: string
+          created_at?: string | null
           end_time?: string
           equipment_id?: string
           id?: string
           quantity?: number
           start_time?: string
-          status?: Database["public"]["Enums"]["booking_status"]
-          total_price?: number
-          updated_at?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          total_price?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -68,48 +68,41 @@ export type Database = {
       }
       bookings: {
         Row: {
-          created_at: string
+          created_at: string | null
           end_time: string
           id: string
           room_id: string
           start_time: string
-          status: Database["public"]["Enums"]["booking_status"]
-          total_price: number
-          updated_at: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          total_price: number | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           end_time: string
           id?: string
           room_id: string
           start_time: string
-          status?: Database["public"]["Enums"]["booking_status"]
-          total_price?: number
-          updated_at?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          total_price?: number | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           end_time?: string
           id?: string
           room_id?: string
           start_time?: string
-          status?: Database["public"]["Enums"]["booking_status"]
-          total_price?: number
-          updated_at?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          total_price?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_bookings_profiles"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_bookings_rooms"
+            foreignKeyName: "bookings_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
@@ -121,7 +114,7 @@ export type Database = {
         Row: {
           city: string | null
           id: string
-          name: string
+          name: string | null
           neighborhood: string | null
           number: string | null
           street: string | null
@@ -129,7 +122,7 @@ export type Database = {
         Insert: {
           city?: string | null
           id?: string
-          name: string
+          name?: string | null
           neighborhood?: string | null
           number?: string | null
           street?: string | null
@@ -137,7 +130,7 @@ export type Database = {
         Update: {
           city?: string | null
           id?: string
-          name?: string
+          name?: string | null
           neighborhood?: string | null
           number?: string | null
           street?: string | null
@@ -147,64 +140,64 @@ export type Database = {
       equipment: {
         Row: {
           close_time: string | null
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
-          is_active: boolean
+          is_active: boolean | null
           name: string
           open_days: Database["public"]["Enums"]["weekday"][] | null
           open_time: string | null
           price_per_hour: number
           quantity: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           close_time?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name: string
           open_days?: Database["public"]["Enums"]["weekday"][] | null
           open_time?: string | null
-          price_per_hour?: number
+          price_per_hour: number
           quantity?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           close_time?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name?: string
           open_days?: Database["public"]["Enums"]["weekday"][] | null
           open_time?: string | null
           price_per_hour?: number
           quantity?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       equipment_availability: {
         Row: {
-          created_at: string
+          created_at: string | null
           end_time: string
-          equipment_id: string | null
+          equipment_id: string
           id: string
           start_time: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           end_time: string
-          equipment_id?: string | null
+          equipment_id: string
           id?: string
           start_time: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           end_time?: string
-          equipment_id?: string | null
+          equipment_id?: string
           id?: string
           start_time?: string
         }
@@ -220,30 +213,30 @@ export type Database = {
       }
       equipment_schedules: {
         Row: {
-          created_at: string
+          created_at: string | null
           end_time: string
-          equipment_id: string | null
+          equipment_id: string
           id: string
           start_time: string
-          updated_at: string
+          updated_at: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           end_time: string
-          equipment_id?: string | null
+          equipment_id: string
           id?: string
           start_time: string
-          updated_at?: string
+          updated_at?: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           end_time?: string
-          equipment_id?: string | null
+          equipment_id?: string
           id?: string
           start_time?: string
-          updated_at?: string
+          updated_at?: string | null
           weekday?: Database["public"]["Enums"]["weekday"]
         }
         Relationships: [
@@ -260,21 +253,21 @@ export type Database = {
         Row: {
           booking_id: string
           content: string
-          created_at: string
+          created_at: string | null
           id: string
           sender_id: string
         }
         Insert: {
           booking_id: string
           content: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           sender_id: string
         }
         Update: {
           booking_id?: string
           content?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
           sender_id?: string
         }
@@ -294,7 +287,7 @@ export type Database = {
           city: string | null
           cnpj: string | null
           cpf: string | null
-          created_at: string
+          created_at: string | null
           crp: string | null
           first_name: string | null
           house_number: string | null
@@ -302,18 +295,18 @@ export type Database = {
           last_name: string | null
           neighborhood: string | null
           phone: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database["public"]["Enums"]["user_role"] | null
           specialty: string | null
           state: string | null
           street: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           cep?: string | null
           city?: string | null
           cnpj?: string | null
           cpf?: string | null
-          created_at?: string
+          created_at?: string | null
           crp?: string | null
           first_name?: string | null
           house_number?: string | null
@@ -321,18 +314,18 @@ export type Database = {
           last_name?: string | null
           neighborhood?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           specialty?: string | null
           state?: string | null
           street?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           cep?: string | null
           city?: string | null
           cnpj?: string | null
           cpf?: string | null
-          created_at?: string
+          created_at?: string | null
           crp?: string | null
           first_name?: string | null
           house_number?: string | null
@@ -340,31 +333,31 @@ export type Database = {
           last_name?: string | null
           neighborhood?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database["public"]["Enums"]["user_role"] | null
           specialty?: string | null
           state?: string | null
           street?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
       room_availability: {
         Row: {
-          created_at: string
+          created_at: string | null
           end_time: string
           id: string
           room_id: string
           start_time: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           end_time: string
           id?: string
           room_id: string
           start_time: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           end_time?: string
           id?: string
           room_id?: string
@@ -382,19 +375,19 @@ export type Database = {
       }
       room_photos: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           room_id: string
           url: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           room_id: string
           url: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           room_id?: string
           url?: string
@@ -411,30 +404,30 @@ export type Database = {
       }
       room_schedules: {
         Row: {
-          created_at: string
+          created_at: string | null
           end_time: string
           id: string
           room_id: string
           start_time: string
-          updated_at: string
+          updated_at: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           end_time: string
           id?: string
           room_id: string
           start_time: string
-          updated_at?: string
+          updated_at?: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           end_time?: string
           id?: string
           room_id?: string
           start_time?: string
-          updated_at?: string
+          updated_at?: string | null
           weekday?: Database["public"]["Enums"]["weekday"]
         }
         Relationships: [
@@ -450,51 +443,57 @@ export type Database = {
       rooms: {
         Row: {
           close_time: string | null
-          created_at: string
+          created_at: string | null
           description: string | null
           has_ac: boolean | null
           has_chairs: boolean | null
+          has_private_bathroom: boolean | null
           has_tables: boolean | null
+          has_tv: boolean | null
           has_wifi: boolean | null
           id: string
-          is_active: boolean
+          is_active: boolean | null
           name: string
           open_days: number[] | null
           open_time: string | null
           price_per_hour: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           close_time?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           has_ac?: boolean | null
           has_chairs?: boolean | null
+          has_private_bathroom?: boolean | null
           has_tables?: boolean | null
+          has_tv?: boolean | null
           has_wifi?: boolean | null
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name: string
           open_days?: number[] | null
           open_time?: string | null
-          price_per_hour?: number
-          updated_at?: string
+          price_per_hour: number
+          updated_at?: string | null
         }
         Update: {
           close_time?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           has_ac?: boolean | null
           has_chairs?: boolean | null
+          has_private_bathroom?: boolean | null
           has_tables?: boolean | null
+          has_tv?: boolean | null
           has_wifi?: boolean | null
           id?: string
-          is_active?: boolean
+          is_active?: boolean | null
           name?: string
           open_days?: number[] | null
           open_time?: string | null
           price_per_hour?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -503,21 +502,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_equipment_availability: {
-        Args: {
-          p_equipment_id: string
-          p_start_time: string
-          p_end_time: string
-          p_requested_quantity: number
-        }
-        Returns: boolean
-      }
-      is_admin_or_super: {
+      is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_owner_or_admin: {
-        Args: { record_user_id: string }
+        Args: { owner_id: string }
         Returns: boolean
       }
     }
