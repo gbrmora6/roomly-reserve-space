@@ -117,7 +117,7 @@ const AdminProducts = () => {
         price: values.price,
         model: values.model,
         quantity: values.quantity,
-        equipment_id: values.equipment_id || null,
+        equipment_id: values.equipment_id === "null" ? null : values.equipment_id,
       };
 
       if (editingProductId) {
@@ -130,6 +130,15 @@ const AdminProducts = () => {
           .single();
 
         if (error) throw error;
+        
+        // Update in Stripe if connected
+        if (data.stripe_product_id) {
+          await updateProductInStripe(data);
+        } else {
+          // If no stripe ID exists yet, create one
+          await createProductInStripe(data);
+        }
+        
         return data;
       } else {
         // Create new product
@@ -151,7 +160,7 @@ const AdminProducts = () => {
         title: editingProductId ? "Produto atualizado" : "Produto criado",
         description: editingProductId 
           ? "O produto foi atualizado com sucesso." 
-          : "O produto foi criado com sucesso.",
+          : "O produto foi criado com sucesso e sincronizado com Stripe.",
       });
       setOpenDialog(false);
       resetForm();
@@ -169,7 +178,7 @@ const AdminProducts = () => {
   // Create product in Stripe
   const createProductInStripe = async (productData: any) => {
     try {
-      const { error } = await supabase.functions.invoke("stripe-integration", {
+      const { data, error } = await supabase.functions.invoke("stripe-integration", {
         body: {
           action: "create-product",
           productData,
@@ -177,12 +186,37 @@ const AdminProducts = () => {
       });
 
       if (error) throw error;
+      console.log("Product created in Stripe:", data);
+      return data;
     } catch (error) {
       console.error("Error creating product in Stripe:", error);
       toast({
         variant: "destructive",
         title: "Erro ao integrar com Stripe",
         description: "O produto foi salvo, mas ocorreu um erro ao sincronizar com o Stripe.",
+      });
+    }
+  };
+
+  // Update product in Stripe
+  const updateProductInStripe = async (productData: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-integration", {
+        body: {
+          action: "update-product",
+          productData,
+        },
+      });
+
+      if (error) throw error;
+      console.log("Product updated in Stripe:", data);
+      return data;
+    } catch (error) {
+      console.error("Error updating product in Stripe:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar no Stripe",
+        description: "O produto foi atualizado localmente, mas ocorreu um erro ao sincronizar com o Stripe.",
       });
     }
   };
@@ -217,15 +251,16 @@ const AdminProducts = () => {
   // Sync all products with Stripe
   const syncProductsMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.functions.invoke("stripe-integration", {
+      const { data, error } = await supabase.functions.invoke("stripe-integration", {
         body: {
           action: "sync-products",
         },
       });
 
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Produtos sincronizados",
         description: "Os produtos foram sincronizados com o Stripe com sucesso.",

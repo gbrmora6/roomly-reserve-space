@@ -1,88 +1,76 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Navbar: React.FC = () => {
+const Navbar = () => {
+  const location = useLocation();
   const { user, signOut } = useAuth();
 
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      console.log("Initiating logout from navbar");
-      await signOut();
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="border-b bg-white shadow-md">
+    <header className="bg-white dark:bg-gray-950 border-b sticky top-0 z-50">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-roomly-600">Psico Flex</span>
+        <div className="flex gap-6 md:gap-10">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="font-bold text-xl">Sapiens</span>
           </Link>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Link to="/rooms">
-            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
+          <nav className="hidden md:flex gap-6">
+            <Link
+              to="/rooms"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive("/rooms") ? "text-primary" : ""
+              }`}
+            >
               Salas
-            </Button>
-          </Link>
-          
-          <Link to="/equipment">
-            <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
+            </Link>
+            <Link
+              to="/equipment"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActive("/equipment") ? "text-primary" : ""
+              }`}
+            >
               Equipamentos
-            </Button>
-          </Link>
-          
+            </Link>
+            <Link
+              to="/store"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname.startsWith("/store") ? "text-primary" : ""
+              }`}
+            >
+              Produtos
+            </Link>
+          </nav>
+        </div>
+        <div className="flex items-center gap-4">
           {user ? (
             <>
-              {user.user_metadata?.role === "admin" ? (
-                <Link to="/admin">
-                  <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
-                    Painel Admin
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Link to="/my-bookings">
-                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
-                      Minhas Reservas
-                    </Button>
-                  </Link>
-                  <Link to="/my-account">
-                    <Button variant="default" className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white text-base px-5 py-5 shadow-lg">
-                      Minha Conta
-                    </Button>
-                  </Link>
-                </>
-              )}
-              
-              <Button 
-                variant="outline" 
-                onClick={handleSignOut}
-                className="border-roomly-500 border-2 text-roomly-700 hover:bg-roomly-50 font-semibold text-base px-5 py-5"
-              >
+              <Link to="/my-account">
+                <Button variant="ghost" size="sm">
+                  Minha Conta
+                </Button>
+              </Link>
+              <Link to="/my-bookings">
+                <Button variant="ghost" size="sm">
+                  Minhas Reservas
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={signOut}>
                 Sair
               </Button>
             </>
           ) : (
             <>
               <Link to="/login">
-                <Button 
-                  variant="outline" 
-                  className="border-roomly-500 border-2 text-roomly-700 hover:bg-roomly-50 font-semibold text-base px-5 py-5"
-                >
-                  Entrar
+                <Button variant="ghost" size="sm">
+                  Login
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-roomly-600 hover:bg-roomly-700 font-semibold text-white shadow-lg text-base px-5 py-5">
-                  Cadastre-se
+                <Button variant="outline" size="sm">
+                  Cadastrar
                 </Button>
               </Link>
             </>
@@ -91,6 +79,6 @@ const Navbar: React.FC = () => {
       </div>
     </header>
   );
-}
+};
 
 export default Navbar;

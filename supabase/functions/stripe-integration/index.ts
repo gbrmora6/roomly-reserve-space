@@ -33,10 +33,11 @@ serve(async (req) => {
         // Create a product in Stripe
         const stripeProduct = await stripe.products.create({
           name: productData.name,
-          description: productData.description,
+          description: productData.description || "",
           active: true,
           metadata: {
             model: productData.model || "",
+            product_id: productData.id,
           },
         });
 
@@ -68,6 +69,62 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
+      
+      case "update-product":
+        // Check if product exists in Stripe
+        if (!productData.stripe_product_id) {
+          throw new Error("Product doesn't have a Stripe ID");
+        }
+        
+        // Update product in Stripe
+        const updatedStripeProduct = await stripe.products.update(
+          productData.stripe_product_id,
+          {
+            name: productData.name,
+            description: productData.description || "",
+            metadata: {
+              model: productData.model || "",
+              product_id: productData.id,
+            },
+          }
+        );
+        
+        // If price has changed, create a new price and update the product
+        const currentPrice = await stripe.prices.retrieve(productData.stripe_price_id);
+        const newPriceInCents = Math.round(productData.price * 100);
+        
+        let updatedStripePrice = currentPrice;
+        
+        if (currentPrice.unit_amount !== newPriceInCents) {
+          // Deactivate old price
+          await stripe.prices.update(currentPrice.id, { active: false });
+          
+          // Create new price
+          updatedStripePrice = await stripe.prices.create({
+            product: productData.stripe_product_id,
+            unit_amount: newPriceInCents,
+            currency: "brl",
+          });
+          
+          // Update the price ID in Supabase
+          const { error: priceUpdateError } = await supabase
+            .from("products")
+            .update({ stripe_price_id: updatedStripePrice.id })
+            .eq("id", productData.id);
+          
+          if (priceUpdateError) {
+            throw new Error(`Supabase price update failed: ${priceUpdateError.message}`);
+          }
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          stripeProduct: updatedStripeProduct,
+          stripePrice: updatedStripePrice,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
 
       case "create-checkout":
         if (!userId || !productIds || !quantities || productIds.length === 0) {
@@ -77,7 +134,7 @@ serve(async (req) => {
         // Fetch user data for the checkout session
         const { data: userData, error: userError } = await supabase
           .from("profiles")
-          .select("first_name, last_name")
+          .select("first_name, last_name, email")
           .eq("id", userId)
           .single();
 
@@ -112,9 +169,7 @@ serve(async (req) => {
           success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${origin}/payment-canceled`,
           client_reference_id: userId,
-          customer_email: userData?.first_name 
-            ? `${userData.first_name.toLowerCase()}.${userData.last_name?.toLowerCase() || "cliente"}@example.com` 
-            : undefined,
+          customer_email: userData?.email,
           metadata: {
             userId,
           },
@@ -198,6 +253,7 @@ serve(async (req) => {
               active: product.is_active,
               metadata: {
                 model: product.model || "",
+                product_id: product.id,
               },
             });
 

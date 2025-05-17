@@ -20,6 +20,8 @@ import AdminEquipmentForm from "./pages/admin/EquipmentForm";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminEquipmentBookings from "./pages/admin/EquipmentBookings";
 import AdminProducts from "./pages/admin/Products";
+import ProductStore from "./pages/store/ProductStore";
+import ProductDetail from "./pages/store/ProductDetail";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import Clients from "./pages/admin/Clients";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -48,6 +50,8 @@ const App: React.FC = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/rooms" element={<RoomList />} />
               <Route path="/equipment" element={<EquipmentList />} />
+              <Route path="/store" element={<ProductStore />} />
+              <Route path="/store/product/:id" element={<ProductDetail />} />
               <Route path="/create-superadmin" element={<CreateSuperAdmin />} />
               <Route path="/booking/:id" element={<BookingDetails />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
