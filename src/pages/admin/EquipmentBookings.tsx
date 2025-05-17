@@ -86,13 +86,14 @@ const AdminEquipmentBookings: React.FC = () => {
               name,
               price_per_hour
             )
-          `);
+          `)
+          .order("created_at", { ascending: false });
           
         if (activeTab !== "all") {
           query = query.eq("status", activeTab);
         }
         
-        const { data: equipmentBookingsData, error: equipmentError } = await query.order("created_at", { ascending: false });
+        const { data: equipmentBookingsData, error: equipmentError } = await query;
         
         if (equipmentError) throw equipmentError;
         
@@ -112,6 +113,9 @@ const AdminEquipmentBookings: React.FC = () => {
               console.error("Error fetching user profile for", item.user_id, ":", userError);
             }
             
+            // Garantir que temos um objeto user válido mesmo se a busca falhar
+            const user = userProfile || { first_name: '', last_name: '' };
+            
             return {
               id: item.id,
               user_id: item.user_id,
@@ -119,10 +123,10 @@ const AdminEquipmentBookings: React.FC = () => {
               start_time: item.start_time,
               end_time: item.end_time,
               status: item.status as BookingStatus,
-              created_at: item.created_at,
-              updated_at: item.updated_at,
-              total_price: item.total_price,
-              user: userProfile || null,
+              created_at: item.created_at || '',
+              updated_at: item.updated_at || '',
+              total_price: item.total_price || 0,
+              user,
               room: null,
               booking_equipment: [{
                 quantity: item.quantity,
@@ -238,6 +242,13 @@ const AdminEquipmentBookings: React.FC = () => {
     }
   };
   
+  // Garantir que bookings é um array válido antes de passar para o componente
+  const safeBookings = (bookings || []).map(booking => ({
+    ...booking,
+    user: booking.user || { first_name: '', last_name: '' },
+    booking_equipment: booking.booking_equipment || []
+  }));
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -276,12 +287,12 @@ const AdminEquipmentBookings: React.FC = () => {
                 {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
               </p>
             </div>
-          ) : !bookings || bookings.length === 0 ? (
+          ) : !safeBookings || safeBookings.length === 0 ? (
             <div className="text-center py-10 border rounded-lg">
               <p className="text-muted-foreground">Nenhuma reserva de equipamento encontrada</p>
             </div>
           ) : (
-            <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
+            <BookingsTable bookings={safeBookings} onUpdateStatus={handleUpdateStatus} />
           )}
         </TabsContent>
       </Tabs>

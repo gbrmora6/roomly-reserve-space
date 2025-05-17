@@ -20,6 +20,11 @@ interface Client {
   specialty: string | null;
 }
 
+type AuthUser = {
+  id: string;
+  email: string;
+};
+
 const isValidCRP = (crp: string) => /^[0-9]{7,9}$/.test(crp);
 
 const Clients: React.FC = () => {
@@ -30,82 +35,57 @@ const Clients: React.FC = () => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        // Busca os usuários da autenticação para obter os emails
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.error("Error fetching auth users:", authError);
-          // Tenta buscar apenas os perfis se não conseguir acessar usuários de autenticação
-          const { data: profilesOnly, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
-            
-          if (profilesError) {
-            console.error("Error fetching profiles:", profilesError);
-            toast({
-              title: "Erro",
-              description: "Não foi possível carregar os clientes.",
-              variant: "destructive",
-            });
-            setLoading(false);
-            return;
-          }
-          
-          const clientsData = profilesOnly ? profilesOnly.map(profile => ({
-            id: profile.id,
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            phone: profile.phone || '',
-            email: '', // Email não disponível sem acesso à autenticação
-            crp: profile.crp || '',
-            cpf: profile.cpf,
-            cnpj: profile.cnpj,
-            specialty: profile.specialty
-          })) : [];
-          
-          setClients(clientsData);
-          setLoading(false);
-          return;
-        }
-        
-        // Se tiver acesso aos usuários de autenticação, busca os perfis
-        const { data: profiles, error } = await supabase
+        // Busca os perfis primeiro
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
         
-        if (error) {
-          console.error("Error fetching profiles:", error);
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
           toast({
             title: "Erro",
-            description: "Não foi possível carregar os clientes.",
+            description: "Não foi possível carregar os perfis dos clientes.",
             variant: "destructive",
           });
           setLoading(false);
           return;
         }
-        
-        // Mapeia os emails dos usuários para os perfis
-        const userEmails = new Map();
-        if (authUsers?.users) {
-          authUsers.users.forEach(user => {
-            userEmails.set(user.id, user.email);
-          });
+
+        // Tenta buscar os emails dos usuários através da API de admin do auth
+        let userEmails: Map<string, string> = new Map();
+        try {
+          // Essa chamada pode falhar se o usuário não tiver permissões de admin
+          const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+          
+          if (!authError && authUsers?.users) {
+            authUsers.users.forEach((user: AuthUser) => {
+              if (user && user.id && user.email) {
+                userEmails.set(user.id, user.email);
+              }
+            });
+          } else {
+            console.log("Não foi possível acessar os dados de autenticação, emails podem estar ausentes");
+          }
+        } catch (authErr) {
+          console.log("Erro ao acessar dados de autenticação:", authErr);
         }
         
-        // Combina os dados dos perfis com os emails
-        const clientsWithData = profiles ? profiles.map(profile => ({
-          id: profile.id,
-          first_name: profile.first_name || '',
-          last_name: profile.last_name || '',
-          phone: profile.phone || '',
-          email: userEmails.get(profile.id) || '',
-          crp: profile.crp || '',
-          cpf: profile.cpf,
-          cnpj: profile.cnpj,
-          specialty: profile.specialty
-        })) : [];
+        // Combinar os dados dos perfis com os e-mails
+        const clientsData = profiles ? profiles.map(profile => {
+          return {
+            id: profile.id,
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            phone: profile.phone || '',
+            email: userEmails.get(profile.id) || '',
+            crp: profile.crp || '',
+            cpf: profile.cpf,
+            cnpj: profile.cnpj,
+            specialty: profile.specialty
+          };
+        }) : [];
         
-        setClients(clientsWithData);
+        setClients(clientsData);
       } catch (error) {
         console.error("Error in fetchClients:", error);
         toast({

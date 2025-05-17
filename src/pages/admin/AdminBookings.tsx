@@ -38,11 +38,20 @@ const AdminBookings = () => {
     checkAccess();
   }, [toast]);
 
+  // Garantir que bookings seja um array válido antes de passar para os componentes
+  const safeBookings = Array.isArray(bookings) ? bookings.map(booking => ({
+    ...booking,
+    // Garantir que user sempre tenha first_name e last_name válidos
+    user: booking.user && typeof booking.user === 'object' && !('error' in booking.user) 
+      ? booking.user 
+      : { first_name: '', last_name: '' }
+  })) : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
-        <BookingExport bookings={bookings} />
+        <BookingExport bookings={safeBookings} />
       </div>
 
       <BookingFilters filter={filter} onFilterChange={setFilter} />
@@ -52,7 +61,7 @@ const AdminBookings = () => {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <BookingsTable bookings={bookings} onUpdateStatus={handleUpdateStatus} />
+        <BookingsTable bookings={safeBookings} onUpdateStatus={handleUpdateStatus} />
       )}
     </div>
   );
