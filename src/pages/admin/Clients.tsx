@@ -13,7 +13,6 @@ interface Client {
   first_name: string;
   last_name: string;
   phone: string;
-  email: string | null;
   crp: string;
   cpf: string | null;
   cnpj: string | null;
@@ -34,7 +33,7 @@ const Clients: React.FC = () => {
         // Busca os perfis primeiro
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj,email');
+          .select('id,first_name,last_name,phone,crp,specialty,cpf,cnpj');
         
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);
@@ -56,7 +55,6 @@ const Clients: React.FC = () => {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             phone: profile.phone || '',
-            email: profile.email || '',
             crp: profile.crp || '',
             cpf: profile.cpf,
             cnpj: profile.cnpj,
@@ -144,7 +142,6 @@ const Clients: React.FC = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Sobrenome</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>CRP</TableHead>
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Especialidade</TableHead>
@@ -160,7 +157,6 @@ const Clients: React.FC = () => {
                     <TableCell>{client.first_name}</TableCell>
                     <TableCell>{client.last_name}</TableCell>
                     <TableCell>{client.phone}</TableCell>
-                    <TableCell>{client.email || '-'}</TableCell>
                     <TableCell>{client.crp}</TableCell>
                     <TableCell>{client.cpf || client.cnpj || '-'}</TableCell>
                     <TableCell>{client.specialty || '-'}</TableCell>
@@ -168,7 +164,7 @@ const Clients: React.FC = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6">
+                  <TableCell colSpan={6} className="text-center py-6">
                     Nenhum cliente encontrado
                   </TableCell>
                 </TableRow>

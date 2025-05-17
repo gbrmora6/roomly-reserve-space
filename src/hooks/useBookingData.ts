@@ -46,17 +46,28 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
         // For each booking, fetch the user profile information separately
         const bookingsWithProfiles = await Promise.all(
           bookingData.map(async (booking) => {
-            const { data: profileData, error: profileError } = await supabase
-              .from("profiles")
-              .select("first_name, last_name")
-              .eq("id", booking.user_id)
-              .single();
-              
-            return {
-              ...booking,
-              user: profileError ? { first_name: '', last_name: '' } : profileData,
-              booking_equipment: booking.booking_equipment || []
-            };
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from("profiles")
+                .select("first_name, last_name")
+                .eq("id", booking.user_id)
+                .single();
+                
+              return {
+                ...booking,
+                user: profileError || !profileData 
+                  ? { first_name: 'Usuário', last_name: 'Desconhecido' } 
+                  : profileData,
+                booking_equipment: booking.booking_equipment || []
+              };
+            } catch (err) {
+              console.error("Error fetching profile for booking:", err);
+              return {
+                ...booking,
+                user: { first_name: 'Usuário', last_name: 'Desconhecido' },
+                booking_equipment: booking.booking_equipment || []
+              };
+            }
           })
         );
         
