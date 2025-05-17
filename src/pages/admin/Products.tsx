@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +43,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit, SyncAlert } from "lucide-react";
+import { Plus, Trash2, Edit, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -298,7 +297,7 @@ const AdminProducts = () => {
             onClick={() => syncProductsMutation.mutate()}
             disabled={syncProductsMutation.isPending}
           >
-            <SyncAlert className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Sincronizar com Stripe
           </Button>
           <Button onClick={() => {

@@ -55,8 +55,18 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
   } = useEquipmentBooking({ equipment, initialFilters: filters, onClose });
   
   // Create dummy dates for equipment availability hook
-  const startTimeDate = selectedDate ? new Date(selectedDate) : null;
-  const endTimeDate = selectedDate ? new Date(selectedDate) : null;
+  const startTimeDate = selectedDate && startHour ? new Date(selectedDate) : null;
+  const endTimeDate = selectedDate && endHour ? new Date(selectedDate) : null;
+  
+  if (startTimeDate && startHour) {
+    const [hours, minutes] = startHour.split(":").map(Number);
+    startTimeDate.setHours(hours, minutes, 0, 0);
+  }
+  
+  if (endTimeDate && endHour) {
+    const [hours, minutes] = endHour.split(":").map(Number);
+    endTimeDate.setHours(hours, minutes, 0, 0);
+  }
   
   // Auto scroll to start hour selection after date is selected
   useEffect(() => {
@@ -129,8 +139,17 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                 />
               )}
               
-              {endHour && (
-                <EquipmentBookingSummary bookingTotal={bookingTotal} />
+              {endHour && startTimeDate && endTimeDate && (
+                <EquipmentBookingSummary 
+                  equipment={equipment}
+                  quantity={quantity}
+                  startTime={startTimeDate}
+                  endTime={endTimeDate}
+                  totalPrice={bookingTotal}
+                  onConfirm={handleSubmit}
+                  loading={isSubmitting}
+                  onCancel={onClose}
+                />
               )}
             </div>
           )}
