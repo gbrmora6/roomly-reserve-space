@@ -131,15 +131,19 @@ serve(async (req) => {
           throw new Error("Missing required parameters");
         }
 
-        // Fetch user data for the checkout session
+        // Get user information directly from auth.users instead of profiles
         const { data: userData, error: userError } = await supabase
-          .from("profiles")
-          .select("first_name, last_name, email")
-          .eq("id", userId)
-          .single();
+          .auth.admin.getUserById(userId);
 
-        if (userError) {
+        if (userError || !userData) {
           console.error("Error fetching user data:", userError);
+          throw new Error(`Failed to get user: ${userError?.message || "Unknown error"}`);
+        }
+
+        const userEmail = userData.user.email;
+        
+        if (!userEmail) {
+          throw new Error("User email not found");
         }
 
         // Fetch products data from Supabase
@@ -152,11 +156,75 @@ serve(async (req) => {
           throw new Error(`Error fetching products: ${productsError?.message || "No products found"}`);
         }
 
+        // Check if products have stripe_price_id
+        const productsWithoutStripeId = productsData.filter(p => !p.stripe_price_id);
+        
+        // If any products don't have Stripe IDs, create them now
+        if (productsWithoutStripeId.length > 0) {
+          for (const product of productsWithoutStripeId) {
+            // Get full product data
+            const { data: fullProduct } = await supabase
+              .from("products")
+              .select("*")
+              .eq("id", product.id)
+              .single();
+              
+            if (fullProduct) {
+              // Create in Stripe
+              const stripeProduct = await stripe.products.create({
+                name: fullProduct.name,
+                description: fullProduct.description || "",
+                active: true,
+                metadata: {
+                  model: fullProduct.model || "",
+                  product_id: fullProduct.id,
+                },
+              });
+              
+              // Create price
+              const stripePrice = await stripe.prices.create({
+                product: stripeProduct.id,
+                unit_amount: Math.round(fullProduct.price * 100),
+                currency: "brl",
+              });
+              
+              // Update in database
+              await supabase
+                .from("products")
+                .update({
+                  stripe_product_id: stripeProduct.id,
+                  stripe_price_id: stripePrice.id,
+                })
+                .eq("id", fullProduct.id);
+                
+              // Update our local copy
+              product.stripe_price_id = stripePrice.id;
+            }
+          }
+          
+          // Refresh products data after creating Stripe products
+          const { data: refreshedProducts } = await supabase
+            .from("products")
+            .select("id, name, price, stripe_price_id")
+            .in("id", productIds);
+            
+          if (refreshedProducts) {
+            productsData.length = 0;
+            productsData.push(...refreshedProducts);
+          }
+        }
+
         // Create line items for checkout
-        const lineItems = productsData.map((product, index) => ({
-          price: product.stripe_price_id,
-          quantity: quantities[index],
-        }));
+        const lineItems = productsData.map((product, index) => {
+          if (!product.stripe_price_id) {
+            throw new Error(`Product ${product.id} does not have a Stripe price ID`);
+          }
+          
+          return {
+            price: product.stripe_price_id,
+            quantity: quantities[index],
+          };
+        });
 
         // Get the URL origin for success and cancel URLs
         const url = new URL(req.url);
@@ -169,7 +237,7 @@ serve(async (req) => {
           success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${origin}/payment-canceled`,
           client_reference_id: userId,
-          customer_email: userData?.email,
+          customer_email: userEmail,
           metadata: {
             userId,
           },

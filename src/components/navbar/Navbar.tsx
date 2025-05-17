@@ -3,6 +3,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { ShoppingBag } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -40,7 +41,10 @@ const Navbar = () => {
                 location.pathname.startsWith("/store") ? "text-primary" : ""
               }`}
             >
-              Produtos
+              <div className="flex items-center gap-1">
+                <ShoppingBag className="h-4 w-4" />
+                <span>Produtos</span>
+              </div>
             </Link>
           </nav>
         </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { ShoppingBag, Search } from "lucide-react";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 const ProductStore = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,13 +26,6 @@ const ProductStore = () => {
       return data || [];
     },
   });
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
 
   const filteredProducts = products?.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

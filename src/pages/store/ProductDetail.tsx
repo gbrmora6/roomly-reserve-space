@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, ShoppingCart, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,13 +75,6 @@ const ProductDetail = () => {
       });
     },
   });
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
 
   const handleBuy = () => {
     if (!user) {
