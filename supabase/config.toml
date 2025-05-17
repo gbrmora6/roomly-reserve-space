@@ -1,1 +1,5 @@
+
 project_id = "fgiidcdsvmqxdkclgety"
+
+[functions.stripe-integration]
+verify_jwt = true

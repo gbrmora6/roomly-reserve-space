@@ -16,6 +16,7 @@ import {
   BookOpen,
   Package,
   Users,
+  ShoppingBag,
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 
@@ -71,6 +72,18 @@ export const AdminSidebarMenu: React.FC = () => {
             >
               <Mic className="mr-2 h-4 w-4" />
               <span>Equipamentos</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link
+              to="/admin/products"
+              className={isActive("/admin/products") ? "bg-muted" : ""}
+            >
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              <span>Produtos</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

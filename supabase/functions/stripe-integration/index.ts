@@ -1,0 +1,260 @@
+
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@12.18.0?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+
+    const { action, productData, userId, productIds, quantities } = await req.json();
+
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Switch based on the action requested
+    switch (action) {
+      case "create-product":
+        // Create a product in Stripe
+        const stripeProduct = await stripe.products.create({
+          name: productData.name,
+          description: productData.description,
+          active: true,
+          metadata: {
+            model: productData.model || "",
+          },
+        });
+
+        // Create a price for the product
+        const stripePrice = await stripe.prices.create({
+          product: stripeProduct.id,
+          unit_amount: Math.round(productData.price * 100), // Convert to cents
+          currency: "brl",
+        });
+
+        // Update the product in Supabase with Stripe IDs
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({
+            stripe_product_id: stripeProduct.id,
+            stripe_price_id: stripePrice.id,
+          })
+          .eq("id", productData.id);
+
+        if (updateError) {
+          throw new Error(`Supabase update failed: ${updateError.message}`);
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          stripeProduct,
+          stripePrice
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+
+      case "create-checkout":
+        if (!userId || !productIds || !quantities || productIds.length === 0) {
+          throw new Error("Missing required parameters");
+        }
+
+        // Fetch user data for the checkout session
+        const { data: userData, error: userError } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", userId)
+          .single();
+
+        if (userError) {
+          console.error("Error fetching user data:", userError);
+        }
+
+        // Fetch products data from Supabase
+        const { data: productsData, error: productsError } = await supabase
+          .from("products")
+          .select("id, name, price, stripe_price_id")
+          .in("id", productIds);
+
+        if (productsError || !productsData) {
+          throw new Error(`Error fetching products: ${productsError?.message || "No products found"}`);
+        }
+
+        // Create line items for checkout
+        const lineItems = productsData.map((product, index) => ({
+          price: product.stripe_price_id,
+          quantity: quantities[index],
+        }));
+
+        // Get the URL origin for success and cancel URLs
+        const url = new URL(req.url);
+        const origin = url.origin || "http://localhost:3000";
+
+        // Create checkout session in Stripe
+        const session = await stripe.checkout.sessions.create({
+          line_items: lineItems,
+          mode: "payment",
+          success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${origin}/payment-canceled`,
+          client_reference_id: userId,
+          customer_email: userData?.first_name 
+            ? `${userData.first_name.toLowerCase()}.${userData.last_name?.toLowerCase() || "cliente"}@example.com` 
+            : undefined,
+          metadata: {
+            userId,
+          },
+        });
+
+        // Create order in Supabase
+        const { data: order, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            user_id: userId,
+            total_amount: productsData.reduce((sum, product, index) => 
+              sum + (product.price * quantities[index]), 0),
+            stripe_session_id: session.id,
+            status: "pending",
+          })
+          .select("id")
+          .single();
+
+        if (orderError || !order) {
+          throw new Error(`Error creating order: ${orderError?.message || "Unknown error"}`);
+        }
+
+        // Create order items
+        const orderItems = productIds.map((productId, index) => {
+          const product = productsData.find(p => p.id === productId);
+          return {
+            order_id: order.id,
+            product_id: productId,
+            quantity: quantities[index],
+            price_per_unit: product?.price || 0,
+          };
+        });
+
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .insert(orderItems);
+
+        if (itemsError) {
+          console.error("Error creating order items:", itemsError);
+          // We don't throw here to ensure checkout still proceeds
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          url: session.url,
+          sessionId: session.id,
+          orderId: order.id,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+
+      case "sync-products":
+        // Sync all products to Stripe that don't have a stripe_product_id yet
+        const { data: productsToSync, error: syncError } = await supabase
+          .from("products")
+          .select("*")
+          .is("stripe_product_id", null);
+
+        if (syncError) {
+          throw new Error(`Error fetching products to sync: ${syncError.message}`);
+        }
+
+        if (!productsToSync || productsToSync.length === 0) {
+          return new Response(JSON.stringify({ 
+            success: true,
+            message: "No products to sync"
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+
+        const results = [];
+        for (const product of productsToSync) {
+          try {
+            // Create product in Stripe
+            const stripeProduct = await stripe.products.create({
+              name: product.name,
+              description: product.description || "",
+              active: product.is_active,
+              metadata: {
+                model: product.model || "",
+              },
+            });
+
+            // Create price for the product
+            const stripePrice = await stripe.prices.create({
+              product: stripeProduct.id,
+              unit_amount: Math.round(product.price * 100), // Convert to cents
+              currency: "brl",
+            });
+
+            // Update product with Stripe IDs
+            const { error: updateError } = await supabase
+              .from("products")
+              .update({
+                stripe_product_id: stripeProduct.id,
+                stripe_price_id: stripePrice.id,
+              })
+              .eq("id", product.id);
+
+            results.push({
+              id: product.id,
+              success: !updateError,
+              error: updateError?.message,
+            });
+          } catch (error) {
+            results.push({
+              id: product.id,
+              success: false,
+              error: error.message,
+            });
+          }
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          results 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+
+      default:
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: "Invalid action"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+    }
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message 
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
+});

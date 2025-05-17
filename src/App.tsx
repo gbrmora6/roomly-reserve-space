@@ -19,6 +19,7 @@ import AdminEquipment from "./pages/admin/Equipment";
 import AdminEquipmentForm from "./pages/admin/EquipmentForm";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminEquipmentBookings from "./pages/admin/EquipmentBookings";
+import AdminProducts from "./pages/admin/Products";
 import CompanyProfile from "./pages/admin/CompanyProfile";
 import Clients from "./pages/admin/Clients";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -27,6 +28,8 @@ import MyAccount from "./pages/client/MyAccount";
 import MyBookings from "./pages/client/MyBookings";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import BookingDetails from "./pages/BookingDetails";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCanceled from "./pages/PaymentCanceled";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -47,6 +50,8 @@ const App: React.FC = () => {
               <Route path="/equipment" element={<EquipmentList />} />
               <Route path="/create-superadmin" element={<CreateSuperAdmin />} />
               <Route path="/booking/:id" element={<BookingDetails />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-canceled" element={<PaymentCanceled />} />
               
               {/* Client Routes */}
               <Route path="/my-account" element={
@@ -74,6 +79,7 @@ const App: React.FC = () => {
                 <Route path="equipment" element={<AdminEquipment />} />
                 <Route path="equipment/new" element={<AdminEquipmentForm />} />
                 <Route path="equipment/:id" element={<AdminEquipmentForm />} />
+                <Route path="products" element={<AdminProducts />} />
                 <Route path="bookings" element={<AdminBookings />} />
                 <Route path="equipment-bookings" element={<AdminEquipmentBookings />} />
                 <Route path="clients" element={<Clients />} />
