@@ -8,9 +8,14 @@ import { devLog, errorLog } from "@/utils/logger";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: "admin" | "client";
+  requireAdmin?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiredRole, 
+  requireAdmin = false 
+}) => {
   const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -46,8 +51,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           return;
         }
 
-        // Check role requirements
-        if (requiredRole) {
+        // Check role requirements - handle both requireAdmin and requiredRole
+        const effectiveRequiredRole = requireAdmin ? "admin" : requiredRole;
+        
+        if (effectiveRequiredRole) {
           const userRole = user.user_metadata?.role;
           const isAdmin = 
             user.user_metadata?.is_admin === true || 
@@ -55,17 +62,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
           
           devLog("Verificando permissões", { 
             userRole, 
-            requiredRole, 
+            effectiveRequiredRole, 
             isAdmin,
             metadata: user.user_metadata
           });
           
           // Check if user has the required role
-          if (requiredRole === "admin" && !isAdmin) {
+          if (effectiveRequiredRole === "admin" && !isAdmin) {
             errorLog(`Acesso negado: Usuário não tem permissão de administrador`);
             setIsAuthorized(false);
-          } else if (requiredRole !== "admin" && requiredRole !== userRole) {
-            errorLog(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${requiredRole}`);
+          } else if (effectiveRequiredRole !== "admin" && effectiveRequiredRole !== userRole) {
+            errorLog(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${effectiveRequiredRole}`);
             setIsAuthorized(false);
           } else {
             setIsAuthorized(true);
@@ -83,7 +90,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     };
 
     verifyAccess();
-  }, [user, loading, requiredRole, refreshUserClaims, location.pathname]);
+  }, [user, loading, requiredRole, requireAdmin, refreshUserClaims, location.pathname]);
 
   // Show improved loading state
   if (loading || !authChecked) {
@@ -104,11 +111,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
         description: "Você precisa estar logado para acessar esta página",
       });
       return <Navigate to="/login" replace state={{ from: location }} />;
-    } else if (requiredRole) {
+    } else if (requireAdmin || requiredRole) {
+      const roleDescription = requireAdmin || requiredRole === "admin" ? "administradores" : requiredRole;
       toast({
         variant: "destructive",
         title: "Acesso restrito",
-        description: `Você não tem permissão para acessar esta área. Acesso restrito para ${requiredRole === "admin" ? "administradores" : requiredRole}.`,
+        description: `Você não tem permissão para acessar esta área. Acesso restrito para ${roleDescription}.`,
       });
       return <Navigate to="/" replace />;
     }
