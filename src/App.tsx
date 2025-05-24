@@ -101,22 +101,20 @@ function App() {
                 path="/admin/*"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <AdminLayout>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/rooms" element={<Rooms />} />
-                        <Route path="/rooms/new" element={<RoomForm />} />
-                        <Route path="/rooms/edit/:id" element={<RoomForm />} />
-                        <Route path="/equipment" element={<Equipment />} />
-                        <Route path="/equipment/new" element={<EquipmentForm />} />
-                        <Route path="/equipment/edit/:id" element={<EquipmentForm />} />
-                        <Route path="/products" element={<Products />} />
-                        <Route path="/bookings" element={<AdminBookings />} />
-                        <Route path="/equipment-bookings" element={<EquipmentBookings />} />
-                        <Route path="/clients" element={<Clients />} />
-                        <Route path="/company-profile" element={<CompanyProfile />} />
-                      </Routes>
-                    </AdminLayout>
+                    <Routes>
+                      <Route path="/" element={<AdminLayout><Dashboard /></AdminLayout>} />
+                      <Route path="/rooms" element={<AdminLayout><Rooms /></AdminLayout>} />
+                      <Route path="/rooms/new" element={<AdminLayout><RoomForm /></AdminLayout>} />
+                      <Route path="/rooms/edit/:id" element={<AdminLayout><RoomForm /></AdminLayout>} />
+                      <Route path="/equipment" element={<AdminLayout><Equipment /></AdminLayout>} />
+                      <Route path="/equipment/new" element={<AdminLayout><EquipmentForm /></AdminLayout>} />
+                      <Route path="/equipment/edit/:id" element={<AdminLayout><EquipmentForm /></AdminLayout>} />
+                      <Route path="/products" element={<AdminLayout><Products /></AdminLayout>} />
+                      <Route path="/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
+                      <Route path="/equipment-bookings" element={<AdminLayout><EquipmentBookings /></AdminLayout>} />
+                      <Route path="/clients" element={<AdminLayout><Clients /></AdminLayout>} />
+                      <Route path="/company-profile" element={<AdminLayout><CompanyProfile /></AdminLayout>} />
+                    </Routes>
                   </ProtectedRoute>
                 }
               />
