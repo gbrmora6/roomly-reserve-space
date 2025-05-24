@@ -8,26 +8,27 @@ import { supabase } from "@/integrations/supabase/client";
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  const orderId = searchParams.get("order_id");
   const { toast } = useToast();
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      if (!sessionId) {
+      if (!orderId) {
         setLoading(false);
         return;
       }
 
       try {
-        // Get order details from Supabase
+        // Buscar detalhes do pedido
         const { data: order, error } = await supabase
           .from("orders")
           .select(`
             id,
             total_amount,
             created_at,
+            status,
             order_items (
               quantity,
               price_per_unit,
@@ -36,20 +37,14 @@ const PaymentSuccess: React.FC = () => {
               )
             )
           `)
-          .eq("stripe_session_id", sessionId)
+          .eq("id", orderId)
           .single();
 
         if (error) throw error;
         
-        // Update order status to "paid"
-        await supabase
-          .from("orders")
-          .update({ status: "paid" })
-          .eq("stripe_session_id", sessionId);
-
         setOrderDetails(order);
       } catch (error) {
-        console.error("Error fetching order details:", error);
+        console.error("Erro ao buscar detalhes do pedido:", error);
         toast({
           variant: "destructive",
           title: "Erro",
@@ -61,7 +56,7 @@ const PaymentSuccess: React.FC = () => {
     };
 
     fetchOrderDetails();
-  }, [sessionId, toast]);
+  }, [orderId, toast]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -78,7 +73,7 @@ const PaymentSuccess: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
-        <p className="mt-4 text-lg">Processando seu pagamento...</p>
+        <p className="mt-4 text-lg">Carregando detalhes do pagamento...</p>
       </div>
     );
   }
@@ -99,6 +94,7 @@ const PaymentSuccess: React.FC = () => {
             <h2 className="font-semibold text-lg mb-2">Detalhes do Pedido</h2>
             <p className="text-sm text-muted-foreground">ID: {orderDetails.id.substring(0, 8)}...</p>
             <p className="text-sm text-muted-foreground">Data: {formatDate(orderDetails.created_at)}</p>
+            <p className="text-sm text-muted-foreground">Status: {orderDetails.status === 'paid' ? 'Pago' : 'Pendente'}</p>
             
             <div className="mt-4 space-y-2">
               <h3 className="font-semibold">Itens:</h3>
@@ -125,7 +121,7 @@ const PaymentSuccess: React.FC = () => {
 
         <div className="flex flex-col space-y-3">
           <Button asChild className="w-full">
-            <Link to="/my-bookings">Ver minhas reservas</Link>
+            <Link to="/my-bookings">Ver meus pedidos</Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/">Voltar para a página inicial</Link>

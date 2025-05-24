@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import Register from "./pages/auth/Register";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
+import PaymentInstructions from "./pages/PaymentInstructions";
 
 // Client pages
 import RoomList from "./pages/rooms/RoomList";
@@ -25,6 +25,7 @@ import Cart from "./pages/Cart";
 import MyAccount from "./pages/client/MyAccount";
 import MyBookings from "./pages/client/MyBookings";
 import BookingDetails from "./pages/BookingDetails";
+import Checkout from "./pages/Checkout";
 
 // Admin pages
 import AdminLayout from "./components/layout/AdminLayout";
@@ -57,6 +58,8 @@ function App() {
               <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
               <Route path="/payment/success" element={<PaymentSuccess />} />
               <Route path="/payment/canceled" element={<PaymentCanceled />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-instructions" element={<PaymentInstructions />} />
 
               {/* Client routes */}
               <Route path="/rooms" element={<RoomList />} />
@@ -68,6 +71,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Cart />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
                   </ProtectedRoute>
                 }
               />

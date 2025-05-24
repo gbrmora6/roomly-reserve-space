@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
@@ -79,8 +78,7 @@ const CartPage = () => {
     }
   };
 
-  const handleCheckout = async () => {
-    // Implementar checkout com Stripe
+  const handleCheckout = () => {
     navigate("/checkout");
   };
 
