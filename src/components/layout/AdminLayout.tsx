@@ -18,7 +18,11 @@ import { devLog, errorLog } from "@/utils/logger";
 
 const ADMIN_ACCESS_KEY = "admin_access_validated";
 
-const AdminLayout: React.FC = () => {
+interface AdminLayoutProps {
+  children?: React.ReactNode;
+}
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, refreshUserClaims } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -125,7 +129,7 @@ const AdminLayout: React.FC = () => {
             </header>
 
             <div className="flex-1 p-6">
-              <Outlet />
+              {children || <Outlet />}
             </div>
           </div>
         </SidebarInset>
