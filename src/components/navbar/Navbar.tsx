@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingBag } from "lucide-react";
+import CartButton from "@/components/cart/CartButton";
 
 const Navbar = () => {
   const location = useLocation();
@@ -51,6 +52,7 @@ const Navbar = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              <CartButton />
               <Link to="/my-account">
                 <Button variant="ghost" size="sm">
                   Minha Conta

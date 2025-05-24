@@ -110,6 +110,39 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          metadata: Json
+          price: number
+          quantity: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          metadata?: Json
+          price: number
+          quantity: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          metadata?: Json
+          price?: number
+          quantity?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       company_profile: {
         Row: {
           city: string | null
@@ -630,6 +663,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_to_cart: {
+        Args: {
+          p_user_id: string
+          p_item_type: string
+          p_item_id: string
+          p_quantity: number
+          p_metadata: Json
+        }
+        Returns: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          metadata: Json
+          price: number
+          quantity: number
+          user_id: string | null
+        }
+      }
+      clear_cart: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      get_cart: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          metadata: Json
+          price: number
+          quantity: number
+          user_id: string | null
+        }[]
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -637,6 +706,23 @@ export type Database = {
       is_owner_or_admin: {
         Args: { owner_id: string }
         Returns: boolean
+      }
+      remove_from_cart: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      update_cart: {
+        Args: { p_id: string; p_quantity: number }
+        Returns: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          metadata: Json
+          price: number
+          quantity: number
+          user_id: string | null
+        }
       }
     }
     Enums: {

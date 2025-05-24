@@ -1,11 +1,11 @@
 
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
 import {
   Card,
   CardContent,
@@ -22,7 +22,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { addToCart, isAddingToCart } = useCart();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
 
@@ -44,49 +44,20 @@ const ProductDetail = () => {
     enabled: !!id,
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) {
-        throw new Error("Você precisa estar logado para comprar produtos");
-      }
-
-      const { data, error } = await supabase.functions.invoke("stripe-integration", {
-        body: {
-          action: "create-checkout",
-          userId: user.id,
-          productIds: [id],
-          quantities: [quantity],
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao processar o pagamento",
-        description: error.message,
-      });
-    },
-  });
-
-  const handleBuy = () => {
+  const handleAddToCart = () => {
     if (!user) {
-      toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para comprar produtos",
-      });
       navigate("/login", { state: { returnTo: `/store/product/${id}` } });
       return;
     }
     
-    checkoutMutation.mutate();
+    if (!id) return;
+
+    addToCart({
+      itemType: 'product',
+      itemId: id,
+      quantity,
+      metadata: {}
+    });
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,17 +155,17 @@ const ProductDetail = () => {
                 </div>
 
                 <Button
-                  onClick={handleBuy}
+                  onClick={handleAddToCart}
                   className="w-full"
                   size="lg"
-                  disabled={checkoutMutation.isPending || product.quantity <= 0}
+                  disabled={isAddingToCart || product.quantity <= 0}
                 >
                   <ShoppingCart className="mr-2 h-4 w-4" />
-                  {checkoutMutation.isPending
-                    ? "Processando..."
+                  {isAddingToCart
+                    ? "Adicionando..."
                     : product.quantity <= 0
                     ? "Fora de estoque"
-                    : "Comprar agora"}
+                    : "Adicionar ao carrinho"}
                 </Button>
               </div>
             </div>
