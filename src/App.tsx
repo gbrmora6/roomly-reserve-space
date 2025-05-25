@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ import PaymentInstructions from "./pages/PaymentInstructions";
 import RoomList from "./pages/rooms/RoomList";
 import RoomDetail from "./pages/rooms/RoomDetail";
 import EquipmentList from "./pages/equipment/EquipmentList";
+import EquipmentDetail from "./pages/equipment/EquipmentDetail";
 import ProductStore from "./pages/store/ProductStore";
 import ProductDetail from "./pages/store/ProductDetail";
 import Cart from "./pages/Cart";

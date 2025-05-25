@@ -14,6 +14,9 @@ export interface CartItem {
   price: number;
   metadata: any;
   created_at: string;
+  expires_at: string;
+  reserved_booking_id?: string;
+  reserved_equipment_booking_id?: string;
 }
 
 export const useCart = () => {

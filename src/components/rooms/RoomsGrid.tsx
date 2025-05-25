@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Room } from "@/types/room";
-import { RoomCard } from "@/components/rooms/RoomCard";
+import RoomCard from "@/components/rooms/RoomCard";
 
 interface RoomsGridProps {
   rooms: Room[] | null;
@@ -35,9 +35,6 @@ export const RoomsGrid: React.FC<RoomsGridProps> = ({
             <RoomCard
               key={room.id}
               room={room}
-              onReserve={onReserve}
-              isLoggedIn={isLoggedIn}
-              address={address}
             />
           ))
         ) : (
