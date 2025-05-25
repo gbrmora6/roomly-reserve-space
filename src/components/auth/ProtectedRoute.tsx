@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,12 +8,14 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: "admin" | "client";
   requireAdmin?: boolean;
+  requireSuperAdmin?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredRole, 
-  requireAdmin = false 
+  requireAdmin = false,
+  requireSuperAdmin = false
 }) => {
   const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
@@ -44,6 +45,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           user.email === "admin@example.com" || 
           user.email === "cpd@sapiens-psi.com.br";
         
+        if (requireSuperAdmin) {
+          if (isSuperAdmin) {
+            setIsAuthorized(true);
+            setAuthChecked(true);
+            return;
+          } else {
+            setIsAuthorized(false);
+            setAuthChecked(true);
+            return;
+          }
+        }
+
         if (isSuperAdmin) {
           devLog("SuperAdmin detected - bypassing role checks");
           setIsAuthorized(true);
@@ -90,7 +103,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
 
     verifyAccess();
-  }, [user, loading, requiredRole, requireAdmin, refreshUserClaims, location.pathname]);
+  }, [user, loading, requiredRole, requireAdmin, requireSuperAdmin, refreshUserClaims, location.pathname]);
 
   // Show improved loading state
   if (loading || !authChecked) {

@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Database } from "@/integrations/supabase/types";
 
@@ -8,15 +7,14 @@ interface BookingStatusBadgeProps {
   status: BookingStatus;
 }
 
+const statusMap: Record<string, { label: string; color: string }> = {
+  'pago': { label: 'Pago', color: 'bg-green-100 text-green-800' },
+  'falta pagar': { label: 'Falta pagar', color: 'bg-yellow-100 text-yellow-800' },
+  'cancelado por falta de pagamento': { label: 'Cancelado por falta de pagamento', color: 'bg-red-100 text-red-800' },
+};
+
 export const BookingStatusBadge = ({ status }: BookingStatusBadgeProps) => {
-  switch (status) {
-    case "pending":
-      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendente</Badge>;
-    case "confirmed":
-      return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Confirmada</Badge>;
-    case "cancelled":
-      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Cancelada</Badge>;
-    default:
-      return null;
-  }
+  const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
+
+  return <Badge variant="outline" className={`${statusInfo.color} border-gray-300`}>{statusInfo.label}</Badge>;
 };

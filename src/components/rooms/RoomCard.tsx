@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,79 +15,39 @@ const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
   const firstPhoto = room.room_photos?.[0]?.url;
 
   return (
-    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
       {firstPhoto && (
-        <div className="aspect-video overflow-hidden rounded-t-lg">
-          <img
-            src={firstPhoto}
-            alt={room.name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-          />
-        </div>
+        <img
+          src={firstPhoto}
+          alt={room.name}
+          className="w-full h-48 object-cover"
+        />
       )}
-      
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          {room.name}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {room.description}
-        </p>
-      </CardHeader>
-
-      <CardContent className="flex-1 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-primary">
-            {formatCurrency(room.price_per_hour)}
-          </span>
-          <span className="text-sm text-muted-foreground">/hora</span>
+      <div className="flex-1 flex flex-col p-5">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-lg text-gray-900">{room.name}</span>
+          </div>
+          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{room.description}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl font-semibold text-gray-900">{formatCurrency(room.price_per_hour)}</span>
+            <span className="text-sm text-gray-500">/ hour</span>
+          </div>
+          {/* Comodidades/Tags */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {room.has_wifi && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">Wi-Fi</span>}
+            {room.has_ac && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">A/C</span>}
+            {room.has_tv && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">TV</span>}
+            {room.has_private_bathroom && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">Banheiro</span>}
+          </div>
         </div>
-
-        {/* Comodidades */}
-        <div className="flex flex-wrap gap-1">
-          {room.has_wifi && (
-            <Badge variant="secondary" className="text-xs">
-              <Wifi className="h-3 w-3 mr-1" />
-              Wi-Fi
-            </Badge>
-          )}
-          {room.has_ac && (
-            <Badge variant="secondary" className="text-xs">
-              <Wind className="h-3 w-3 mr-1" />
-              A/C
-            </Badge>
-          )}
-          {room.has_tv && (
-            <Badge variant="secondary" className="text-xs">
-              <Tv className="h-3 w-3 mr-1" />
-              TV
-            </Badge>
-          )}
-          {room.has_private_bathroom && (
-            <Badge variant="secondary" className="text-xs">
-              <Bath className="h-3 w-3 mr-1" />
-              Banheiro
-            </Badge>
-          )}
+        <div className="flex justify-end mt-2">
+          <Button asChild className="bg-[#23406e] hover:bg-[#1a2e4d] text-white font-semibold px-6 py-2 rounded-md">
+            <Link to={`/rooms/${room.id}`}>View Details</Link>
+          </Button>
         </div>
-
-        {/* Horário de funcionamento */}
-        {room.open_time && room.close_time && (
-          <p className="text-xs text-muted-foreground">
-            Disponível: {room.open_time} às {room.close_time}
-          </p>
-        )}
-      </CardContent>
-
-      <CardFooter className="pt-3">
-        <Button asChild className="w-full">
-          <Link to={`/rooms/${room.id}`}>
-            Ver Detalhes e Reservar
-          </Link>
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import {
@@ -112,11 +111,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <SidebarProvider>
       <div className="flex w-full min-h-screen">
         <Sidebar>
-          <AdminSidebarHeader />
-          <SidebarContent>
-            <AdminSidebarMenu />
-          </SidebarContent>
-          <AdminSidebarFooter />
+          <div className="bg-gradient-to-b from-[#232c43] to-[#1a2233] flex flex-col h-full rounded-r-3xl shadow-2xl min-w-[18rem] w-full">
+            <AdminSidebarHeader />
+            <SidebarContent>
+              <AdminSidebarMenu />
+            </SidebarContent>
+            <AdminSidebarFooter />
+          </div>
         </Sidebar>
 
         <SidebarInset>

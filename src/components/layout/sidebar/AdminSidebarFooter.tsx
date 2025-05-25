@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +18,7 @@ export const AdminSidebarFooter: React.FC = () => {
   };
 
   return (
-    <SidebarFooter className="flex flex-col gap-2 p-4 border-t">
+    <SidebarFooter className="flex flex-col gap-2 py-3 px-4">
       <Button variant="outline" asChild className="w-full">
         <Link to="/">
           <Home className="mr-2 h-4 w-4" />

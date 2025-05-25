@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ interface Equipment {
   is_active: boolean;
   open_time?: string | null;
   close_time?: string | null;
+  image_url?: string;
 }
 
 interface EquipmentCardProps {
@@ -36,82 +36,45 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
     }
   };
 
+  // Supondo que futuramente terá uma imagem, usar um placeholder por enquanto
+  const imageUrl = equipment.image_url || "https://placehold.co/400x300?text=Equipment";
+
   return (
-    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          {equipment.name}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {equipment.description || "Equipamento disponível para reserva"}
-        </p>
-      </CardHeader>
-
-      <CardContent className="flex-1 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-primary">
-            {formatCurrency(equipment.price_per_hour)}
-          </span>
-          <span className="text-sm text-muted-foreground">/hora</span>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Disponível:</span>
-            <Badge variant="secondary">
-              {equipment.quantity} unidades
-            </Badge>
+    <div className="bg-white rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
+      <img
+        src={imageUrl}
+        alt={equipment.name}
+        className="w-full h-48 object-cover"
+      />
+      <div className="flex-1 flex flex-col p-5">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-lg text-gray-900">{equipment.name}</span>
           </div>
-
-          {/* Horário de funcionamento */}
-          {equipment.open_time && equipment.close_time && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              {equipment.open_time} às {equipment.close_time}
-            </div>
-          )}
-
-          {/* Quantity selector if onQuantityChange is provided */}
-          {onQuantityChange && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Quantidade:</span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={selectedQuantity <= 0}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="w-8 text-center text-sm font-medium">
-                  {selectedQuantity}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={selectedQuantity >= equipment.quantity}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{equipment.description || "Equipamento disponível para reserva"}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl font-semibold text-gray-900">{formatCurrency(equipment.price_per_hour)}</span>
+            <span className="text-sm text-gray-500">/ hour</span>
+          </div>
+          {/* Tags/características */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">{equipment.quantity} unidades</span>
+            {equipment.open_time && equipment.close_time && (
+              <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">
+                {equipment.open_time} às {equipment.close_time}
+              </span>
+            )}
+          </div>
         </div>
-      </CardContent>
-
-      {!onQuantityChange && (
-        <CardFooter className="pt-3">
-          <Button asChild className="w-full">
-            <Link to={`/equipment/${equipment.id}`}>
-              Ver Detalhes e Reservar
-            </Link>
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+        {!onQuantityChange && (
+          <div className="flex justify-end mt-2">
+            <Button asChild className="bg-[#23406e] hover:bg-[#1a2e4d] text-white font-semibold px-6 py-2 rounded-md">
+              <Link to={`/equipment/${equipment.id}`}>View Details</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
