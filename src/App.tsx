@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -65,7 +66,7 @@ function App() {
             <Route path="/rooms" element={<RoomList />} />
             <Route path="/rooms/:id" element={<RoomDetail />} />
             <Route path="/equipment" element={<EquipmentList />} />
-            <Route path="/equipment/:id" element={<Equipment />} />
+            <Route path="/equipment/:id" element={<EquipmentDetail />} />
             <Route path="/store" element={<ProductStore />} />
             <Route path="/store/product/:id" element={<ProductDetail />} />
             <Route
@@ -110,6 +111,14 @@ function App() {
             />
 
             {/* Admin routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin/dashboard"
               element={

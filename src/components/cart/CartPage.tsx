@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ShoppingCart, Package, MapPin, Plus, Minus } from "lucide-react";
+import { Trash2, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import CartTimer from "./CartTimer";
 import ProductSuggestions from "./ProductSuggestions";
+import { CartItemImage } from "./CartItemImage";
+import { CartItemNotes } from "./CartItemNotes";
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,7 +59,7 @@ const CartPage: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       refetch();
-    }, 10000); // Verificar a cada 10 segundos
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [refetch]);
@@ -92,57 +94,77 @@ const CartPage: React.FC = () => {
     return (
       <Card key={item.id} className="mb-4">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              {item.item_type === 'room' && <MapPin className="h-4 w-4" />}
-              {item.item_type === 'equipment' && <Package className="h-4 w-4" />}
-              {item.item_type === 'product' && <ShoppingCart className="h-4 w-4" />}
-              {item.details.name}
-            </CardTitle>
-            
-            <div className="flex items-center gap-2">
-              {isTimeSensitive && (
-                <CartTimer 
-                  expiresAt={item.expires_at} 
-                  onExpired={handleItemExpired}
-                />
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => removeFromCart(item.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4 flex-1">
+              <CartItemImage 
+                itemType={item.item_type}
+                itemName={item.details.name}
+              />
+              
+              <div className="flex-1">
+                <CardTitle className="text-lg mb-1">
+                  {item.details.name}
+                </CardTitle>
+                
+                {item.details.description && (
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {item.details.description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge 
+                    variant={
+                      item.item_type === 'room' ? 'default' : 
+                      item.item_type === 'equipment' ? 'secondary' : 
+                      'outline'
+                    }
+                  >
+                    {item.item_type === 'room' ? 'Sala' : 
+                     item.item_type === 'equipment' ? 'Equipamento' : 
+                     'Produto'}
+                  </Badge>
+                  
+                  {isTimeSensitive && (
+                    <CartTimer 
+                      expiresAt={item.expires_at} 
+                      onExpired={handleItemExpired}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+            
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => removeFromCart(item.id)}
+              className="ml-2"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {item.details.description && (
-            <p className="text-sm text-muted-foreground">
-              {item.details.description}
-            </p>
-          )}
-
           {/* Detalhes específicos do tipo */}
           {(item.item_type === 'room' || item.item_type === 'equipment') && (
-            <div className="space-y-2">
+            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
               {metadata.date && (
                 <div className="flex justify-between text-sm">
-                  <span>Data:</span>
+                  <span className="font-medium">Data:</span>
                   <span>{metadata.date}</span>
                 </div>
               )}
               {metadata.start_time_display && metadata.end_time_display && (
                 <div className="flex justify-between text-sm">
-                  <span>Horário:</span>
+                  <span className="font-medium">Horário:</span>
                   <span>{metadata.start_time_display} - {metadata.end_time_display}</span>
                 </div>
               )}
               {metadata.duration && (
                 <div className="flex justify-between text-sm">
-                  <span>Duração:</span>
+                  <span className="font-medium">Duração:</span>
                   <span>{metadata.duration}h</span>
                 </div>
               )}
@@ -150,23 +172,25 @@ const CartPage: React.FC = () => {
           )}
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Quantidade:</span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">Quantidade:</span>
               {item.item_type === 'product' ? (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => updateCart({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })}
                     disabled={item.quantity <= 1}
+                    className="h-8 w-8 p-0"
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="px-2">{item.quantity}</span>
+                  <span className="w-8 text-center font-medium">{item.quantity}</span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => updateCart({ itemId: item.id, quantity: item.quantity + 1 })}
+                    className="h-8 w-8 p-0"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
@@ -188,6 +212,14 @@ const CartPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Campo de observações para reservas */}
+          {(item.item_type === 'room' || item.item_type === 'equipment') && (
+            <CartItemNotes 
+              itemId={item.id} 
+              currentNotes={metadata.notes} 
+            />
+          )}
+
           {/* Produtos relacionados para equipamentos */}
           {item.item_type === 'equipment' && (
             <ProductSuggestions equipmentId={item.item_id} />
@@ -199,7 +231,7 @@ const CartPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="py-8">
+      <div className="container mx-auto py-8">
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
@@ -208,70 +240,74 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
 
-        {itemsWithDetails && itemsWithDetails.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Lista de itens */}
-            <div className="lg:col-span-2">
-              {itemsWithDetails.map(renderCartItem)}
-            </div>
+      {itemsWithDetails && itemsWithDetails.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Lista de itens */}
+          <div className="lg:col-span-2">
+            {itemsWithDetails.map(renderCartItem)}
+          </div>
 
-            {/* Resumo do pedido */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-4">
-                <CardHeader>
-                  <CardTitle>Resumo do Pedido</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
+          {/* Resumo do pedido */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-4">
+              <CardHeader>
+                <CardTitle>Resumo do Pedido</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Itens ({cartItems.length}):</span>
                     <span>{formatCurrency(cartTotal)}</span>
                   </div>
+                </div>
 
-                  <Separator />
+                <Separator />
 
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total:</span>
-                    <span>{formatCurrency(cartTotal)}</span>
-                  </div>
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total:</span>
+                  <span>{formatCurrency(cartTotal)}</span>
+                </div>
 
-                  <Button 
-                    onClick={handleCheckout}
-                    className="w-full"
-                    size="lg"
-                    disabled={cartItems.length === 0}
-                  >
-                    Finalizar Compra
-                  </Button>
+                <Button 
+                  onClick={handleCheckout}
+                  className="w-full"
+                  size="lg"
+                  disabled={cartItems.length === 0}
+                >
+                  Finalizar Compra ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
+                </Button>
 
-                  <p className="text-xs text-muted-foreground text-center">
-                    * Salas e equipamentos são reservados temporariamente por 15 minutos
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+                <div className="text-xs text-muted-foreground text-center space-y-1">
+                  <p>* Salas e equipamentos são reservados temporariamente por 15 minutos</p>
+                  <p>* Produtos físicos não possuem tempo limite</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <div className="text-center py-20">
-            <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">Seu carrinho está vazio</h2>
-            <p className="text-muted-foreground mb-6">
-              Adicione salas, equipamentos ou produtos para começar
-            </p>
-            <div className="space-x-4">
-              <Button onClick={() => navigate("/rooms")}>
-                Ver Salas
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/equipment")}>
-                Ver Equipamentos
-              </Button>
-            </div>
+        </div>
+      ) : (
+        <div className="text-center py-20">
+          <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-semibold mb-2">Seu carrinho está vazio</h2>
+          <p className="text-muted-foreground mb-6">
+            Adicione salas, equipamentos ou produtos para começar
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => navigate("/rooms")} size="lg">
+              Ver Salas
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/equipment")} size="lg">
+              Ver Equipamentos
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/store")} size="lg">
+              Ver Produtos
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

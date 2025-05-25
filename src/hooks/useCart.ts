@@ -29,15 +29,22 @@ export const useCart = () => {
     queryFn: async () => {
       if (!user) return [];
       
+      console.log("Fetching cart for user:", user.id);
+      
       const { data, error } = await supabase.rpc("get_cart", {
         p_user_id: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching cart:", error);
+        throw error;
+      }
+      
+      console.log("Cart data received:", data);
       return data as CartItem[];
     },
     enabled: !!user,
-    refetchInterval: 30000, // Refresh a cada 30 segundos para verificar itens expirados
+    refetchInterval: 30000,
   });
 
   const addToCartMutation = useMutation({
@@ -54,20 +61,31 @@ export const useCart = () => {
     }) => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      console.log("Adding to cart:", { itemType, itemId, quantity, metadata });
+      console.log("Adding to cart:", { 
+        itemType, 
+        itemId, 
+        quantity, 
+        metadata,
+        userId: user.id 
+      });
+
+      // Ensure metadata is a valid object
+      const validMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
       const { data, error } = await supabase.rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: itemType,
         p_item_id: itemId,
         p_quantity: quantity,
-        p_metadata: metadata || {}
+        p_metadata: validMetadata
       });
 
       if (error) {
         console.error("Error adding to cart:", error);
         throw error;
       }
+      
+      console.log("Item added to cart successfully:", data);
       return data;
     },
     onSuccess: () => {
@@ -89,11 +107,16 @@ export const useCart = () => {
 
   const removeFromCartMutation = useMutation({
     mutationFn: async (itemId: string) => {
+      console.log("Removing item from cart:", itemId);
+      
       const { data, error } = await supabase.rpc("remove_from_cart", {
         p_id: itemId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error removing from cart:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -104,6 +127,7 @@ export const useCart = () => {
       });
     },
     onError: (error: any) => {
+      console.error("Remove from cart error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao remover item",
@@ -114,18 +138,24 @@ export const useCart = () => {
 
   const updateCartMutation = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
+      console.log("Updating cart item:", { itemId, quantity });
+      
       const { data, error } = await supabase.rpc("update_cart", {
         p_id: itemId,
         p_quantity: quantity
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating cart:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
     },
     onError: (error: any) => {
+      console.error("Update cart error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar item",
@@ -138,11 +168,16 @@ export const useCart = () => {
     mutationFn: async () => {
       if (!user) throw new Error("Usuário não autenticado");
 
+      console.log("Clearing cart for user:", user.id);
+
       const { data, error } = await supabase.rpc("clear_cart", {
         p_user_id: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error clearing cart:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -153,6 +188,7 @@ export const useCart = () => {
       });
     },
     onError: (error: any) => {
+      console.error("Clear cart error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao limpar carrinho",
