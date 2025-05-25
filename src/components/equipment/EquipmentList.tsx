@@ -1,6 +1,6 @@
 
 import React from "react";
-import { EquipmentCard } from "./EquipmentCard";
+import EquipmentCard from "./EquipmentCard";
 
 interface Equipment {
   id: string;
