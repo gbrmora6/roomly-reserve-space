@@ -27,6 +27,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     quantity: number;
     available: number;
     price_per_hour: number;
+    is_active: boolean;
     open_time?: string;
     close_time?: string;
     open_days?: WeekdayEnum[];

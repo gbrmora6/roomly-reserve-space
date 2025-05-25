@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Clock } from "lucide-react";
+import { Package, Clock, Plus, Minus } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 
 interface Equipment {
@@ -20,9 +20,22 @@ interface Equipment {
 
 interface EquipmentCardProps {
   equipment: Equipment;
+  selectedQuantity?: number;
+  onQuantityChange?: (equipmentId: string, quantity: number) => void;
 }
 
-const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
+const EquipmentCard: React.FC<EquipmentCardProps> = ({ 
+  equipment, 
+  selectedQuantity = 0, 
+  onQuantityChange 
+}) => {
+  const handleQuantityChange = (change: number) => {
+    if (onQuantityChange) {
+      const newQuantity = Math.max(0, Math.min(equipment.quantity, selectedQuantity + change));
+      onQuantityChange(equipment.id, newQuantity);
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
       <CardHeader className="pb-3">
@@ -58,16 +71,46 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
               {equipment.open_time} às {equipment.close_time}
             </div>
           )}
+
+          {/* Quantity selector if onQuantityChange is provided */}
+          {onQuantityChange && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Quantidade:</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuantityChange(-1)}
+                  disabled={selectedQuantity <= 0}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="w-8 text-center text-sm font-medium">
+                  {selectedQuantity}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuantityChange(1)}
+                  disabled={selectedQuantity >= equipment.quantity}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
 
-      <CardFooter className="pt-3">
-        <Button asChild className="w-full">
-          <Link to={`/equipment/${equipment.id}`}>
-            Ver Detalhes e Reservar
-          </Link>
-        </Button>
-      </CardFooter>
+      {!onQuantityChange && (
+        <CardFooter className="pt-3">
+          <Button asChild className="w-full">
+            <Link to={`/equipment/${equipment.id}`}>
+              Ver Detalhes e Reservar
+            </Link>
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };
