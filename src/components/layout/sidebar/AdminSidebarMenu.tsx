@@ -116,26 +116,6 @@ export const AdminSidebarMenu: React.FC = () => {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        {isSuperAdmin && (
-          <>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/admin/branches" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/branches") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-                  <Building className="h-5 w-5" />
-                  <span>Filiais</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/admin/admins" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/admins") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-                  <Users className="h-5 w-5" />
-                  <span>Usuários Admin</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </>
-        )}
       </SidebarMenu>
     </SidebarGroup>
   );

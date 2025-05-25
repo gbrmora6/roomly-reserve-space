@@ -8,21 +8,18 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: "admin" | "client";
   requireAdmin?: boolean;
-  requireSuperAdmin?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredRole, 
-  requireAdmin = false,
-  requireSuperAdmin = false
+  requireAdmin = false
 }) => {
   const { user, loading, refreshUserClaims } = useAuth();
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Verify authentication and permissions when component mounts
   useEffect(() => {
     const verifyAccess = async () => {
       if (loading) return;
@@ -35,75 +32,29 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
 
       try {
-        // Always refresh claims when accessing protected routes to ensure we have the latest permissions
-        devLog("ProtectedRoute - Refreshing user claims");
         await refreshUserClaims();
-        
-        // Check if user is superAdmin, which bypasses all role checks
-        const isSuperAdmin = 
-          user.user_metadata?.is_super_admin === true || 
-          user.email === "admin@example.com" || 
-          user.email === "cpd@sapiens-psi.com.br";
-        
-        if (requireSuperAdmin) {
-          if (isSuperAdmin) {
-            setIsAuthorized(true);
-            setAuthChecked(true);
-            return;
-          } else {
-            setIsAuthorized(false);
-            setAuthChecked(true);
-            return;
-          }
-        }
-
-        if (isSuperAdmin) {
-          devLog("SuperAdmin detected - bypassing role checks");
-          setIsAuthorized(true);
+        const isAdmin = user.user_metadata?.role === "admin";
+        const effectiveRequiredRole = requireAdmin ? "admin" : requiredRole;
+        if (effectiveRequiredRole && user.user_metadata?.role !== effectiveRequiredRole) {
+          setIsAuthorized(false);
           setAuthChecked(true);
           return;
         }
-
-        // Check role requirements - handle both requireAdmin and requiredRole
-        const effectiveRequiredRole = requireAdmin ? "admin" : requiredRole;
-        
-        if (effectiveRequiredRole) {
-          const userRole = user.user_metadata?.role;
-          const isAdmin = 
-            user.user_metadata?.is_admin === true || 
-            user.user_metadata?.role === "admin";
-          
-          devLog("Verificando permissões", { 
-            userRole, 
-            effectiveRequiredRole, 
-            isAdmin,
-            metadata: user.user_metadata
-          });
-          
-          // Check if user has the required role
-          if (effectiveRequiredRole === "admin" && !isAdmin) {
-            errorLog(`Acesso negado: Usuário não tem permissão de administrador`);
-            setIsAuthorized(false);
-          } else if (effectiveRequiredRole !== "admin" && effectiveRequiredRole !== userRole) {
-            errorLog(`Acesso negado: Usuário tem papel ${userRole}, mas a página requer ${effectiveRequiredRole}`);
-            setIsAuthorized(false);
-          } else {
-            setIsAuthorized(true);
-          }
-        } else {
-          // No specific role required, just authentication
-          setIsAuthorized(true);
+        if (requireAdmin && !isAdmin) {
+          setIsAuthorized(false);
+          setAuthChecked(true);
+          return;
         }
-      } catch (error) {
-        errorLog("Error verifying user access", error);
+        setIsAuthorized(true);
+        setAuthChecked(true);
+      } catch (err) {
+        errorLog("Error verifying access in ProtectedRoute", err);
         setIsAuthorized(false);
-      } finally {
         setAuthChecked(true);
       }
     };
-
     verifyAccess();
-  }, [user, loading, requiredRole, requireAdmin, requireSuperAdmin, refreshUserClaims, location.pathname]);
+  }, [user, loading, requiredRole, requireAdmin, refreshUserClaims, location.pathname]);
 
   // Show improved loading state
   if (loading || !authChecked) {
