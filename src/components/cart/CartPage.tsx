@@ -1,15 +1,18 @@
+
 import React from "react";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, Calendar, Clock } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import CartTimer from "./CartTimer";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const CartPage = () => {
   const { user } = useAuth();
@@ -22,6 +25,7 @@ const CartPage = () => {
     removeFromCart,
     updateCart,
     clearCart,
+    refetch,
     isRemovingFromCart,
     isUpdatingCart,
     isClearingCart,
@@ -80,6 +84,10 @@ const CartPage = () => {
 
   const handleCheckout = () => {
     navigate("/checkout");
+  };
+
+  const handleExpiredItem = () => {
+    refetch();
   };
 
   if (!user) {
@@ -149,46 +157,85 @@ const CartPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {itemDetails?.map((item) => (
-                <Card key={item.id}>
+                <Card key={item.id} className="relative">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-medium">
-                          {item.details?.name || `${item.item_type} (ID: ${item.item_id})`}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium">
+                            {item.details?.name || `${item.item_type} (ID: ${item.item_id})`}
+                          </h3>
+                          <Badge variant="outline" className="text-xs">
+                            {item.item_type === 'room' ? 'Sala' : 
+                             item.item_type === 'equipment' ? 'Equipamento' : 'Produto'}
+                          </Badge>
+                          {item.expires_at && (
+                            <CartTimer 
+                              expiresAt={item.expires_at} 
+                              onExpired={handleExpiredItem}
+                            />
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-3">
                           {item.details?.description || `Tipo: ${item.item_type}`}
                         </p>
-                        <p className="text-sm font-medium mt-2">
-                          {formatCurrency(item.price)} cada
-                        </p>
-                        {item.metadata && Object.keys(item.metadata).length > 0 && (
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            {JSON.stringify(item.metadata)}
+
+                        {/* Informações específicas do item */}
+                        {item.metadata && (
+                          <div className="space-y-1 mb-3">
+                            {item.metadata.date && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                {item.metadata.date}
+                              </div>
+                            )}
+                            {item.metadata.start_time_display && item.metadata.end_time_display && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {item.metadata.start_time_display} - {item.metadata.end_time_display}
+                                {item.metadata.duration && ` (${item.metadata.duration}h)`}
+                              </div>
+                            )}
                           </div>
                         )}
+                        
+                        <p className="text-sm font-medium">
+                          {formatCurrency(item.price)} 
+                          {item.item_type !== 'product' && ' total'}
+                          {item.item_type === 'product' && ' cada'}
+                        </p>
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                            disabled={isUpdatingCart}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                            disabled={isUpdatingCart}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
+                      <div className="flex items-center gap-3 ml-4">
+                        {/* Controle de quantidade apenas para produtos */}
+                        {item.item_type === 'product' && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                              disabled={isUpdatingCart}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                              disabled={isUpdatingCart}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        
+                        {item.item_type === 'equipment' && item.quantity > 1 && (
+                          <Badge variant="secondary">
+                            {item.quantity} unidades
+                          </Badge>
+                        )}
                         
                         <Button
                           variant="ghost"
@@ -216,13 +263,21 @@ const CartPage = () => {
                       <span>Subtotal ({cartCount} {cartCount === 1 ? 'item' : 'itens'})</span>
                       <span>{formatCurrency(cartTotal)}</span>
                     </div>
-                    <div className="border-t pt-2">
-                      <div className="flex justify-between font-medium">
-                        <span>Total</span>
-                        <span>{formatCurrency(cartTotal)}</span>
-                      </div>
+                    <Separator />
+                    <div className="flex justify-between font-medium">
+                      <span>Total</span>
+                      <span>{formatCurrency(cartTotal)}</span>
                     </div>
                   </div>
+                  
+                  {/* Aviso sobre tempo de reserva */}
+                  {itemDetails?.some(item => item.expires_at) && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-xs text-yellow-800">
+                        ⚠️ Alguns itens têm reserva temporária. Complete seu pagamento antes que expire.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter>
                   <Button 

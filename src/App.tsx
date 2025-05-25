@@ -18,6 +18,7 @@ import PaymentInstructions from "./pages/PaymentInstructions";
 
 // Client pages
 import RoomList from "./pages/rooms/RoomList";
+import RoomDetail from "./pages/rooms/RoomDetail";
 import EquipmentList from "./pages/equipment/EquipmentList";
 import ProductStore from "./pages/store/ProductStore";
 import ProductDetail from "./pages/store/ProductDetail";
@@ -63,7 +64,9 @@ function App() {
 
               {/* Client routes */}
               <Route path="/rooms" element={<RoomList />} />
+              <Route path="/rooms/:id" element={<RoomDetail />} />
               <Route path="/equipment" element={<EquipmentList />} />
+              <Route path="/equipment/:id" element={<EquipmentDetail />} />
               <Route path="/store" element={<ProductStore />} />
               <Route path="/store/product/:id" element={<ProductDetail />} />
               <Route

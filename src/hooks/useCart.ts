@@ -34,6 +34,7 @@ export const useCart = () => {
       return data as CartItem[];
     },
     enabled: !!user,
+    refetchInterval: 30000, // Refresh a cada 30 segundos para verificar itens expirados
   });
 
   const addToCartMutation = useMutation({

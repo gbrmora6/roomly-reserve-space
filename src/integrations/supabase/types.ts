@@ -113,35 +113,59 @@ export type Database = {
       cart_items: {
         Row: {
           created_at: string
+          expires_at: string | null
           id: string
           item_id: string
           item_type: string
           metadata: Json
           price: number
           quantity: number
+          reserved_booking_id: string | null
+          reserved_equipment_booking_id: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           item_id: string
           item_type: string
           metadata?: Json
           price: number
           quantity: number
+          reserved_booking_id?: string | null
+          reserved_equipment_booking_id?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          expires_at?: string | null
           id?: string
           item_id?: string
           item_type?: string
           metadata?: Json
           price?: number
           quantity?: number
+          reserved_booking_id?: string | null
+          reserved_equipment_booking_id?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_reserved_booking_id_fkey"
+            columns: ["reserved_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_reserved_equipment_booking_id_fkey"
+            columns: ["reserved_equipment_booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_equipment"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_profile: {
         Row: {
@@ -673,29 +697,43 @@ export type Database = {
         }
         Returns: {
           created_at: string
+          expires_at: string | null
           id: string
           item_id: string
           item_type: string
           metadata: Json
           price: number
           quantity: number
+          reserved_booking_id: string | null
+          reserved_equipment_booking_id: string | null
           user_id: string | null
         }
       }
+      clean_expired_cart_items: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       clear_cart: {
         Args: { p_user_id: string }
+        Returns: boolean
+      }
+      confirm_cart_payment: {
+        Args: { p_user_id: string; p_order_id: string }
         Returns: boolean
       }
       get_cart: {
         Args: { p_user_id: string }
         Returns: {
           created_at: string
+          expires_at: string | null
           id: string
           item_id: string
           item_type: string
           metadata: Json
           price: number
           quantity: number
+          reserved_booking_id: string | null
+          reserved_equipment_booking_id: string | null
           user_id: string | null
         }[]
       }
@@ -715,12 +753,15 @@ export type Database = {
         Args: { p_id: string; p_quantity: number }
         Returns: {
           created_at: string
+          expires_at: string | null
           id: string
           item_id: string
           item_type: string
           metadata: Json
           price: number
           quantity: number
+          reserved_booking_id: string | null
+          reserved_equipment_booking_id: string | null
           user_id: string | null
         }
       }
