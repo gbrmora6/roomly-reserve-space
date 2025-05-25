@@ -1,16 +1,18 @@
-
 import React from "react";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BookingsHeaderProps {
   onShowAddress: () => void;
+  title?: string;
 }
 
-export const BookingsHeader = ({ onShowAddress }: BookingsHeaderProps) => {
+export const BookingsHeader = ({ onShowAddress, title = "Minhas Reservas" }: BookingsHeaderProps) => {
   return (
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold">Minhas Reservas</h1>
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <h1 className="text-2xl font-bold text-roomly-800">
+        {title}
+      </h1>
       <Button 
         onClick={onShowAddress} 
         variant="outline" 

@@ -1,9 +1,9 @@
-
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { useBookings } from "@/hooks/useBookings";
 import { useCompanyProfile } from "@/hooks/useCompanyProfile";
+import { useOrders } from "@/hooks/useOrders";
 import { BookingsHeader } from "./components/BookingsHeader";
 import { BookingTabs } from "./components/BookingTabs";
 import { CompanyAddressDialog } from "./components/CompanyAddressDialog";
@@ -21,6 +21,8 @@ const MyBookings = () => {
     handleCancelBooking
   } = useBookings(user?.id);
 
+  const { productOrders, isLoading: isLoadingOrders } = useOrders(user?.id);
+
   const {
     companyProfile,
     showAddressDialog,
@@ -29,7 +31,7 @@ const MyBookings = () => {
   } = useCompanyProfile();
 
   // Show loading state
-  if (isLoading && !roomBookings && !equipmentBookings) {
+  if ((isLoading && !roomBookings && !equipmentBookings) || isLoadingOrders) {
     return (
       <MainLayout>
         <div className="container mx-auto py-8">
@@ -42,13 +44,14 @@ const MyBookings = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8">
-        <BookingsHeader onShowAddress={handleShowAddress} />
+        <BookingsHeader onShowAddress={handleShowAddress} title="Meus Pedidos" />
         
         <BookingTabs 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           roomBookings={roomBookings}
           equipmentBookings={equipmentBookings}
+          productOrders={productOrders}
           onCancelBooking={handleCancelBooking}
         />
 

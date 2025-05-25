@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +20,7 @@ const RoomList: React.FC = () => {
     date: null as Date | null,
     startTime: null as string | null,
     endTime: null as string | null,
+    city: "" as string,
   });
   const [companyAddress, setCompanyAddress] = useState({
     street: "",
@@ -153,6 +153,7 @@ const RoomList: React.FC = () => {
       date: null,
       startTime: null,
       endTime: null,
+      city: "",
     });
   };
 

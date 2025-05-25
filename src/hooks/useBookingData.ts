@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,8 +6,13 @@ import { Database } from "@/integrations/supabase/types";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
-  const [filter, setFilter] = useState<BookingStatus | "all">(initialFilter);
+interface BookingFilter {
+  status?: BookingStatus | "all";
+  branchId?: string;
+}
+
+export function useBookingData(initialFilter: BookingFilter = { status: "all", branchId: undefined }) {
+  const [filter, setFilter] = useState<BookingFilter>(initialFilter);
   const { toast } = useToast();
 
   const { data: bookings, isLoading, refetch } = useQuery({
@@ -33,16 +37,18 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
           `)
           .order("start_time", { ascending: false });
 
-        if (filter !== "all") {
-          query = query.eq("status", filter);
+        if (filter.status && filter.status !== "all") {
+          query = query.eq("status", filter.status);
+        }
+        if (filter.branchId) {
+          query = query.eq("branch_id", filter.branchId);
         }
 
         const { data: bookingData, error } = await query;
 
         if (error) throw error;
-        
         if (!bookingData) return [];
-        
+
         // For each booking, fetch the user profile information separately
         const bookingsWithProfiles = await Promise.all(
           bookingData.map(async (booking) => {
@@ -52,11 +58,10 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
                 .select("first_name, last_name")
                 .eq("id", booking.user_id)
                 .single();
-                
               return {
                 ...booking,
-                user: profileError || !profileData 
-                  ? { first_name: 'Usuário', last_name: 'Desconhecido' } 
+                user: profileError || !profileData
+                  ? { first_name: 'Usuário', last_name: 'Desconhecido' }
                   : profileData,
                 booking_equipment: booking.booking_equipment || []
               };
@@ -70,7 +75,6 @@ export function useBookingData(initialFilter: BookingStatus | "all" = "all") {
             }
           })
         );
-        
         return bookingsWithProfiles;
       } catch (error: any) {
         console.error("Erro ao buscar reservas:", error);

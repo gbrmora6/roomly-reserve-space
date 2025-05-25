@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,8 +20,32 @@ export function useSessionManager() {
         devLog("User data in auth change", currentSession.user.id);
         // Don't log user metadata in production (using devLog)
         devLog("User metadata from session", currentSession.user.user_metadata);
-        setSession(currentSession);
-        setUser(currentSession.user);
+        // Garantir branch_id e is_super_admin no user_metadata
+        (async () => {
+          let updated = false;
+          let newMetadata = { ...currentSession.user.user_metadata };
+          if (!('branch_id' in newMetadata) || !('is_super_admin' in newMetadata)) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('branch_id')
+              .eq('id', currentSession.user.id)
+              .maybeSingle();
+            if (profile?.branch_id && !('branch_id' in newMetadata)) {
+              newMetadata.branch_id = profile.branch_id;
+              updated = true;
+            }
+            if (!('is_super_admin' in newMetadata)) {
+              newMetadata.is_super_admin = false;
+              updated = true;
+            }
+            if (updated) {
+              await supabase.auth.updateUser({ data: newMetadata });
+              currentSession.user.user_metadata = newMetadata;
+            }
+          }
+          setSession(currentSession);
+          setUser({ ...currentSession.user, user_metadata: newMetadata });
+        })();
         
         // Store session info securely
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -124,8 +147,32 @@ export function useSessionManager() {
         devLog("Initial session check", currentSession?.user?.id || "No session");
         
         if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
+          // Garantir branch_id e is_super_admin no user_metadata
+          (async () => {
+            let updated = false;
+            let newMetadata = { ...currentSession.user.user_metadata };
+            if (!('branch_id' in newMetadata) || !('is_super_admin' in newMetadata)) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('branch_id')
+                .eq('id', currentSession.user.id)
+                .maybeSingle();
+              if (profile?.branch_id && !('branch_id' in newMetadata)) {
+                newMetadata.branch_id = profile.branch_id;
+                updated = true;
+              }
+              if (!('is_super_admin' in newMetadata)) {
+                newMetadata.is_super_admin = false;
+                updated = true;
+              }
+              if (updated) {
+                await supabase.auth.updateUser({ data: newMetadata });
+                currentSession.user.user_metadata = newMetadata;
+              }
+            }
+            setSession(currentSession);
+            setUser({ ...currentSession.user, user_metadata: newMetadata });
+          })();
           
           // Check if user is admin and store securely
           const isAdmin = 

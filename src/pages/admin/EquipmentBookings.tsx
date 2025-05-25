@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Package } from "lucide-react";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -52,6 +55,7 @@ interface Booking {
 const AdminEquipmentBookings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BookingStatus | "all">("all");
   const { refreshUserClaims } = useAuth();
+  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
   
   // Execute refresh claims on component mount
   useEffect(() => {
@@ -63,11 +67,12 @@ const AdminEquipmentBookings: React.FC = () => {
   }, [refreshUserClaims]);
   
   const { data: bookings, isLoading, error, refetch } = useQuery({
-    queryKey: ["equipment_bookings", activeTab],
+    queryKey: ["equipment_bookings", activeTab, branchId],
     queryFn: async () => {
+      if (!branchId) return [];
       console.log(`Fetching ${activeTab} equipment bookings`);
       try {
-        // Query the booking_equipment table with a proper join to profiles
+        // Query the booking_equipment table with join to equipment and filter por branch_id
         let query = supabase
           .from("booking_equipment")
           .select(`
@@ -84,17 +89,17 @@ const AdminEquipmentBookings: React.FC = () => {
             user_id,
             equipment:equipment(
               name,
-              price_per_hour
+              price_per_hour,
+              branch_id
             )
           `)
           .order("created_at", { ascending: false });
-          
         if (activeTab !== "all") {
           query = query.eq("status", activeTab);
         }
-        
+        // Filtrar por branch_id da tabela equipment
+        query = query.eq("equipment.branch_id", branchId);
         const { data: equipmentBookingsData, error: equipmentError } = await query;
-        
         if (equipmentError) throw equipmentError;
         
         console.log("Equipment booking data retrieved:", equipmentBookingsData?.length || 0, "records");
@@ -251,51 +256,75 @@ const AdminEquipmentBookings: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>
-          <p className="text-muted-foreground mt-2">
-            Gerencie todas as reservas de equipamentos
-          </p>
-        </div>
-        
-        <Button variant="outline" onClick={downloadReport}>
-          <Download className="mr-2 h-4 w-4" />
-          Baixar Relatório
-        </Button>
-      </div>
-      
-      <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
-        <TabsList>
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="pending">Pendentes</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
-          <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="mt-6">
-          {isLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+            <Package className="h-7 w-7 text-purple-700" /> Reservas de Equipamentos
+          </CardTitle>
+          <CardDescription className="text-gray-500">Gerencie todas as reservas de equipamentos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isSuperAdmin && branches && (
+            <div className="mb-4 max-w-xs">
+              <Select value={branchId || undefined} onValueChange={setBranchId!}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filial" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ) : error ? (
-            <div className="rounded-lg bg-destructive/10 p-6 text-center">
-              <p className="text-destructive font-medium">Erro ao carregar reservas</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
+          )}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>
+              <p className="text-muted-foreground mt-2">
+                Gerencie todas as reservas de equipamentos
               </p>
             </div>
-          ) : !safeBookings || safeBookings.length === 0 ? (
-            <div className="text-center py-10 border rounded-lg">
-              <p className="text-muted-foreground">Nenhuma reserva de equipamento encontrada</p>
-            </div>
-          ) : (
-            <BookingsTable bookings={safeBookings} onUpdateStatus={handleUpdateStatus} />
-          )}
-        </TabsContent>
-      </Tabs>
+            
+            <Button variant="outline" onClick={downloadReport}>
+              <Download className="mr-2 h-4 w-4" />
+              Baixar Relatório
+            </Button>
+          </div>
+          
+          <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
+            <TabsList>
+              <TabsTrigger value="all">Todas</TabsTrigger>
+              <TabsTrigger value="pending">Pendentes</TabsTrigger>
+              <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
+              <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={activeTab} className="mt-6">
+              {isLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : error ? (
+                <div className="rounded-lg bg-destructive/10 p-6 text-center">
+                  <p className="text-destructive font-medium">Erro ao carregar reservas</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
+                  </p>
+                </div>
+              ) : !safeBookings || safeBookings.length === 0 ? (
+                <div className="text-center py-10 border rounded-lg">
+                  <p className="text-muted-foreground">Nenhuma reserva de equipamento encontrada</p>
+                </div>
+              ) : (
+                <BookingsTable bookings={safeBookings} onUpdateStatus={handleUpdateStatus} />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

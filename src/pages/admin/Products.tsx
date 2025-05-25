@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,10 +43,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Edit, RefreshCw, ShoppingBag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -64,6 +64,7 @@ const AdminProducts = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -79,19 +80,18 @@ const AdminProducts = () => {
 
   // Fetch products
   const { data: products, isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", branchId],
     queryFn: async () => {
+      if (!branchId) return [];
       const { data, error } = await supabase
         .from("products")
-        .select(`
-          *,
-          equipment:equipment(name)
-        `)
+        .select(`*, equipment:equipment(name)`)
+        .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return data || [];
     },
+    enabled: !!branchId
   });
 
   // Fetch equipment for reference selection
@@ -320,115 +320,139 @@ const AdminProducts = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Produtos</h1>
-          <p className="text-muted-foreground">
-            Gerencie os produtos disponíveis para venda
-          </p>
+      {isSuperAdmin && branches && (
+        <div className="mb-4 max-w-xs">
+          <Select value={branchId || undefined} onValueChange={setBranchId!}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filial" />
+            </SelectTrigger>
+            <SelectContent>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => syncProductsMutation.mutate()}
-            disabled={syncProductsMutation.isPending}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Sincronizar com Stripe
-          </Button>
-          <Button onClick={() => {
-            resetForm();
-            setOpenDialog(true);
-          }}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Produto
-          </Button>
-        </div>
-      </div>
-
-      <Card>
+      )}
+      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
-          <CardTitle>Lista de Produtos</CardTitle>
-          <CardDescription>
-            Gerencie todos os produtos disponíveis para venda
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+            <ShoppingBag className="h-7 w-7 text-blue-700" /> Produtos
+          </CardTitle>
+          <CardDescription className="text-gray-500">Gerencie os produtos disponíveis para venda</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoadingProducts ? (
-            <div className="flex justify-center p-8">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold">Produtos</h1>
+              <p className="text-muted-foreground">
+                Gerencie os produtos disponíveis para venda
+              </p>
             </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Modelo</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Equipamento Relacionado</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Status Stripe</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products && products.length > 0 ? (
-                    products.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.model || "-"}</TableCell>
-                        <TableCell>{formatCurrency(product.price)}</TableCell>
-                        <TableCell>
-                          {product.equipment ? (
-                            <span className="text-sm">{(product.equipment as any).name}</span>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
-                        <TableCell>{product.quantity || 0}</TableCell>
-                        <TableCell>
-                          {product.stripe_product_id ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Sincronizado
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Não sincronizado
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditProduct(product)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteProduct(product.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => syncProductsMutation.mutate()}
+                disabled={syncProductsMutation.isPending}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sincronizar com Stripe
+              </Button>
+              <Button onClick={() => {
+                resetForm();
+                setOpenDialog(true);
+              }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Produto
+              </Button>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lista de Produtos</CardTitle>
+              <CardDescription>
+                Gerencie todos os produtos disponíveis para venda
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingProducts ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Equipamento Relacionado</TableHead>
+                        <TableHead>Quantidade</TableHead>
+                        <TableHead>Status Stripe</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                        Nenhum produto encontrado
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                    </TableHeader>
+                    <TableBody>
+                      {products && products.length > 0 ? (
+                        products.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell>{product.model || "-"}</TableCell>
+                            <TableCell>{formatCurrency(product.price)}</TableCell>
+                            <TableCell>
+                              {product.equipment ? (
+                                <span className="text-sm">{(product.equipment as any).name}</span>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
+                            <TableCell>{product.quantity || 0}</TableCell>
+                            <TableCell>
+                              {product.stripe_product_id ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Sincronizado
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  Não sincronizado
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditProduct(product)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                            Nenhum produto encontrado
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </CardContent>
       </Card>
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -25,10 +24,6 @@ interface Equipment {
 }
 
 const EquipmentList: React.FC = () => {
-  const { user } = useAuth();
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
-  
   const { 
     filters, 
     setFilters, 
@@ -40,19 +35,6 @@ const EquipmentList: React.FC = () => {
   } = useEquipmentFiltering();
   
   const { formatAddress } = useCompanyAddress();
-
-  const handleReserve = (equipment: Equipment) => {
-    if (user) {
-      setSelectedEquipment(equipment);
-      setIsReserveModalOpen(true);
-    } else {
-      toast({
-        title: "Você precisa estar logado",
-        description: "Faça login para reservar equipamentos",
-        variant: "destructive"
-      });
-    }
-  };
 
   return (
     <MainLayout>
@@ -79,19 +61,10 @@ const EquipmentList: React.FC = () => {
         ) : (
           <EquipmentsGrid
             equipments={equipments}
-            onReserve={handleReserve}
-            isLoggedIn={!!user}
             address={formatAddress()}
             showFilterMessage={filters.date && (!filters.startTime || !filters.endTime)}
           />
         )}
-
-        <ReserveEquipmentModal
-          isOpen={isReserveModalOpen}
-          onOpenChange={setIsReserveModalOpen}
-          selectedEquipment={selectedEquipment}
-          filters={filters}
-        />
       </div>
     </MainLayout>
   );

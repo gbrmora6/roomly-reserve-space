@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Building, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -111,16 +110,12 @@ const CompanyProfile: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Perfil da Empresa</h1>
-      </div>
-      
-      <Card>
+      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Building className="mr-2 h-5 w-5" />
-            Informações da Empresa
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+            <Building className="h-7 w-7 text-blue-700" /> Perfil da Empresa
           </CardTitle>
+          <CardDescription className="text-gray-500">Gerencie as informações da empresa</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>

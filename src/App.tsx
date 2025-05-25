@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,6 +41,9 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import EquipmentBookings from "./pages/admin/EquipmentBookings";
 import Clients from "./pages/admin/Clients";
 import CompanyProfile from "./pages/admin/CompanyProfile";
+import BranchesPage from "./pages/admin/Branches";
+import AdminsPage from "./pages/admin/Admins";
+import ProductSales from "./pages/admin/ProductSales";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +132,18 @@ function App() {
                       <Route path="products" element={<Products />} />
                       <Route path="clients" element={<Clients />} />
                       <Route path="company-profile" element={<CompanyProfile />} />
+                      <Route path="product-sales" element={<ProductSales />} />
+                      {/* Rotas exclusivas do superadmin */}
+                      <Route path="branches" element={
+                        <ProtectedRoute requireAdmin requireSuperAdmin>
+                          <BranchesPage />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="admins" element={
+                        <ProtectedRoute requireAdmin requireSuperAdmin>
+                          <AdminsPage />
+                        </ProtectedRoute>
+                      } />
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>

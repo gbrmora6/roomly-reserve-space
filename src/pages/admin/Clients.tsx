@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Client {
@@ -110,8 +109,14 @@ const Clients: React.FC = () => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+            <Users className="h-7 w-7 text-yellow-700" /> Clientes
+          </CardTitle>
+          <CardDescription className="text-gray-500">Veja todos os clientes cadastrados</CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="flex items-center justify-center h-32">
             <p className="text-muted-foreground">Carregando clientes...</p>
           </div>
@@ -121,18 +126,12 @@ const Clients: React.FC = () => {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-2xl font-bold">Clientes</CardTitle>
-        <Button
-          onClick={exportExcel}
-          variant="outline"
-          className="flex items-center gap-2"
-          disabled={clients.length === 0}
-        >
-          <Download className="h-4 w-4" />
-          Exportar Excel
-        </Button>
+    <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+          <Users className="h-7 w-7 text-yellow-700" /> Clientes
+        </CardTitle>
+        <CardDescription className="text-gray-500">Veja todos os clientes cadastrados</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">

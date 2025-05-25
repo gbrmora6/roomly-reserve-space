@@ -1,10 +1,10 @@
-
 import React from "react";
 import { format, addHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { BookingStatusBadge } from "@/components/bookings/BookingStatusBadge";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface BookingRowProps {
   booking: {
@@ -21,6 +21,7 @@ interface BookingRowProps {
 }
 
 export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
+  const navigate = useNavigate();
   const formatDateTime = (dateTimeString: string) => {
     try {
       // Adjust time to correct the 3-hour difference
@@ -31,6 +32,17 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
       return "Horário inválido";
     }
   };
+
+  // Lógica para mostrar botão de tentar pagar novamente
+  const isFaltaPagar = booking.status === "falta pagar";
+  let canRetryPayment = false;
+  if (isFaltaPagar && booking.start_time) {
+    const createdAt = new Date(booking.start_time);
+    const now = new Date();
+    const diffMs = now.getTime() - createdAt.getTime();
+    const diffMinutes = diffMs / (1000 * 60);
+    canRetryPayment = diffMinutes <= 15;
+  }
 
   return (
     <TableRow key={booking.id}>
@@ -58,6 +70,16 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
             onClick={() => onCancelBooking(booking.id)}
           >
             Cancelar
+          </Button>
+        )}
+        {isFaltaPagar && canRetryPayment && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-2"
+            onClick={() => navigate(`/payment-instructions?bookingId=${booking.id}`)}
+          >
+            Tentar pagar novamente
           </Button>
         )}
       </TableCell>
