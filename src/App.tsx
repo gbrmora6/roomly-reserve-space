@@ -11,7 +11,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import PaymentInstructions from "./pages/PaymentInstructions";
@@ -58,7 +57,6 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
@@ -134,16 +132,8 @@ function App() {
                       <Route path="company-profile" element={<CompanyProfile />} />
                       <Route path="product-sales" element={<ProductSales />} />
                       {/* Rotas exclusivas do superadmin */}
-                      <Route path="branches" element={
-                        <ProtectedRoute requireAdmin requireSuperAdmin>
-                          <BranchesPage />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="admins" element={
-                        <ProtectedRoute requireAdmin requireSuperAdmin>
-                          <AdminsPage />
-                        </ProtectedRoute>
-                      } />
+                      {/* <Route path="branches" element={<ProtectedRoute requireAdmin requireSuperAdmin><BranchesPage /></ProtectedRoute>} /> */}
+                      {/* <Route path="admins" element={<ProtectedRoute requireAdmin requireSuperAdmin><AdminsPage /></ProtectedRoute>} /> */}
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>

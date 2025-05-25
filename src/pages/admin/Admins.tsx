@@ -110,9 +110,7 @@ const AdminsPage: React.FC = () => {
             first_name: form.first_name,
             last_name: form.last_name,
             branch_id: form.branch_id,
-            role: "admin",
-            is_admin: true,
-            is_super_admin: false
+            role: "admin"
           }
         });
         if (userError) throw userError;
@@ -127,9 +125,7 @@ const AdminsPage: React.FC = () => {
               first_name: form.first_name,
               last_name: form.last_name,
               branch_id: form.branch_id,
-              role: "admin",
-              is_admin: true,
-              is_super_admin: false
+              role: "admin"
             }
           }
         });

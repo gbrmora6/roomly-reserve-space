@@ -20,11 +20,11 @@ export function useSessionManager() {
         devLog("User data in auth change", currentSession.user.id);
         // Don't log user metadata in production (using devLog)
         devLog("User metadata from session", currentSession.user.user_metadata);
-        // Garantir branch_id e is_super_admin no user_metadata
+        // Garantir branch_id no user_metadata
         (async () => {
           let updated = false;
           let newMetadata = { ...currentSession.user.user_metadata };
-          if (!('branch_id' in newMetadata) || !('is_super_admin' in newMetadata)) {
+          if (!('branch_id' in newMetadata)) {
             const { data: profile } = await supabase
               .from('profiles')
               .select('branch_id')
@@ -32,10 +32,6 @@ export function useSessionManager() {
               .maybeSingle();
             if (profile?.branch_id && !('branch_id' in newMetadata)) {
               newMetadata.branch_id = profile.branch_id;
-              updated = true;
-            }
-            if (!('is_super_admin' in newMetadata)) {
-              newMetadata.is_super_admin = false;
               updated = true;
             }
             if (updated) {
@@ -147,11 +143,11 @@ export function useSessionManager() {
         devLog("Initial session check", currentSession?.user?.id || "No session");
         
         if (currentSession) {
-          // Garantir branch_id e is_super_admin no user_metadata
+          // Garantir branch_id no user_metadata
           (async () => {
             let updated = false;
             let newMetadata = { ...currentSession.user.user_metadata };
-            if (!('branch_id' in newMetadata) || !('is_super_admin' in newMetadata)) {
+            if (!('branch_id' in newMetadata)) {
               const { data: profile } = await supabase
                 .from('profiles')
                 .select('branch_id')
@@ -159,10 +155,6 @@ export function useSessionManager() {
                 .maybeSingle();
               if (profile?.branch_id && !('branch_id' in newMetadata)) {
                 newMetadata.branch_id = profile.branch_id;
-                updated = true;
-              }
-              if (!('is_super_admin' in newMetadata)) {
-                newMetadata.is_super_admin = false;
                 updated = true;
               }
               if (updated) {

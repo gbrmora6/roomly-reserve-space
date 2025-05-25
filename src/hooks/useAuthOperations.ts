@@ -97,11 +97,8 @@ export function useAuthOperations() {
     }
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, branchId: string) => {
     try {
-      // Verificar se o email é um dos superadmins
-      const isSuperAdmin = email === "admin@example.com" || email === "cpd@sapiens-psi.com.br";
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -109,9 +106,8 @@ export function useAuthOperations() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: isSuperAdmin ? "admin" : "client",
-            is_admin: isSuperAdmin,
-            is_super_admin: isSuperAdmin
+            role: "admin",
+            branch_id: branchId
           },
         },
       });
@@ -129,48 +125,6 @@ export function useAuthOperations() {
         title: "Erro ao criar conta",
         description: error.message,
       });
-    }
-  };
-
-  const createSuperAdmin = async () => {
-    try {
-      const email = "cpd@sapiens-psi.com.br";
-      const password = "123456789";
-      const firstName = "Super";
-      const lastName = "Admin";
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: "admin",
-            is_admin: true,
-            is_super_admin: true
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: "Usuário SuperAdmin criado!",
-        description: `Conta para ${email} foi criada com sucesso.`,
-      });
-      
-      return data;
-    } catch (error: any) {
-      console.error("Error creating superadmin:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao criar SuperAdmin",
-        description: error.message,
-      });
-      throw error;
     }
   };
 
@@ -212,7 +166,7 @@ export function useAuthOperations() {
     }
   };
 
-  return { signIn, signUp, createSuperAdmin, signOut };
+  return { signIn, signUp, signOut };
 }
 
 // Helper functions for rate limiting

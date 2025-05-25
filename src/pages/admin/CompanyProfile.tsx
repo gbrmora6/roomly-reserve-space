@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Building, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
 
 interface CompanyProfileData {
   id: string;
@@ -21,10 +22,11 @@ const CompanyProfile: React.FC = () => {
   const [profile, setProfile] = useState<CompanyProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { branchId } = useBranchFilter();
 
   useEffect(() => {
-    fetchProfileData();
-  }, []);
+    if (branchId) fetchProfileData();
+  }, [branchId]);
 
   const fetchProfileData = async () => {
     setLoading(true);
@@ -32,9 +34,10 @@ const CompanyProfile: React.FC = () => {
       const { data, error } = await supabase
         .from('company_profile')
         .select('*')
+        .eq('branch_id', branchId)
         .single();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         toast({
           title: "Erro ao carregar dados",
           description: error.message,
@@ -42,6 +45,15 @@ const CompanyProfile: React.FC = () => {
         });
       } else if (data) {
         setProfile(data as CompanyProfileData);
+      } else {
+        setProfile({
+          id: '',
+          name: '',
+          street: '',
+          number: '',
+          neighborhood: '',
+          city: '',
+        });
       }
     } catch (err) {
       console.error("Erro ao buscar perfil da empresa:", err);
@@ -59,13 +71,12 @@ const CompanyProfile: React.FC = () => {
 
   const handleSave = async () => {
     if (!profile) return;
-    
     setSaving(true);
     try {
+      const upsertData = { ...profile, branch_id: branchId };
       const { error } = await supabase
         .from('company_profile')
-        .upsert(profile);
-        
+        .upsert(upsertData, { onConflict: 'branch_id' });
       if (error) {
         toast({
           title: "Erro ao salvar",

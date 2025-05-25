@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 interface CompanyAddress {
   street: string;
@@ -18,12 +18,15 @@ export const useCompanyAddress = () => {
     city: "",
     name: ""
   });
+  const { branchId } = useBranchFilter();
 
   useEffect(() => {
     const fetchCompanyProfile = async () => {
+      if (!branchId) return;
       const { data, error } = await supabase
         .from("company_profile")
         .select("street, number, neighborhood, city, name")
+        .eq("branch_id", branchId)
         .single();
       
       if (data && !error) {
@@ -32,7 +35,7 @@ export const useCompanyAddress = () => {
     };
     
     fetchCompanyProfile();
-  }, []);
+  }, [branchId]);
 
   const formatAddress = () => {
     if (!companyAddress.street) return "";

@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -25,53 +24,10 @@ export function useUserClaims() {
         return;
       }
       
-      // First check if user is one of the superadmins by email
-      const userEmail = session.user.email;
-      const isSuperAdmin = 
-        userEmail === "admin@example.com" || 
-        userEmail === "cpd@sapiens-psi.com.br";
-      
-      // Force admin status for superadmins
-      if (isSuperAdmin) {
-        devLog("SuperAdmin detected by email, setting admin privileges");
-        
-        const { data, error: updateError } = await supabase.auth.updateUser({
-          data: { 
-            role: "admin",
-            is_admin: true,
-            is_super_admin: true
-          }
-        });
-        
-        if (updateError) {
-          errorLog("Error updating superadmin claims", updateError);
-          return;
-        }
-        
-        if (data?.user) {
-          devLog("SuperAdmin claims updated successfully", data.user.user_metadata);
-          
-          // Refresh session to update JWT claims
-          const { error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError) {
-            errorLog("Error refreshing session after superadmin claims update", refreshError);
-          } else {
-            devLog("Session refreshed with new superadmin JWT claims");
-            // Store encrypted timestamp of last refresh
-            localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
-          }
-        }
-        
-        return;
-      }
-      
-      // For regular users, check if we need to update based on profile
-      devLog("Current user metadata", session.user.user_metadata);
-      
-      // Fetch profile data to verify role
+      // Fetch profile data to verify role e branch_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, branch_id')
         .eq('id', session.user.id)
         .single();
       
@@ -80,36 +36,31 @@ export function useUserClaims() {
         return;
       }
       
-      if (!profile?.role) {
-        devLog("No role found in profile data, skipping claims update");
+      if (!profile?.role || !profile?.branch_id) {
+        devLog("No role or branch_id found in profile data, skipping claims update");
         return;
       }
 
-      // Check if user role has changed or admin status needs updating
+      // Check if user role or branch_id has changed
       const currentRole = session.user.user_metadata?.role;
+      const currentBranchId = session.user.user_metadata?.branch_id;
       const isAdmin = profile.role === 'admin';
-      const currentIsAdmin = session.user.user_metadata?.is_admin === true;
-      const currentIsSuperAdmin = session.user.user_metadata?.is_super_admin === true;
       
-      // Only update if there's a mismatch
-      if (currentRole === profile.role && currentIsAdmin === isAdmin && currentIsSuperAdmin === isSuperAdmin) {
+      if (currentRole === profile.role && currentBranchId === profile.branch_id) {
         devLog("User claims already up to date, skipping update");
-        // Still update the refresh timestamp
         localStorage.setItem('last_claims_refresh', encryptData(now.toString()));
         return;
       }
 
-      devLog("Updating user JWT claims to match profile role", {
+      devLog("Updating user JWT claims to match profile role and branch_id", {
         role: profile.role,
-        is_admin: isAdmin,
-        is_super_admin: isSuperAdmin
+        branch_id: profile.branch_id
       });
       
       const { data, error: updateError } = await supabase.auth.updateUser({
-        data: { 
+        data: {
           role: profile.role,
-          is_admin: isAdmin,
-          is_super_admin: isSuperAdmin
+          branch_id: profile.branch_id
         }
       });
       
