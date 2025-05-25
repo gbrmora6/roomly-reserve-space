@@ -110,108 +110,28 @@ function App() {
               }
             />
 
-            {/* Admin routes */}
+            {/* Admin routes - All wrapped with AdminLayout */}
             <Route
-              path="/admin"
+              path="/admin/*"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/bookings"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminBookings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/equipment-bookings"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <EquipmentBookings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/rooms"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Rooms />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/rooms/new"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <RoomForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/rooms/:id"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <RoomForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/equipment"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Equipment />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/equipment/new"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <EquipmentForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/equipment/:id"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <EquipmentForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/products"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Products />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/clients"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Clients />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/company-profile"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <CompanyProfile />
+                  <AdminLayout>
+                    <Routes>
+                      <Route index element={<Dashboard />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="bookings" element={<AdminBookings />} />
+                      <Route path="equipment-bookings" element={<EquipmentBookings />} />
+                      <Route path="rooms" element={<Rooms />} />
+                      <Route path="rooms/new" element={<RoomForm />} />
+                      <Route path="rooms/:id" element={<RoomForm />} />
+                      <Route path="equipment" element={<Equipment />} />
+                      <Route path="equipment/new" element={<EquipmentForm />} />
+                      <Route path="equipment/:id" element={<EquipmentForm />} />
+                      <Route path="products" element={<Products />} />
+                      <Route path="clients" element={<Clients />} />
+                      <Route path="company-profile" element={<CompanyProfile />} />
+                    </Routes>
+                  </AdminLayout>
                 </ProtectedRoute>
               }
             />

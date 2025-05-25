@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,9 +40,22 @@ const Login: React.FC = () => {
     );
   }
 
+  // Redirect based on user role
   if (user) {
-    console.log("User is already logged in, redirecting to /rooms");
-    return <Navigate to="/rooms" replace />;
+    console.log("User is already logged in, checking role for redirect");
+    const isAdmin = 
+      user.user_metadata?.is_admin === true || 
+      user.user_metadata?.role === "admin" ||
+      user.email === "admin@example.com" ||
+      user.email === "cpd@sapiens-psi.com.br";
+    
+    if (isAdmin) {
+      console.log("Admin user detected, redirecting to /admin");
+      return <Navigate to="/admin" replace />;
+    } else {
+      console.log("Regular user detected, redirecting to /rooms");
+      return <Navigate to="/rooms" replace />;
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +77,7 @@ const Login: React.FC = () => {
     try {
       await signIn(email, password);
       console.log("Login successful in Login component");
-      // O redirecionamento acontecerá no signIn
+      // O redirecionamento acontecerá automaticamente quando o user state for atualizado
     } catch (error: any) {
       console.error("Login error in component:", error);
       
