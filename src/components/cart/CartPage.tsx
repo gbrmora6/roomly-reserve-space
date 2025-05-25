@@ -199,7 +199,7 @@ const CartPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container py-8">
+      <div className="py-8">
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
@@ -208,7 +208,7 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="container py-8">
+    <div className="py-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
 

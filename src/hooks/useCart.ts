@@ -54,6 +54,8 @@ export const useCart = () => {
     }) => {
       if (!user) throw new Error("Usuário não autenticado");
 
+      console.log("Adding to cart:", { itemType, itemId, quantity, metadata });
+
       const { data, error } = await supabase.rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: itemType,
@@ -62,7 +64,10 @@ export const useCart = () => {
         p_metadata: metadata || {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding to cart:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -72,11 +77,12 @@ export const useCart = () => {
         description: "O item foi adicionado com sucesso ao seu carrinho.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Cart mutation error:", error);
       toast({
         variant: "destructive",
         title: "Erro ao adicionar item",
-        description: error.message,
+        description: error.message || "Erro desconhecido ao adicionar item ao carrinho",
       });
     },
   });
@@ -97,7 +103,7 @@ export const useCart = () => {
         description: "O item foi removido do seu carrinho.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: "destructive",
         title: "Erro ao remover item",
@@ -119,7 +125,7 @@ export const useCart = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: "destructive",
         title: "Erro ao atualizar item",
@@ -146,7 +152,7 @@ export const useCart = () => {
         description: "Todos os itens foram removidos do seu carrinho.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: "destructive",
         title: "Erro ao limpar carrinho",

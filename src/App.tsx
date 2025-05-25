@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -47,101 +46,173 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
-              <Route path="/payment/success" element={<PaymentSuccess />} />
-              <Route path="/payment/canceled" element={<PaymentCanceled />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-instructions" element={<PaymentInstructions />} />
+    <Router>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <Toaster />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/canceled" element={<PaymentCanceled />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-instructions" element={<PaymentInstructions />} />
 
-              {/* Client routes */}
-              <Route path="/rooms" element={<RoomList />} />
-              <Route path="/rooms/:id" element={<RoomDetail />} />
-              <Route path="/equipment" element={<EquipmentList />} />
-              <Route path="/equipment/:id" element={<EquipmentDetail />} />
-              <Route path="/store" element={<ProductStore />} />
-              <Route path="/store/product/:id" element={<ProductDetail />} />
-              <Route
-                path="/cart"
-                element={
-                  <ProtectedRoute>
-                    <Cart />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute>
-                    <Checkout />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-account"
-                element={
-                  <ProtectedRoute>
-                    <MyAccount />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-bookings"
-                element={
-                  <ProtectedRoute>
-                    <MyBookings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/booking/:id"
-                element={
-                  <ProtectedRoute>
-                    <BookingDetails />
-                  </ProtectedRoute>
-                }
-              />
+            {/* Client routes */}
+            <Route path="/rooms" element={<RoomList />} />
+            <Route path="/rooms/:id" element={<RoomDetail />} />
+            <Route path="/equipment" element={<EquipmentList />} />
+            <Route path="/equipment/:id" element={<Equipment />} />
+            <Route path="/store" element={<ProductStore />} />
+            <Route path="/store/product/:id" element={<ProductDetail />} />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <Cart />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-account"
+              element={
+                <ProtectedRoute>
+                  <MyAccount />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-bookings"
+              element={
+                <ProtectedRoute>
+                  <MyBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/booking/:id"
+              element={
+                <ProtectedRoute>
+                  <BookingDetails />
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Admin routes */}
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute requireAdmin>
-                    <Routes>
-                      <Route path="/" element={<AdminLayout><Dashboard /></AdminLayout>} />
-                      <Route path="/rooms" element={<AdminLayout><Rooms /></AdminLayout>} />
-                      <Route path="/rooms/new" element={<AdminLayout><RoomForm /></AdminLayout>} />
-                      <Route path="/rooms/edit/:id" element={<AdminLayout><RoomForm /></AdminLayout>} />
-                      <Route path="/equipment" element={<AdminLayout><Equipment /></AdminLayout>} />
-                      <Route path="/equipment/new" element={<AdminLayout><EquipmentForm /></AdminLayout>} />
-                      <Route path="/equipment/edit/:id" element={<AdminLayout><EquipmentForm /></AdminLayout>} />
-                      <Route path="/products" element={<AdminLayout><Products /></AdminLayout>} />
-                      <Route path="/bookings" element={<AdminLayout><AdminBookings /></AdminLayout>} />
-                      <Route path="/equipment-bookings" element={<AdminLayout><EquipmentBookings /></AdminLayout>} />
-                      <Route path="/clients" element={<AdminLayout><Clients /></AdminLayout>} />
-                      <Route path="/company-profile" element={<AdminLayout><CompanyProfile /></AdminLayout>} />
-                    </Routes>
-                  </ProtectedRoute>
-                }
-              />
+            {/* Admin routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/bookings"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/equipment-bookings"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EquipmentBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/rooms"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Rooms />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/rooms/new"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <RoomForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/rooms/:id"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <RoomForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/equipment"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Equipment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/equipment/new"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EquipmentForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/equipment/:id"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <EquipmentForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/products"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/clients"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Clients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/company-profile"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <CompanyProfile />
+                </ProtectedRoute>
+              }
+            />
 
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </QueryClientProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
