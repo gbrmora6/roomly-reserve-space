@@ -9,6 +9,9 @@ interface Equipment {
   quantity: number;
   available: number;
   price_per_hour: number;
+  is_active: boolean;
+  open_time: string | null;
+  close_time: string | null;
 }
 
 interface EquipmentListProps {
