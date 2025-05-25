@@ -55,7 +55,7 @@ interface Booking {
 const AdminEquipmentBookings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BookingStatus | "all">("all");
   const { refreshUserClaims } = useAuth();
-  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
+  const { branchId } = useBranchFilter();
   
   // Execute refresh claims on component mount
   useEffect(() => {
@@ -264,20 +264,6 @@ const AdminEquipmentBookings: React.FC = () => {
           <CardDescription className="text-gray-500">Gerencie todas as reservas de equipamentos</CardDescription>
         </CardHeader>
         <CardContent>
-          {isSuperAdmin && branches && (
-            <div className="mb-4 max-w-xs">
-              <Select value={branchId || undefined} onValueChange={setBranchId!}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filial" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>

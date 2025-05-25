@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { EquipmentForm } from "@/components/equipment/EquipmentForm";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminEquipmentForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
   
   const { data: equipment, isLoading } = useQuery({
     queryKey: ["equipment", id],
@@ -31,6 +32,10 @@ const AdminEquipmentForm: React.FC = () => {
   const handleSubmit = async (formData: any) => {
     setIsSubmitting(true);
     try {
+      const branchId = user?.user_metadata?.branch_id;
+      if (!user || !branchId) {
+        throw new Error("Sessão expirada ou usuário sem filial associada. Faça login novamente.");
+      }
       if (id) {
         const { error } = await supabase
           .from("equipment")
@@ -56,7 +61,9 @@ const AdminEquipmentForm: React.FC = () => {
             price_per_hour: formData.price_per_hour,
             open_time: formData.open_time,
             close_time: formData.close_time,
-            open_days: formData.open_days
+            open_days: formData.open_days,
+            branch_id: branchId,
+            is_active: true,
           });
         
         if (error) throw error;

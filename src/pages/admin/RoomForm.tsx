@@ -1,5 +1,3 @@
-
-import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +16,8 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import React, { useState } from "react";
 
 interface Room {
   id: string;
@@ -72,6 +72,7 @@ const RoomForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = !!id;
+  const { user } = useAuth();
   
   const [room, setRoom] = useState<Partial<Room>>({
     name: "",
@@ -211,37 +212,54 @@ const RoomForm: React.FC = () => {
       if (!room.name) {
         throw new Error("O nome da sala é obrigatório");
       }
-
-      const { data: roomData, error: errorRoom } = await supabase
-        .from("rooms")
-        .upsert({
-          id: isEditing ? id : undefined,
-          name: room.name,
-          description: room.description,
-          has_wifi: room.has_wifi,
-          has_ac: room.has_ac,
-          has_chairs: room.has_chairs,
-          has_tables: room.has_tables,
-          price_per_hour: room.price_per_hour,
-        })
-        .select("id")
-        .single();
-
-      if (errorRoom) {
-        throw new Error(errorRoom.message || "Erro desconhecido ao criar/atualizar sala");
+      // Verifica sessão e branch_id
+      const branchId = user?.user_metadata?.branch_id;
+      if (!user || !branchId) {
+        throw new Error("Sessão expirada ou usuário sem filial associada. Faça login novamente.");
       }
-
-      const roomId = roomData.id;
-
-      if (isEditing) {
-        const { error: errorDeleteSchedules } = await supabase
-          .from("room_schedules")
-          .delete()
-          .eq("room_id", roomId);
-
-        if (errorDeleteSchedules) {
-          throw new Error(errorDeleteSchedules.message || "Erro ao limpar horários antigos");
-        }
+      let roomId = id;
+      let errorRoom;
+      if (!isEditing) {
+        // Criação: insert
+        const { data, error } = await supabase
+          .from("rooms")
+          .insert({
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables,
+            price_per_hour: room.price_per_hour,
+            open_time: room.open_time,
+            close_time: room.close_time,
+            branch_id: branchId,
+            is_active: true,
+          })
+          .select("id")
+          .single();
+        errorRoom = error;
+        roomId = data?.id;
+      } else {
+        // Edição: update
+        const { error } = await supabase
+          .from("rooms")
+          .update({
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables,
+            price_per_hour: room.price_per_hour,
+            open_time: room.open_time,
+            close_time: room.close_time,
+          })
+          .eq("id", id);
+        errorRoom = error;
+      }
+      if (errorRoom || !roomId) {
+        throw new Error(errorRoom?.message || "Erro desconhecido ao criar/atualizar sala");
       }
 
       if (schedules.length > 0) {

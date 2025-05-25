@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
 const AdminBookings = () => {
-  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
+  const { branchId } = useBranchFilter();
   const { bookings, isLoading, refetch, filter, setFilter } = useBookingData({ status: 'all', branchId });
   const { handleUpdateStatus } = BookingStatusManager({ refetch });
   const { toast } = useToast();
@@ -64,20 +64,6 @@ const AdminBookings = () => {
           <CardDescription className="text-gray-500">Gerencie todas as reservas de salas</CardDescription>
         </CardHeader>
         <CardContent>
-          {isSuperAdmin && branches && (
-            <div className="mb-4 max-w-xs">
-              <Select value={branchId || undefined} onValueChange={setBranchId!}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filial" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">Gerenciar Reservas</h1>
             <BookingExport bookings={safeBookings} />

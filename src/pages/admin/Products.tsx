@@ -48,6 +48,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
+import { useAuth } from "@/contexts/AuthContext";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -65,6 +66,7 @@ const AdminProducts = () => {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const { toast } = useToast();
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
+  const { user } = useAuth();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -111,6 +113,11 @@ const AdminProducts = () => {
   // Create or update product
   const saveProductMutation = useMutation({
     mutationFn: async (values: ProductFormValues) => {
+      // Verifica sessão e branch_id
+      const branchId = user?.user_metadata?.branch_id;
+      if (!user || !branchId) {
+        throw new Error("Sessão expirada ou usuário sem filial associada. Faça login novamente.");
+      }
       const productData = {
         name: values.name,
         description: values.description,
@@ -119,7 +126,6 @@ const AdminProducts = () => {
         quantity: values.quantity,
         equipment_id: values.equipment_id === "null" ? null : values.equipment_id,
       };
-
       if (editingProductId) {
         // Update existing product
         const { data, error } = await supabase
@@ -128,29 +134,21 @@ const AdminProducts = () => {
           .eq("id", editingProductId)
           .select()
           .single();
-
         if (error) throw error;
-        
-        // Update in Stripe if connected
         if (data.stripe_product_id) {
           await updateProductInStripe(data);
         } else {
-          // If no stripe ID exists yet, create one
           await createProductInStripe(data);
         }
-        
         return data;
       } else {
         // Create new product
         const { data, error } = await supabase
           .from("products")
-          .insert(productData)
+          .insert({ ...productData, branch_id: branchId, is_active: true })
           .select()
           .single();
-
         if (error) throw error;
-        
-        // Sync with Stripe
         await createProductInStripe(data);
         return data;
       }
