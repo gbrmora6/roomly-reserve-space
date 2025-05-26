@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,8 +68,7 @@ export default function ProductSales() {
             quantity,
             price_per_unit,
             product:products(name)
-          ),
-          user:profiles!orders_user_id_fkey(first_name, last_name)
+          )
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -78,9 +78,32 @@ export default function ProductSales() {
         query = query.in("status", statusList);
       }
       
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      const { data: ordersData, error: ordersError } = await query;
+      if (ordersError) throw ordersError;
+      
+      if (!ordersData || ordersData.length === 0) return [];
+
+      // Fetch user profiles separately
+      const userIds = [...new Set(ordersData.map(order => order.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        // Return orders without user data if profiles can't be fetched
+        return ordersData.map(order => ({ ...order, user: null }));
+      }
+
+      // Create a map of profiles for quick lookup
+      const profilesMap = new Map(profiles?.map(profile => [profile.id, profile]) || []);
+
+      // Combine orders with user data
+      return ordersData.map(order => ({
+        ...order,
+        user: profilesMap.get(order.user_id) || null
+      }));
     },
     enabled: !!branchId,
     refetchInterval: 30000,
@@ -439,7 +462,7 @@ export default function ProductSales() {
                   {paginatedOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell>{getUserName(order.user)}</TableCell>
-                      <TableCell>{order.user?.email || '-'}</TableCell>
+                      <TableCell>{order.user_id || '-'}</TableCell>
                       <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>
                         {order.order_items && order.order_items.length > 0 ? (
@@ -525,7 +548,7 @@ export default function ProductSales() {
                 <span className="font-semibold">Cliente:</span> {getUserName(selectedOrder.user)}
               </div>
               <div>
-                <span className="font-semibold">Email:</span> {selectedOrder.user?.email || '-'}
+                <span className="font-semibold">Email:</span> {selectedOrder.user_id || '-'}
               </div>
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}
