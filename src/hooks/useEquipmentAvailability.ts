@@ -19,20 +19,22 @@ const getWeekdayFromNumber = (day: number): WeekdayEnum => {
   return weekdays[day];
 };
 
+interface EquipmentWithBranch {
+  id: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  available: number;
+  price_per_hour: number;
+  is_active: boolean;
+  open_time?: string;
+  close_time?: string;
+  open_days?: WeekdayEnum[];
+  branch?: { city: string; name: string };
+}
+
 export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null, selectedCity?: string) {
-  const [availableEquipment, setAvailableEquipment] = useState<Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    quantity: number;
-    available: number;
-    price_per_hour: number;
-    is_active: boolean;
-    open_time?: string;
-    close_time?: string;
-    open_days?: WeekdayEnum[];
-    branch?: { city: string; name: string };
-  }>>([]);
+  const [availableEquipment, setAvailableEquipment] = useState<EquipmentWithBranch[]>([]);
   const [loading, setLoading] = useState(false);
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
 
@@ -148,7 +150,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return { 
             ...equipment, 
             available: Math.max(0, available),
-            hourlyBookings
+            branch: equipment.branch?.[0] || { city: "", name: "" }
           };
         });
 
@@ -178,9 +180,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("Blocked hours:", blocked);
 
         // Filter to only show equipment with available quantities
-        const availableItems = availabilityResults
-          .filter(item => item.available > 0)
-          .map(({ hourlyBookings, ...rest }) => rest); // Remove hourlyBookings from result
+        const availableItems = availabilityResults.filter(item => item.available > 0);
         
         console.log("Available equipment:", availableItems.length);
         setAvailableEquipment(availableItems);

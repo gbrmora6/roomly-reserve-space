@@ -15,14 +15,18 @@ const WEEKDAYS = [
 interface WeekdaySelectorProps {
   selectedDays: string[];
   onChange: (days: string[]) => void;
+  value?: string[];
 }
 
-export function WeekdaySelector({ selectedDays, onChange }: WeekdaySelectorProps) {
+export function WeekdaySelector({ selectedDays, onChange, value }: WeekdaySelectorProps) {
+  // Use value prop if provided, otherwise use selectedDays
+  const activeDays = value || selectedDays;
+  
   const toggleDay = (day: string) => {
-    if (selectedDays.includes(day)) {
-      onChange(selectedDays.filter(d => d !== day));
+    if (activeDays.includes(day)) {
+      onChange(activeDays.filter(d => d !== day));
     } else {
-      onChange([...selectedDays, day]);
+      onChange([...activeDays, day]);
     }
   };
 
@@ -32,7 +36,7 @@ export function WeekdaySelector({ selectedDays, onChange }: WeekdaySelectorProps
         <Button
           key={day.value}
           type="button"
-          variant={selectedDays.includes(day.value) ? "default" : "outline"}
+          variant={activeDays.includes(day.value) ? "default" : "outline"}
           onClick={() => toggleDay(day.value)}
           className="w-14"
         >

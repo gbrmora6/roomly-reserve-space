@@ -86,10 +86,18 @@ export const BookingChat: React.FC<BookingChatProps> = ({ bookingId }) => {
     if (!message.trim() || !user) return;
 
     try {
+      // Get user's branch_id
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("branch_id")
+        .eq("id", user.id)
+        .single();
+
       const { error } = await supabase.from("messages").insert({
         booking_id: bookingId,
         sender_id: user.id,
         content: message.trim(),
+        branch_id: profile?.branch_id || "",
       });
 
       if (error) throw error;
