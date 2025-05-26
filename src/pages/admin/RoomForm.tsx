@@ -268,6 +268,7 @@ const RoomForm: React.FC = () => {
           weekday: schedule.weekday,
           start_time: schedule.start_time,
           end_time: schedule.end_time,
+          branch_id: branchId,
         }));
 
         const { error: errorInsertSchedules } = await supabase

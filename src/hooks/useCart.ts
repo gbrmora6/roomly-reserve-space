@@ -109,9 +109,10 @@ export const useCart = () => {
     mutationFn: async (itemId: string) => {
       console.log("Removing item from cart:", itemId);
       
-      const { data, error } = await supabase.rpc("remove_from_cart", {
-        p_id: itemId
-      });
+      const { data, error } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq("id", itemId);
 
       if (error) {
         console.error("Error removing from cart:", error);
@@ -140,10 +141,10 @@ export const useCart = () => {
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
       console.log("Updating cart item:", { itemId, quantity });
       
-      const { data, error } = await supabase.rpc("update_cart", {
-        p_id: itemId,
-        p_quantity: quantity
-      });
+      const { data, error } = await supabase
+        .from("cart_items")
+        .update({ quantity })
+        .eq("id", itemId);
 
       if (error) {
         console.error("Error updating cart:", error);
@@ -170,9 +171,10 @@ export const useCart = () => {
 
       console.log("Clearing cart for user:", user.id);
 
-      const { data, error } = await supabase.rpc("clear_cart", {
-        p_user_id: user.id
-      });
+      const { data, error } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq("user_id", user.id);
 
       if (error) {
         console.error("Error clearing cart:", error);

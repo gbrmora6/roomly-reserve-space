@@ -13,12 +13,12 @@ const WEEKDAYS = [
 ];
 
 interface WeekdaySelectorProps {
-  selectedDays: string[];
+  selectedDays?: string[];
   onChange: (days: string[]) => void;
   value?: string[];
 }
 
-export function WeekdaySelector({ selectedDays, onChange, value }: WeekdaySelectorProps) {
+export function WeekdaySelector({ selectedDays = [], onChange, value }: WeekdaySelectorProps) {
   // Use value prop if provided, otherwise use selectedDays
   const activeDays = value || selectedDays;
   

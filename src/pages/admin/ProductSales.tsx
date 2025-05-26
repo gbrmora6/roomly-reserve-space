@@ -95,12 +95,14 @@ export default function ProductSales() {
     }
     if (orders[0].id !== lastOrderId) {
       setLastOrderId(orders[0].id);
+      const user = orders[0].user;
+      const userName = user && typeof user === 'object' && 'first_name' in user ? user.first_name : 'um cliente';
       toast({
         title: "Novo pedido recebido!",
-        description: `Um novo pedido foi realizado por ${orders[0].user && typeof orders[0].user === 'object' ? orders[0].user.first_name : 'um cliente'}.`,
+        description: `Um novo pedido foi realizado por ${userName}.`,
       });
     }
-  }, [orders]);
+  }, [orders, lastOrderId]);
 
   // Cálculos de resumo
   const resumo = useMemo(() => {
@@ -141,8 +143,9 @@ export default function ProductSales() {
     if (!search.trim()) return orders;
     const s = search.trim().toLowerCase();
     return orders.filter(order => {
-      const name = order.user && typeof order.user === 'object' ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.toLowerCase() : "";
-      const email = order.user && typeof order.user === 'object' ? (order.user.email || '').toLowerCase() : "";
+      const user = order.user;
+      const name = user && typeof user === 'object' && 'first_name' in user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
+      const email = user && typeof user === 'object' && 'email' in user ? (user.email || '').toLowerCase() : "";
       return name.includes(s) || email.includes(s);
     });
   }, [orders, search]);
@@ -170,13 +173,14 @@ export default function ProductSales() {
         const produtos = order.order_items && order.order_items.length > 0
           ? order.order_items.map(item => `${item.quantity}x ${item.product?.name || "Produto"}`).join("; ")
           : "-";
+        const user = order.user;
         return {
           "ID": order.id,
-          "Cliente": order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
-            ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
+          "Cliente": user && typeof user === 'object' && 'first_name' in user && user.first_name !== undefined
+            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
             : order.user_id,
-          "Email": order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
-            ? order.user.email
+          "Email": user && typeof user === 'object' && 'email' in user && user.email !== undefined
+            ? user.email
             : '-',
           "Data": format(new Date(order.created_at), "dd/MM/yyyy"),
           "Produtos": produtos,
@@ -237,6 +241,22 @@ export default function ProductSales() {
     }
   };
 
+  const getUserName = (user: any) => {
+    if (!user || typeof user !== 'object') return "Cliente";
+    if ('first_name' in user) {
+      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Cliente";
+    }
+    return "Cliente";
+  };
+
+  const getUserEmail = (user: any) => {
+    if (!user || typeof user !== 'object') return "-";
+    if ('email' in user) {
+      return user.email || "-";
+    }
+    return "-";
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
       {isSuperAdmin && branches && (
@@ -293,7 +313,7 @@ export default function ProductSales() {
       </Card>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -435,16 +455,8 @@ export default function ProductSales() {
                 <TableBody>
                   {paginatedOrders.map(order => (
                     <TableRow key={order.id}>
-                      <TableCell>{
-                        order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
-                          ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
-                          : order.user_id
-                      }</TableCell>
-                      <TableCell>{
-                        order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
-                          ? order.user.email
-                          : '-'
-                      }</TableCell>
+                      <TableCell>{getUserName(order.user)}</TableCell>
+                      <TableCell>{getUserEmail(order.user)}</TableCell>
                       <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>
                         {order.order_items && order.order_items.length > 0 ? (
@@ -527,10 +539,10 @@ export default function ProductSales() {
           {selectedOrder && (
             <div className="space-y-3">
               <div>
-                <span className="font-semibold">Cliente:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() : selectedOrder.user_id}
+                <span className="font-semibold">Cliente:</span> {getUserName(selectedOrder.user)}
               </div>
               <div>
-                <span className="font-semibold">Email:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? selectedOrder.user.email : '-'}
+                <span className="font-semibold">Email:</span> {getUserEmail(selectedOrder.user)}
               </div>
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}
