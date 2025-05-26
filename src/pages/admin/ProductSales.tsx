@@ -68,7 +68,7 @@ export default function ProductSales() {
             price_per_unit,
             product:products(name)
           ),
-          user:profiles!orders_user_id_fkey(first_name, last_name, email)
+          user:profiles!orders_user_id_fkey(first_name, last_name)
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -96,7 +96,7 @@ export default function ProductSales() {
     if (orders[0].id !== lastOrderId) {
       setLastOrderId(orders[0].id);
       const user = orders[0].user;
-      const userName = user && typeof user === 'object' && 'first_name' in user ? user.first_name : 'um cliente';
+      const userName = user?.first_name || 'um cliente';
       toast({
         title: "Novo pedido recebido!",
         description: `Um novo pedido foi realizado por ${userName}.`,
@@ -144,9 +144,8 @@ export default function ProductSales() {
     const s = search.trim().toLowerCase();
     return orders.filter(order => {
       const user = order.user;
-      const name = user && typeof user === 'object' && 'first_name' in user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
-      const email = user && typeof user === 'object' && 'email' in user ? (user.email || '').toLowerCase() : "";
-      return name.includes(s) || email.includes(s);
+      const name = user?.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
+      return name.includes(s);
     });
   }, [orders, search]);
 
@@ -176,12 +175,7 @@ export default function ProductSales() {
         const user = order.user;
         return {
           "ID": order.id,
-          "Cliente": user && typeof user === 'object' && 'first_name' in user && user.first_name !== undefined
-            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-            : order.user_id,
-          "Email": user && typeof user === 'object' && 'email' in user && user.email !== undefined
-            ? user.email
-            : '-',
+          "Cliente": user?.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : order.user_id,
           "Data": format(new Date(order.created_at), "dd/MM/yyyy"),
           "Produtos": produtos,
           "Valor Total": `R$ ${order.total_amount?.toFixed(2) || "0.00"}`,
@@ -242,19 +236,8 @@ export default function ProductSales() {
   };
 
   const getUserName = (user: any) => {
-    if (!user || typeof user !== 'object') return "Cliente";
-    if ('first_name' in user) {
-      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Cliente";
-    }
-    return "Cliente";
-  };
-
-  const getUserEmail = (user: any) => {
-    if (!user || typeof user !== 'object') return "-";
-    if ('email' in user) {
-      return user.email || "-";
-    }
-    return "-";
+    if (!user) return "Cliente";
+    return user.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Cliente" : "Cliente";
   };
 
   return (
@@ -273,7 +256,7 @@ export default function ProductSales() {
           </Select>
         </div>
       )}
-      {/* Título e ação */}
+      
       <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
@@ -312,7 +295,7 @@ export default function ProductSales() {
         </CardContent>
       </Card>
 
-      {/* Cards de resumo */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
         <TooltipProvider>
           <Tooltip>
@@ -391,7 +374,7 @@ export default function ProductSales() {
         </TooltipProvider>
       </div>
 
-      {/* Campo de busca e paginação */}
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <Input
           placeholder="Buscar por nome ou email do cliente..."
@@ -409,7 +392,7 @@ export default function ProductSales() {
         </div>
       </div>
 
-      {/* Tabs e tabela */}
+      
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
@@ -456,7 +439,7 @@ export default function ProductSales() {
                   {paginatedOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell>{getUserName(order.user)}</TableCell>
-                      <TableCell>{getUserEmail(order.user)}</TableCell>
+                      <TableCell>{order.user?.email || '-'}</TableCell>
                       <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>
                         {order.order_items && order.order_items.length > 0 ? (
@@ -527,7 +510,7 @@ export default function ProductSales() {
         </TabsContent>
       </Tabs>
 
-      {/* Modal de detalhes do pedido */}
+      
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -542,7 +525,7 @@ export default function ProductSales() {
                 <span className="font-semibold">Cliente:</span> {getUserName(selectedOrder.user)}
               </div>
               <div>
-                <span className="font-semibold">Email:</span> {getUserEmail(selectedOrder.user)}
+                <span className="font-semibold">Email:</span> {selectedOrder.user?.email || '-'}
               </div>
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}

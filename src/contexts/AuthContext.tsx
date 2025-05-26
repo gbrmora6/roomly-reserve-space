@@ -12,18 +12,19 @@ interface AuthContextType {
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: ReturnType<typeof useAuthOperations>["signOut"];
   refreshUserClaims: ReturnType<typeof useUserClaims>["refreshUserClaims"];
+  createSuperAdmin: ReturnType<typeof useAuthOperations>["createSuperAdmin"];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, session, loading } = useSessionManager();
-  const { signIn, signUp: authSignUp, signOut } = useAuthOperations();
+  const { signIn, signUp: authSignUp, signOut, createSuperAdmin } = useAuthOperations();
   const { refreshUserClaims } = useUserClaims();
   
   // Encapsulamento do método signUp para manter a API consistente
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
-    await authSignUp(email, password, firstName, lastName);
+    await authSignUp(email, password, firstName, lastName, "");
   };
 
   // Log auth state on changes for debugging
@@ -42,7 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    refreshUserClaims
+    refreshUserClaims,
+    createSuperAdmin
   };
 
   return (

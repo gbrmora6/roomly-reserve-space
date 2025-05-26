@@ -305,6 +305,7 @@ const RoomForm: React.FC = () => {
             .insert({
               room_id: roomId,
               url: publicURLData.publicUrl,
+              branch_id: branchId,
             });
 
           if (photoInsertError) {

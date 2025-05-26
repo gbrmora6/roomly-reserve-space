@@ -47,7 +47,7 @@ export function useAuthOperations() {
         data: {
           first_name: "Super",
           last_name: "Admin",
-          role: "super_admin"
+          role: "superadmin"
         }
       }
     });
@@ -64,7 +64,7 @@ export function useAuthOperations() {
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ 
-        role: "super_admin",
+        role: "superadmin",
         first_name: "Super",
         last_name: "Admin"
       })
