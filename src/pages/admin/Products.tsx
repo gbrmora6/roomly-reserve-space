@@ -43,12 +43,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit, RefreshCw, ShoppingBag } from "lucide-react";
+import { Plus, Trash2, Edit, RefreshCw, ShoppingBag, Upload, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { useAuth } from "@/contexts/AuthContext";
+import { CityFilter } from "@/components/shared/CityFilter";
+import { Label } from "@/components/ui/label";
+import { v4 as uuidv4 } from "uuid";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -64,6 +67,8 @@ type ProductFormValues = z.infer<typeof productSchema>;
 const AdminProducts = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState("all");
+  const [photos, setPhotos] = useState<File[]>([]);
   const { toast } = useToast();
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
   const { user } = useAuth();
@@ -82,14 +87,21 @@ const AdminProducts = () => {
 
   // Fetch products
   const { data: products, isLoading: isLoadingProducts, refetch: refetchProducts } = useQuery({
-    queryKey: ["products", branchId],
+    queryKey: ["products", branchId, selectedCity],
     queryFn: async () => {
       if (!branchId) return [];
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from("products")
-        .select(`*, equipment:equipment(name)`)
+        .select(`*, equipment:equipment(name), branch:branches!products_branch_id_fkey(name, city)`)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
+
+      if (selectedCity !== "all") {
+        query = query.eq("branches.city", selectedCity);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
@@ -274,6 +286,17 @@ const AdminProducts = () => {
     },
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const newFiles = Array.from(e.target.files);
+    setPhotos((prev) => [...prev, ...newFiles]);
+  };
+  
+  const handleRemovePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     form.reset({
       name: "",
@@ -284,6 +307,7 @@ const AdminProducts = () => {
       equipment_id: null,
     });
     setEditingProductId(null);
+    setPhotos([]);
   };
 
   const handleEditProduct = (product: any) => {
@@ -348,6 +372,11 @@ const AdminProducts = () => {
               </p>
             </div>
             <div className="flex gap-2">
+              <CityFilter
+                selectedCity={selectedCity}
+                onCityChange={setSelectedCity}
+                placeholder="Filtrar por cidade"
+              />
               <Button 
                 variant="outline" 
                 onClick={() => syncProductsMutation.mutate()}
@@ -466,104 +495,160 @@ const AdminProducts = () => {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do produto" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Descrição do produto" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço *</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modelo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Modelo do produto" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantidade disponível</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="equipment_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Equipamento relacionado</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value || "null"}
-                        value={field.value || "null"}
-                      >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome *</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um equipamento" />
-                          </SelectTrigger>
+                          <Input placeholder="Nome do produto" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="null">Nenhum</SelectItem>
-                          {equipment?.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Descrição do produto" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="price"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Preço *</FormLabel>
+                          <FormControl>
+                            <Input type="number" step="0.01" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="model"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modelo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Modelo do produto" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantidade disponível</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="equipment_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Equipamento relacionado</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value || "null"}
+                            value={field.value || "null"}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um equipamento" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="null">Nenhum</SelectItem>
+                              {equipment?.map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label>Fotos do Produto</Label>
+                    
+                    {photos.length > 0 && (
+                      <div className="grid grid-cols-2 gap-4 mt-2 mb-4">
+                        {photos.map((file, index) => (
+                          <div key={index} className="relative group">
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              alt={`Pré-visualização ${index}`} 
+                              className="w-full h-32 object-cover rounded-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemovePhoto(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="mt-2">
+                      <Label htmlFor="photos" className="cursor-pointer">
+                        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center">
+                          <Upload className="h-8 w-8 text-gray-400" />
+                          <p className="mt-2 text-sm text-gray-500">
+                            Clique para selecionar ou arraste as fotos aqui
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            PNG, JPG, GIF até 10MB
+                          </p>
+                        </div>
+                        <Input
+                          id="photos"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </Label>
+                    </div>
+                  </div>
+                </div>
               </div>
+              
               <DialogFooter>
                 <Button
                   variant="outline"

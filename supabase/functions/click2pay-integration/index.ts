@@ -1,254 +1,182 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID") || "";
-    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "";
-    const baseUrl = Deno.env.get("CLICK2PAY_BASE_URL") || "https://apisandbox.click2pay.com.br";
-    const sellerId = Deno.env.get("CLICK2PAY_SELLER_ID") || "";
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    )
 
-    if (!clientId || !clientSecret) {
-      throw new Error("Credenciais Click2Pay não configuradas");
+    const { action, ...requestData } = await req.json()
+
+    // Get Click2Pay credentials from Supabase secrets
+    const clientId = Deno.env.get('CLICK2PAY_CLIENT_ID')
+    const clientSecret = Deno.env.get('CLICK2PAY_CLIENT_SECRET')
+    const baseUrl = Deno.env.get('CLICK2PAY_BASE_URL') || 'https://sandbox.click2pay.com.br/api'
+    const sellerId = Deno.env.get('CLICK2PAY_SELLER_ID')
+
+    if (!clientId || !clientSecret || !sellerId) {
+      console.error('Missing Click2Pay credentials')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Click2Pay credentials not configured',
+          missing: {
+            clientId: !clientId,
+            clientSecret: !clientSecret,
+            sellerId: !sellerId
+          }
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
-    const { action, userId, productIds, quantities, paymentMethod, paymentData } = await req.json();
+    console.log('Click2Pay integration called with action:', action)
+    console.log('Using base URL:', baseUrl)
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Generate access token
+    const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    })
 
-    // Cabeçalhos de autenticação Basic
-    const credentials = btoa(`${clientId}:${clientSecret}`);
-    const headers = {
-      "Authorization": `Basic ${credentials}`,
-      "Content-Type": "application/json"
-    };
+    if (!tokenResponse.ok) {
+      const tokenError = await tokenResponse.text()
+      console.error('Failed to get Click2Pay token:', tokenError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to authenticate with Click2Pay', details: tokenError }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const { access_token } = await tokenResponse.json()
 
     switch (action) {
-      case "create-checkout":
-        if (!userId || !productIds || !quantities || productIds.length === 0) {
-          throw new Error("Parâmetros obrigatórios faltando");
-        }
-
-        // Buscar dados do usuário
-        const { data: userData, error: userError } = await supabase
-          .auth.admin.getUserById(userId);
-
-        if (userError || !userData) {
-          console.error("Erro ao buscar dados do usuário:", userError);
-          throw new Error(`Falha ao obter usuário: ${userError?.message || "Erro desconhecido"}`);
-        }
-
-        const userEmail = userData.user.email;
+      case 'create-payment':
+        const { amount, description, customer, orderId } = requestData
         
-        if (!userEmail) {
-          throw new Error("Email do usuário não encontrado");
+        const paymentData = {
+          seller_id: sellerId,
+          amount: Math.round(amount * 100), // Convert to centavos
+          currency: 'BRL',
+          description: description || 'Pagamento de produtos/serviços',
+          external_reference: orderId,
+          customer: {
+            name: customer.name,
+            email: customer.email,
+            document: customer.document || customer.cpf,
+            phone: customer.phone,
+          },
+          payment_methods: ['credit_card', 'debit_card', 'pix'],
+          success_url: `${req.headers.get('origin')}/payment-success`,
+          cancel_url: `${req.headers.get('origin')}/payment-canceled`,
+          notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/click2pay-webhook`,
         }
 
-        // Buscar produtos do carrinho
-        const { data: productsData, error: productsError } = await supabase
-          .from("products")
-          .select("id, name, price")
-          .in("id", productIds);
+        const paymentResponse = await fetch(`${baseUrl}/v1/payments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paymentData),
+        })
 
-        if (productsError || !productsData) {
-          throw new Error(`Erro ao buscar produtos: ${productsError?.message || "Produtos não encontrados"}`);
+        if (!paymentResponse.ok) {
+          const paymentError = await paymentResponse.text()
+          console.error('Failed to create Click2Pay payment:', paymentError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to create payment', details: paymentError }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
         }
 
-        // Calcular total do carrinho
-        const totalAmount = productsData.reduce((sum, product, index) => 
-          sum + (product.price * quantities[index]), 0);
+        const paymentResult = await paymentResponse.json()
+        console.log('Click2Pay payment created:', paymentResult)
 
-        if (totalAmount <= 0) {
-          throw new Error("Valor total inválido");
-        }
-
-        // Gerar ID único do pedido
-        const externalId = `pedido_${Date.now()}_${userId.substring(0, 8)}`;
-
-        // Informações do cliente para Click2Pay
-        const customerInfo = {
-          name: paymentData.nomeCompleto || userData.user.user_metadata?.first_name + " " + userData.user.user_metadata?.last_name || "Cliente",
-          taxid: paymentData.cpfCnpj || "00000000000",
-          email: userEmail,
-          phone: paymentData.telefone || "11999999999"
-        };
-
-        const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/click2pay-webhook`;
-
-        let endpoint = "";
-        let requestBody = {};
-
-        if (paymentMethod === "cartao") {
-          // Tokenizar cartão primeiro
-          const tokenResponse = await fetch(`${baseUrl}/v2/tokenization/card`, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify({
-              card_number: paymentData.numeroCartao,
-              card_name: paymentData.nomeNoCartao,
-              card_expiration: paymentData.validadeCartao,
-              card_cvv: paymentData.cvv
-            })
-          });
-
-          if (!tokenResponse.ok) {
-            const errorData = await tokenResponse.json();
-            console.error("Erro ao tokenizar cartão:", errorData);
-            throw new Error("Falha na tokenização do cartão");
+        return new Response(
+          JSON.stringify(paymentResult),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
+        )
 
-          const tokenData = await tokenResponse.json();
-          const cardToken = tokenData.card_token;
+      case 'get-payment':
+        const { paymentId } = requestData
+        
+        const getPaymentResponse = await fetch(`${baseUrl}/v1/payments/${paymentId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+        })
 
-          endpoint = "/v1/transactions/creditcard";
-          requestBody = {
-            external_identifier: externalId,
-            amount: totalAmount.toFixed(2),
-            installments: paymentData.parcelas || 1,
-            card_token: cardToken,
-            customer: customerInfo,
-            callbackAddress: callbackUrl
-          };
-        }
-        else if (paymentMethod === "boleto") {
-          endpoint = "/v1/transactions/boleto";
-          requestBody = {
-            external_identifier: externalId,
-            amount: totalAmount.toFixed(2),
-            customer: customerInfo,
-            callbackAddress: callbackUrl
-          };
-        }
-        else if (paymentMethod === "pix") {
-          endpoint = "/v1/transactions/pix";
-          requestBody = {
-            external_identifier: externalId,
-            amount: totalAmount.toFixed(2),
-            customer: customerInfo,
-            callbackAddress: callbackUrl,
-            returnQRCode: true
-          };
-        } else {
-          throw new Error("Método de pagamento inválido");
+        if (!getPaymentResponse.ok) {
+          const getPaymentError = await getPaymentResponse.text()
+          console.error('Failed to get Click2Pay payment:', getPaymentError)
+          return new Response(
+            JSON.stringify({ error: 'Failed to get payment', details: getPaymentError }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
         }
 
-        // Chamar API Click2Pay
-        const response = await fetch(`${baseUrl}${endpoint}`, {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify(requestBody)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          console.error("Erro na criação da transação:", data);
-          throw new Error("Falha ao criar transação de pagamento");
-        }
-
-        // Criar pedido no Supabase
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert({
-            user_id: userId,
-            total_amount: totalAmount,
-            external_identifier: externalId,
-            click2pay_tid: data.tid,
-            status: "pending",
-            payment_method: paymentMethod
-          })
-          .select("id")
-          .single();
-
-        if (orderError || !order) {
-          throw new Error(`Erro ao criar pedido: ${orderError?.message || "Erro desconhecido"}`);
-        }
-
-        // Criar itens do pedido
-        const orderItems = productIds.map((productId, index) => {
-          const product = productsData.find(p => p.id === productId);
-          return {
-            order_id: order.id,
-            product_id: productId,
-            quantity: quantities[index],
-            price_per_unit: product?.price || 0,
-          };
-        });
-
-        const { error: itemsError } = await supabase
-          .from("order_items")
-          .insert(orderItems);
-
-        if (itemsError) {
-          console.error("Erro ao criar itens do pedido:", itemsError);
-        }
-
-        // Preparar resposta baseada no método de pagamento
-        let responseData = {
-          success: true,
-          orderId: order.id,
-          externalId: externalId,
-          tid: data.tid,
-          status: data.status
-        };
-
-        if (paymentMethod === "cartao") {
-          if (data.status === "paid" || data.status === "pre_authorized") {
-            responseData = { ...responseData, message: "Pagamento aprovado" };
-          } else if (data.status === "recused") {
-            responseData = { ...responseData, success: false, message: "Cartão recusado" };
+        const getPaymentResult = await getPaymentResponse.json()
+        
+        return new Response(
+          JSON.stringify(getPaymentResult),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
-        } else if (paymentMethod === "boleto") {
-          responseData = {
-            ...responseData,
-            linhaDigitavel: data.digitable_line || data.barcode,
-            urlBoleto: data.url_slip || null,
-            vencimento: data.due_date
-          };
-        } else if (paymentMethod === "pix") {
-          responseData = {
-            ...responseData,
-            qrCodeImage: data.qr_code_base64 || null,
-            pixCode: data.copyPasteCode || data.emv
-          };
-        }
-
-        return new Response(JSON.stringify(responseData), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        )
 
       default:
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: "Ação inválida"
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
+        return new Response(
+          JSON.stringify({ error: 'Invalid action' }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
     }
+
   } catch (error) {
-    console.error("Erro na integração Click2Pay:", error);
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: error.message 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error('Click2Pay integration error:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
-});
+})

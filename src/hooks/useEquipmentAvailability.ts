@@ -19,7 +19,7 @@ const getWeekdayFromNumber = (day: number): WeekdayEnum => {
   return weekdays[day];
 };
 
-export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null) {
+export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null, selectedCity?: string) {
   const [availableEquipment, setAvailableEquipment] = useState<Array<{
     id: string;
     name: string;
@@ -31,6 +31,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
     open_time?: string;
     close_time?: string;
     open_days?: WeekdayEnum[];
+    branch?: { city: string; name: string };
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
@@ -59,13 +60,24 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("Start time:", startTime.toISOString());
         console.log("End time:", endTime.toISOString());
         console.log("Weekday enum:", weekdayEnum);
+        console.log("Selected city:", selectedCity);
 
-        // Get all equipment
-        const { data: allEquipment, error: equipmentError } = await supabase
+        // Get all equipment with branch information for city filtering
+        let query = supabase
           .from("equipment")
-          .select("*")
+          .select(`
+            *,
+            branch:branches!equipment_branch_id_fkey(name, city)
+          `)
           .eq("is_active", true)
           .order("name");
+
+        // Filter by city if selected
+        if (selectedCity && selectedCity !== "all") {
+          query = query.eq("branches.city", selectedCity);
+        }
+
+        const { data: allEquipment, error: equipmentError } = await query;
 
         if (equipmentError) {
           console.error("Error fetching equipment:", equipmentError);
@@ -180,12 +192,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       }
     };
 
-    if (startTime && endTime) {
-      fetchEquipment();
-    } else {
-      setLoading(false);
-    }
-  }, [startTime, endTime]);
+    fetchEquipment();
+  }, [startTime, endTime, selectedCity]);
 
   return { availableEquipment, blockedHours, loading };
 }

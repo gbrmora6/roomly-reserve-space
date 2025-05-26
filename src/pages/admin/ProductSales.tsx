@@ -23,20 +23,14 @@ const STATUS_MAP = {
   cancelled: "Cancelado por falta de pagamento",
 };
 
-const STATUS_BADGE = {
-  paid: "bg-green-100 text-green-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  cancelled: "bg-red-100 text-red-800",
-};
-
-function translateStatus(status) {
+function translateStatus(status: string) {
   if (status === "paid") return "Pago";
   if (status === "pending" || status === "awaiting_payment") return "Falta pagar";
   if (status === "cancelled" || status === "cancelled_due_to_payment") return "Cancelado por falta de pagamento";
   return status;
 }
 
-function statusForTab(tab) {
+function statusForTab(tab: string) {
   if (tab === "all") return null;
   if (tab === "paid") return ["paid"];
   if (tab === "pending") return ["pending", "awaiting_payment"];
@@ -59,6 +53,7 @@ export default function ProductSales() {
     queryKey: ["admin-product-sales", activeTab, branchId],
     queryFn: async () => {
       if (!branchId) return [];
+      
       let query = supabase
         .from("orders")
         .select(`
@@ -77,16 +72,18 @@ export default function ProductSales() {
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
+        
       const statusList = statusForTab(activeTab);
       if (statusList) {
         query = query.in("status", statusList);
       }
+      
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
     enabled: !!branchId,
-    refetchInterval: 30000, // 30 segundos
+    refetchInterval: 30000,
   });
 
   // Notificação de novo pedido
@@ -206,7 +203,7 @@ export default function ProductSales() {
   };
 
   // Função para cancelar pedido
-  const handleCancelOrder = async (orderId) => {
+  const handleCancelOrder = async (orderId: string) => {
     if (!window.confirm("Tem certeza que deseja cancelar este pedido?")) return;
     setActionLoading(true);
     const { error } = await supabase
@@ -224,7 +221,7 @@ export default function ProductSales() {
   };
 
   // Função para marcar como pago
-  const handleMarkAsPaid = async (orderId) => {
+  const handleMarkAsPaid = async (orderId: string) => {
     if (!window.confirm("Marcar este pedido como pago?")) return;
     setActionLoading(true);
     const { error } = await supabase
@@ -279,15 +276,17 @@ export default function ProductSales() {
                 Baixar Relatório
               </Button>
             ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" className="h-12 text-base font-semibold" disabled>
-                    <Download className="mr-2 h-5 w-5" />
-                    Baixar Relatório
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
-              </Tooltip>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" className="h-12 text-base font-semibold" disabled>
+                      <Download className="mr-2 h-5 w-5" />
+                      Baixar Relatório
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </CardContent>
@@ -488,19 +487,21 @@ export default function ProductSales() {
                                 </Button>
                               </>
                             ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                      <CheckCircle className="h-4 w-4 text-green-600" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                      <XCircle className="h-4 w-4 text-red-600" />
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
-                              </Tooltip>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                        <CheckCircle className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                        <XCircle className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )
                           )}
                         </div>
@@ -541,7 +542,7 @@ export default function ProductSales() {
                 <span className="font-semibold">Produtos:</span>
                 {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
                   <ul className="list-disc list-inside ml-4">
-                    {selectedOrder.order_items.map((item, idx) => (
+                    {selectedOrder.order_items.map((item: any, idx: number) => (
                       <li key={idx}>{item.quantity}x {item.product?.name || "Produto"} (R$ {item.price_per_unit?.toFixed(2) || "-"})</li>
                     ))}
                   </ul>
@@ -558,4 +559,4 @@ export default function ProductSales() {
       </Dialog>
     </div>
   );
-} 
+}
