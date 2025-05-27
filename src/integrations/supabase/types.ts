@@ -367,6 +367,38 @@ export type Database = {
           },
         ]
       }
+      equipment_photos: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          equipment_id: string
+          id: string
+          url: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          url: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_photos_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_schedules: {
         Row: {
           branch_id: string
@@ -542,6 +574,38 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_photos: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+          url: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+          url: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_photos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -929,7 +993,7 @@ export type Database = {
         | "pago"
         | "falta pagar"
         | "cancelado por falta de pagamento"
-      user_role: "admin" | "client" | "superadmin"
+      user_role: "admin" | "client" | "superadmin" | "super_admin"
       weekday:
         | "monday"
         | "tuesday"
@@ -1062,7 +1126,7 @@ export const Constants = {
         "falta pagar",
         "cancelado por falta de pagamento",
       ],
-      user_role: ["admin", "client", "superadmin"],
+      user_role: ["admin", "client", "superadmin", "super_admin"],
       weekday: [
         "monday",
         "tuesday",
