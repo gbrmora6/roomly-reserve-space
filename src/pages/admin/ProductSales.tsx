@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,10 +45,31 @@ function statusForTab(tab: string) {
   return null;
 }
 
+interface OrderWithUser {
+  id: string;
+  user_id: string;
+  created_at: string;
+  status: string;
+  total_amount: number;
+  branch_id: string;
+  order_items: {
+    quantity: number;
+    price_per_unit: number;
+    product: {
+      name: string;
+    } | null;
+  }[];
+  user?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+}
+
 export default function ProductSales() {
   const [activeTab, setActiveTab] = useState("all");
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithUser | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -95,10 +117,10 @@ export default function ProductSales() {
         return data.map(order => ({
           ...order,
           user: profiles?.find(profile => profile.id === order.user_id) || null
-        }));
+        })) as OrderWithUser[];
       }
       
-      return data || [];
+      return data as OrderWithUser[] || [];
     },
     enabled: !!branchId,
     refetchInterval: 30000, // 30 segundos

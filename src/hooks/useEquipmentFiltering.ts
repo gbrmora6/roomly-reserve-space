@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,11 +11,35 @@ interface EquipmentFilters {
   city: string | null;
 }
 
+// Interface para equipamento com propriedade available
+interface EquipmentWithAvailability {
+  id: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  price_per_hour: number;
+  available: number;
+  open_time?: string;
+  close_time?: string;
+  open_days?: string[];
+  is_active: boolean;
+  branch_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Hook para filtrar equipamentos por filial baseado na cidade
-export const useEquipmentFiltering = (filters: EquipmentFilters) => {
-  return useQuery({
+export const useEquipmentFiltering = () => {
+  const [filters, setFilters] = useState<EquipmentFilters>({
+    date: null,
+    startTime: null,
+    endTime: null,
+    city: null,
+  });
+
+  const query = useQuery({
     queryKey: ["equipment-filtered", filters],
-    queryFn: async () => {
+    queryFn: async (): Promise<EquipmentWithAvailability[]> => {
       console.log("Filtrando equipamentos com:", filters);
 
       // Query base para equipamentos ativos
@@ -58,7 +83,10 @@ export const useEquipmentFiltering = (filters: EquipmentFilters) => {
 
       // Se não há filtros de data/horário, retornar todos os equipamentos
       if (!filters.date || !filters.startTime || !filters.endTime) {
-        return allEquipment || [];
+        return (allEquipment || []).map(equipment => ({
+          ...equipment,
+          available: equipment.quantity
+        }));
       }
 
       // Construir datas de início e fim para verificar disponibilidade
@@ -96,13 +124,37 @@ export const useEquipmentFiltering = (filters: EquipmentFilters) => {
       });
 
       // Filtrar equipamentos com quantidade disponível
-      const availableEquipment = allEquipment?.map(equipment => ({
+      const availableEquipment = (allEquipment || []).map(equipment => ({
         ...equipment,
         available: equipment.quantity - (reservedQuantities[equipment.id] || 0)
-      })).filter(equipment => equipment.available > 0) || [];
+      })).filter(equipment => equipment.available > 0);
 
       console.log("Equipamentos disponíveis:", availableEquipment.length);
       return availableEquipment;
     },
   });
+
+  const handleFilter = () => {
+    // Trigger refetch when filter button is clicked
+    query.refetch();
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      date: null,
+      startTime: null,
+      endTime: null,
+      city: null,
+    });
+  };
+
+  return {
+    filters,
+    setFilters,
+    data: query.data || [],
+    isLoading: query.isLoading,
+    error: query.error,
+    handleFilter,
+    handleClearFilters,
+  };
 };

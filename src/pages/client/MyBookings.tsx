@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
@@ -30,6 +31,12 @@ const MyBookings = () => {
     handleShowAddress
   } = useCompanyProfile();
 
+  // Wrapper function to match the expected signature
+  const handleCancelWrapper = (bookingId: string) => {
+    // Default to "room" type for compatibility
+    handleCancelBooking(bookingId, "room");
+  };
+
   // Show loading state
   if ((isLoading && !roomBookings && !equipmentBookings) || isLoadingOrders) {
     return (
@@ -52,7 +59,7 @@ const MyBookings = () => {
           roomBookings={roomBookings}
           equipmentBookings={equipmentBookings}
           productOrders={productOrders}
-          onCancelBooking={handleCancelBooking}
+          onCancelBooking={handleCancelWrapper}
         />
 
         <CompanyAddressDialog
