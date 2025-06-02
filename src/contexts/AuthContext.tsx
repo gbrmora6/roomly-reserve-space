@@ -9,8 +9,9 @@ interface AuthContextType {
   session: ReturnType<typeof useSessionManager>["session"];
   loading: ReturnType<typeof useSessionManager>["loading"];
   signIn: ReturnType<typeof useAuthOperations>["signIn"];
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, branchId: string) => Promise<void>;
   signOut: ReturnType<typeof useAuthOperations>["signOut"];
+  createSuperAdmin: ReturnType<typeof useAuthOperations>["createSuperAdmin"];
   refreshUserClaims: ReturnType<typeof useUserClaims>["refreshUserClaims"];
 }
 
@@ -18,12 +19,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, session, loading } = useSessionManager();
-  const { signIn, signUp: authSignUp, signOut } = useAuthOperations();
+  const { signIn, signUp: authSignUp, signOut, createSuperAdmin } = useAuthOperations();
   const { refreshUserClaims } = useUserClaims();
   
   // Encapsulamento do método signUp para manter a API consistente
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
-    await authSignUp(email, password, firstName, lastName);
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, branchId: string) => {
+    await authSignUp(email, password, firstName, lastName, branchId);
   };
 
   // Log auth state on changes for debugging
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
+    createSuperAdmin,
     refreshUserClaims
   };
 

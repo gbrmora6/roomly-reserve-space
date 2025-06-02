@@ -128,6 +128,38 @@ export function useAuthOperations() {
     }
   };
 
+  const createSuperAdmin = async () => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: "cpd@sapiens-psi.com.br",
+        password: "123456789",
+        options: {
+          data: {
+            first_name: "CPD",
+            last_name: "Admin",
+            role: "admin",
+            is_admin: true,
+            is_super_admin: true
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "SuperAdmin criado com sucesso!",
+        description: "SuperAdmin criado com as credenciais especificadas.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar SuperAdmin",
+        description: error.message,
+      });
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       devLog("Attempting to sign out");
@@ -166,7 +198,7 @@ export function useAuthOperations() {
     }
   };
 
-  return { signIn, signUp, signOut };
+  return { signIn, signUp, signOut, createSuperAdmin };
 }
 
 // Helper functions for rate limiting

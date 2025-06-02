@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,7 +29,8 @@ const Register: React.FC = () => {
       return;
     }
     setIsLoading(true);
-    await signUp(formData.email, formData.password, formData.firstName, formData.lastName);
+    // Use uma branch padrão para novos registros
+    await signUp(formData.email, formData.password, formData.firstName, formData.lastName, "default-branch-id");
     setIsLoading(false);
   };
 
