@@ -1,164 +1,87 @@
 
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Database } from "@/integrations/supabase/types";
+import { toast } from "@/hooks/use-toast";
 
-type BookingStatus = Database["public"]["Enums"]["booking_status"];
+export type BookingTab = "rooms" | "equipment" | "products";
 
 export const useBookings = (userId: string | undefined) => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"rooms" | "equipment">("rooms");
+  const [activeTab, setActiveTab] = useState<BookingTab>("rooms");
   const queryClient = useQueryClient();
 
-  // Fetch room bookings
-  const { 
-    data: roomBookings, 
-    isLoading: roomsLoading, 
-    refetch: refetchRooms 
-  } = useQuery({
-    queryKey: ["my-room-bookings", userId],
+  const { data: roomBookings = [], isLoading: roomLoading } = useQuery({
+    queryKey: ["my-bookings", userId],
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("bookings")
-        .select(`
-          *,
-          room:rooms(
-            name,
-            price_per_hour
-          ),
-          booking_equipment:booking_equipment(
-            quantity,
-            equipment:equipment(
-              name,
-              price_per_hour
-            )
-          )
-        `)
+        .select(`*, room:rooms(name, description)`)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return data;
     },
     enabled: !!userId,
   });
 
-  // Fetch equipment bookings
-  const { 
-    data: equipmentBookings, 
-    isLoading: equipmentLoading, 
-    refetch: refetchEquipment 
-  } = useQuery({
+  const { data: equipmentBookings = [], isLoading: equipmentLoading } = useQuery({
     queryKey: ["my-equipment-bookings", userId],
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("booking_equipment")
-        .select(`
-          id,
-          booking_id,
-          equipment_id,
-          quantity,
-          start_time,
-          end_time,
-          status,
-          created_at,
-          updated_at,
-          total_price,
-          user_id,
-          equipment:equipment(
-            name,
-            price_per_hour
-          )
-        `)
+        .select(`*, equipment:equipment(name, description)`)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
-      
-      // Transform data to match BookingsTable component expectations
-      const transformedData = data.map(item => ({
-        id: item.id,
-        user_id: item.user_id,
-        room_id: null,
-        start_time: item.start_time,
-        end_time: item.end_time,
-        status: item.status as BookingStatus,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-        total_price: item.total_price,
-        user: null,
-        room: null,
-        booking_equipment: [{
-          quantity: item.quantity,
-          equipment: {
-            name: item.equipment.name,
-            price_per_hour: item.equipment.price_per_hour
-          }
-        }]
-      }));
-      
-      return transformedData;
+      return data;
     },
     enabled: !!userId,
   });
 
-  // Handle cancel booking
-  const handleCancelBooking = async (bookingId: string) => {
-    try {
-      if (activeTab === "rooms") {
-        const { error } = await supabase
-          .from("bookings")
-          .update({ status: "cancelled" })
-          .eq("id", bookingId);
-
-        if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Reserva de sala cancelada com sucesso.",
-        });
-        
-        // Invalidate related queries to update notifications immediately
-        queryClient.invalidateQueries({ queryKey: ["pending-room-bookings"] });
-        
-        refetchRooms();
-      } else {
-        const { error } = await supabase
-          .from("booking_equipment")
-          .update({ status: "cancelled" })
-          .eq("id", bookingId);
-
-        if (error) throw error;
-        
-        toast({
-          title: "Sucesso",
-          description: "Reserva de equipamento cancelada com sucesso.",
-        });
-        
-        // Invalidate related queries to update notifications immediately
-        queryClient.invalidateQueries({ queryKey: ["pending-equipment-bookings"] });
-        
-        refetchEquipment();
-      }
-    } catch (error: any) {
+  const cancelBookingMutation = useMutation({
+    mutationFn: async ({ bookingId, type }: { bookingId: string; type: "room" | "equipment" }) => {
+      const table = type === "room" ? "bookings" : "booking_equipment";
+      const { error } = await supabase
+        .from(table)
+        .update({ status: "cancelled" })
+        .eq("id", bookingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["my-equipment-bookings"] });
       toast({
-        title: "Erro",
-        description: "Não foi possível cancelar a reserva: " + error.message,
-        variant: "destructive",
+        title: "Reserva cancelada",
+        description: "Sua reserva foi cancelada com sucesso.",
       });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao cancelar reserva",
+        description: error.message || "Ocorreu um erro ao cancelar a reserva.",
+      });
+    },
+  });
+
+  const handleCancelBooking = (bookingId: string, type: "room" | "equipment") => {
+    if (window.confirm("Tem certeza que deseja cancelar esta reserva?")) {
+      cancelBookingMutation.mutate({ bookingId, type });
     }
   };
 
-  const isLoading = roomsLoading || equipmentLoading;
+  const handleTabChange = (tab: BookingTab) => {
+    setActiveTab(tab);
+  };
 
   return {
     roomBookings,
     equipmentBookings,
-    isLoading,
+    isLoading: roomLoading || equipmentLoading,
     activeTab,
-    setActiveTab,
+    setActiveTab: handleTabChange,
     handleCancelBooking,
   };
 };

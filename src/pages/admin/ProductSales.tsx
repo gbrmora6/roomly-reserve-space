@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,14 +29,14 @@ const STATUS_BADGE = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-function translateStatus(status) {
+function translateStatus(status: string) {
   if (status === "paid") return "Pago";
   if (status === "pending" || status === "awaiting_payment") return "Falta pagar";
   if (status === "cancelled" || status === "cancelled_due_to_payment") return "Cancelado por falta de pagamento";
   return status;
 }
 
-function statusForTab(tab) {
+function statusForTab(tab: string) {
   if (tab === "all") return null;
   if (tab === "paid") return ["paid"];
   if (tab === "pending") return ["pending", "awaiting_payment"];
@@ -73,8 +72,7 @@ export default function ProductSales() {
             quantity,
             price_per_unit,
             product:products(name)
-          ),
-          user:profiles!orders_user_id_fkey(first_name, last_name)
+          )
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -84,6 +82,22 @@ export default function ProductSales() {
       }
       const { data, error } = await query;
       if (error) throw error;
+      
+      // Fetch user profiles separately to avoid relation issues
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(order => order.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds);
+        
+        // Attach user profiles to orders
+        return data.map(order => ({
+          ...order,
+          user: profiles?.find(profile => profile.id === order.user_id) || null
+        }));
+      }
+      
       return data || [];
     },
     enabled: !!branchId,
@@ -99,9 +113,10 @@ export default function ProductSales() {
     }
     if (orders[0].id !== lastOrderId) {
       setLastOrderId(orders[0].id);
+      const userName = orders[0].user?.first_name || 'um cliente';
       toast({
         title: "Novo pedido recebido!",
-        description: `Um novo pedido foi realizado por ${orders[0].user?.first_name || 'um cliente'}.`,
+        description: `Um novo pedido foi realizado por ${userName}.`,
       });
     }
   }, [orders]);
@@ -145,7 +160,8 @@ export default function ProductSales() {
     if (!search.trim()) return orders;
     const s = search.trim().toLowerCase();
     return orders.filter(order => {
-      const name = order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.toLowerCase() : "";
+      const user = order.user;
+      const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
       return name.includes(s);
     });
   }, [orders, search]);
@@ -171,11 +187,13 @@ export default function ProductSales() {
     try {
       const exportData = orders.map(order => {
         const produtos = order.order_items && order.order_items.length > 0
-          ? order.order_items.map(item => `${item.quantity}x ${item.product?.name || "Produto"}`).join("; ")
+          ? order.order_items.map((item: any) => `${item.quantity}x ${item.product?.name || "Produto"}`).join("; ")
           : "-";
+        const user = order.user;
+        const customerName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : order.user_id;
         return {
           "ID": order.id,
-          "Cliente": order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : order.user_id,
+          "Cliente": customerName,
           "Data": format(new Date(order.created_at), "dd/MM/yyyy"),
           "Produtos": produtos,
           "Valor Total": `R$ ${order.total_amount?.toFixed(2) || "0.00"}`,
@@ -201,7 +219,7 @@ export default function ProductSales() {
   };
 
   // Função para cancelar pedido
-  const handleCancelOrder = async (orderId) => {
+  const handleCancelOrder = async (orderId: string) => {
     if (!window.confirm("Tem certeza que deseja cancelar este pedido?")) return;
     setActionLoading(true);
     const { error } = await supabase
@@ -219,7 +237,7 @@ export default function ProductSales() {
   };
 
   // Função para marcar como pago
-  const handleMarkAsPaid = async (orderId) => {
+  const handleMarkAsPaid = async (orderId: string) => {
     if (!window.confirm("Marcar este pedido como pago?")) return;
     setActionLoading(true);
     const { error } = await supabase
@@ -239,7 +257,7 @@ export default function ProductSales() {
     <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
       {isSuperAdmin && branches && (
         <div className="mb-4 max-w-xs">
-          <Select value={branchId || undefined} onValueChange={setBranchId!}>
+          <Select value={branchId || undefined} onValueChange={setBranchId}>
             <SelectTrigger>
               <SelectValue placeholder="Filial" />
             </SelectTrigger>
@@ -428,72 +446,75 @@ export default function ProductSales() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedOrders.map(order => (
-                    <TableRow key={order.id}>
-                      <TableCell>{
-                        order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : order.user_id
-                      }</TableCell>
-                      <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>
-                        {order.order_items && order.order_items.length > 0 ? (
-                          <ul className="list-disc list-inside">
-                            {order.order_items.map((item, idx) => (
-                              <li key={idx} className="text-sm">
-                                {item.quantity}x {item.product?.name || "Produto"}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>R$ {order.total_amount?.toFixed(2) || "0,00"}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-sm
-                          ${order.status === "paid"
-                            ? "bg-green-200 text-green-900"
-                            : order.status === "pending" || order.status === "awaiting_payment"
-                            ? "bg-yellow-200 text-yellow-900"
-                            : "bg-red-200 text-red-900"}
-                        `}>
-                          {translateStatus(order.status)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="icon" variant="ghost" title="Ver detalhes" onClick={() => { setSelectedOrder(order); setShowDetails(true); }}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {(order.status === "pending" || order.status === "awaiting_payment") && (
-                            isSuperAdmin ? (
-                              <>
-                                <Button size="icon" variant="ghost" title="Marcar como pago" disabled={actionLoading} onClick={() => handleMarkAsPaid(order.id)}>
-                                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 text-green-600" />}
-                                </Button>
-                                <Button size="icon" variant="ghost" title="Cancelar pedido" disabled={actionLoading} onClick={() => handleCancelOrder(order.id)}>
-                                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 text-red-600" />}
-                                </Button>
-                              </>
-                            ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                      <CheckCircle className="h-4 w-4 text-green-600" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                      <XCircle className="h-4 w-4 text-red-600" />
-                                    </Button>
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
-                              </Tooltip>
-                            )
+                  {paginatedOrders.map(order => {
+                    const user = order.user;
+                    const customerName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : order.user_id;
+                    
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell>{customerName}</TableCell>
+                        <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>
+                          {order.order_items && order.order_items.length > 0 ? (
+                            <ul className="list-disc list-inside">
+                              {order.order_items.map((item: any, idx: number) => (
+                                <li key={idx} className="text-sm">
+                                  {item.quantity}x {item.product?.name || "Produto"}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            "-"
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>R$ {order.total_amount?.toFixed(2) || "0,00"}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-sm
+                            ${order.status === "paid"
+                              ? "bg-green-200 text-green-900"
+                              : order.status === "pending" || order.status === "awaiting_payment"
+                              ? "bg-yellow-200 text-yellow-900"
+                              : "bg-red-200 text-red-900"}
+                          `}>
+                            {translateStatus(order.status)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button size="icon" variant="ghost" title="Ver detalhes" onClick={() => { setSelectedOrder(order); setShowDetails(true); }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {(order.status === "pending" || order.status === "awaiting_payment") && (
+                              isSuperAdmin ? (
+                                <>
+                                  <Button size="icon" variant="ghost" title="Marcar como pago" disabled={actionLoading} onClick={() => handleMarkAsPaid(order.id)}>
+                                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 text-green-600" />}
+                                  </Button>
+                                  <Button size="icon" variant="ghost" title="Cancelar pedido" disabled={actionLoading} onClick={() => handleCancelOrder(order.id)}>
+                                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 text-red-600" />}
+                                  </Button>
+                                </>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                        <CheckCircle className="h-4 w-4 text-green-600" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                        <XCircle className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
+                                </Tooltip>
+                              )
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -513,7 +534,11 @@ export default function ProductSales() {
           {selectedOrder && (
             <div className="space-y-3">
               <div>
-                <span className="font-semibold">Cliente:</span> {selectedOrder.user ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() : selectedOrder.user_id}
+                <span className="font-semibold">Cliente:</span> {
+                  selectedOrder.user 
+                    ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() 
+                    : selectedOrder.user_id
+                }
               </div>
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}
@@ -525,7 +550,7 @@ export default function ProductSales() {
                 <span className="font-semibold">Produtos:</span>
                 {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
                   <ul className="list-disc list-inside ml-4">
-                    {selectedOrder.order_items.map((item, idx) => (
+                    {selectedOrder.order_items.map((item: any, idx: number) => (
                       <li key={idx}>{item.quantity}x {item.product?.name || "Produto"} (R$ {item.price_per_unit?.toFixed(2) || "-"})</li>
                     ))}
                   </ul>

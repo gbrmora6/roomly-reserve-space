@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ const EquipmentList: React.FC = () => {
   const { 
     filters, 
     setFilters, 
-    equipments, 
+    data: equipments = [], 
     isLoading, 
     error, 
     handleFilter,

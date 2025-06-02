@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +37,7 @@ export default function AdminLogs() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, email")
+        .select("id, first_name, last_name")
         .eq("role", "admin");
       return data || [];
     },
@@ -106,7 +107,9 @@ export default function AdminLogs() {
               <SelectContent>
                 <SelectItem value="">Todos</SelectItem>
                 {admins.map((a: any) => (
-                  <SelectItem key={a.id} value={a.id}>{a.first_name} {a.last_name} ({a.email})</SelectItem>
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.first_name && a.last_name ? `${a.first_name} ${a.last_name}` : a.id}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -128,17 +131,24 @@ export default function AdminLogs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedLogs.map(log => (
-                  <TableRow key={log.id}>
-                    <TableCell>{format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
-                    <TableCell>{admins.find((a: any) => a.id === log.admin_id)?.first_name || "-"}</TableCell>
-                    <TableCell>{log.admin_email}</TableCell>
-                    <TableCell>{ACTIONS.find(a => a.value === log.action)?.label || log.action}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedLog(log); setShowDetails(true); }}>Ver</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {paginatedLogs.map(log => {
+                  const admin = admins.find((a: any) => a.id === log.admin_id);
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell>{format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
+                      <TableCell>
+                        {admin?.first_name && admin?.last_name 
+                          ? `${admin.first_name} ${admin.last_name}` 
+                          : "-"}
+                      </TableCell>
+                      <TableCell>{log.admin_email}</TableCell>
+                      <TableCell>{ACTIONS.find(a => a.value === log.action)?.label || log.action}</TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => { setSelectedLog(log); setShowDetails(true); }}>Ver</Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {paginatedLogs.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum log encontrado</TableCell>
