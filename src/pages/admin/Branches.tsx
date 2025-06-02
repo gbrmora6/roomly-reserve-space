@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +30,7 @@ const BranchesPage = () => {
     onSuccess: () => {
       setName("");
       setCity("");
-      queryClient.invalidateQueries(["branches"]);
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
     },
   });
 
@@ -59,7 +60,7 @@ const BranchesPage = () => {
               onChange={e => setCity(e.target.value)}
               required
             />
-            <Button type="submit" disabled={createBranch.isLoading}>
+            <Button type="submit" disabled={createBranch.isPending}>
               Adicionar
             </Button>
           </form>
@@ -83,4 +84,4 @@ const BranchesPage = () => {
   );
 };
 
-export default BranchesPage; 
+export default BranchesPage;

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +74,7 @@ export default function ProductSales() {
             price_per_unit,
             product:products(name)
           ),
-          user:profiles!orders_user_id_fkey(first_name, last_name, email)
+          user:profiles!orders_user_id_fkey(first_name, last_name)
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -100,7 +101,7 @@ export default function ProductSales() {
       setLastOrderId(orders[0].id);
       toast({
         title: "Novo pedido recebido!",
-        description: `Um novo pedido foi realizado por ${orders[0].user && typeof orders[0].user === 'object' ? orders[0].user.first_name : 'um cliente'}.`,
+        description: `Um novo pedido foi realizado por ${orders[0].user?.first_name || 'um cliente'}.`,
       });
     }
   }, [orders]);
@@ -144,9 +145,8 @@ export default function ProductSales() {
     if (!search.trim()) return orders;
     const s = search.trim().toLowerCase();
     return orders.filter(order => {
-      const name = order.user && typeof order.user === 'object' ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.toLowerCase() : "";
-      const email = order.user && typeof order.user === 'object' ? (order.user.email || '').toLowerCase() : "";
-      return name.includes(s) || email.includes(s);
+      const name = order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.toLowerCase() : "";
+      return name.includes(s);
     });
   }, [orders, search]);
 
@@ -175,12 +175,7 @@ export default function ProductSales() {
           : "-";
         return {
           "ID": order.id,
-          "Cliente": order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
-            ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
-            : order.user_id,
-          "Email": order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
-            ? order.user.email
-            : '-',
+          "Cliente": order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : order.user_id,
           "Data": format(new Date(order.created_at), "dd/MM/yyyy"),
           "Produtos": produtos,
           "Valor Total": `R$ ${order.total_amount?.toFixed(2) || "0.00"}`,
@@ -425,7 +420,6 @@ export default function ProductSales() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Produtos</TableHead>
                     <TableHead>Valor Total</TableHead>
@@ -437,14 +431,7 @@ export default function ProductSales() {
                   {paginatedOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell>{
-                        order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
-                          ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
-                          : order.user_id
-                      }</TableCell>
-                      <TableCell>{
-                        order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
-                          ? order.user.email
-                          : '-'
+                        order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : order.user_id
                       }</TableCell>
                       <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>
@@ -526,10 +513,7 @@ export default function ProductSales() {
           {selectedOrder && (
             <div className="space-y-3">
               <div>
-                <span className="font-semibold">Cliente:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() : selectedOrder.user_id}
-              </div>
-              <div>
-                <span className="font-semibold">Email:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? selectedOrder.user.email : '-'}
+                <span className="font-semibold">Cliente:</span> {selectedOrder.user ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() : selectedOrder.user_id}
               </div>
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}
@@ -558,4 +542,4 @@ export default function ProductSales() {
       </Dialog>
     </div>
   );
-} 
+}
