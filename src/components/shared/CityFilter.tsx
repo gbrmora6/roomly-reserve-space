@@ -15,17 +15,26 @@ export const CityFilter: React.FC<CityFilterProps> = ({
   onCityChange,
   placeholder = "Todas as cidades"
 }) => {
+  // Query para buscar cidades das filiais cadastradas
   const { data: cities = [] } = useQuery({
-    queryKey: ["cities"],
+    queryKey: ["branch-cities"],
     queryFn: async () => {
+      console.log("Buscando cidades das filiais...");
+      
+      // Buscar cidades distintas das filiais
       const { data, error } = await supabase
         .from("branches")
         .select("city")
         .order("city");
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar cidades das filiais:", error);
+        throw error;
+      }
       
-      // Remove duplicatas e ordena
+      console.log("Cidades das filiais encontradas:", data);
+      
+      // Remover duplicatas e filtrar valores vazios
       const uniqueCities = [...new Set(data.map(branch => branch.city))].filter(Boolean);
       return uniqueCities;
     },

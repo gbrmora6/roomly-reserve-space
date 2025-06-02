@@ -9,9 +9,55 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action: string | null
+          admin_email: string | null
+          admin_id: string | null
+          branch_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action?: string | null
+          admin_email?: string | null
+          admin_id?: string | null
+          branch_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string | null
+          admin_email?: string | null
+          admin_id?: string | null
+          branch_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_equipment: {
         Row: {
           booking_id: string | null
+          branch_id: string
           created_at: string | null
           end_time: string
           equipment_id: string
@@ -25,6 +71,7 @@ export type Database = {
         }
         Insert: {
           booking_id?: string | null
+          branch_id: string
           created_at?: string | null
           end_time: string
           equipment_id: string
@@ -38,6 +85,7 @@ export type Database = {
         }
         Update: {
           booking_id?: string | null
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           equipment_id?: string
@@ -68,6 +116,7 @@ export type Database = {
       }
       bookings: {
         Row: {
+          branch_id: string
           created_at: string | null
           end_time: string
           id: string
@@ -79,6 +128,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           end_time: string
           id?: string
@@ -90,6 +140,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           id?: string
@@ -110,8 +161,30 @@ export type Database = {
           },
         ]
       }
+      branches: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
+          branch_id: string
           created_at: string
           expires_at: string | null
           id: string
@@ -125,6 +198,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          branch_id: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -138,6 +212,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          branch_id?: string
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -169,6 +244,7 @@ export type Database = {
       }
       company_profile: {
         Row: {
+          branch_id: string
           city: string | null
           id: string
           name: string | null
@@ -177,6 +253,7 @@ export type Database = {
           street: string | null
         }
         Insert: {
+          branch_id: string
           city?: string | null
           id?: string
           name?: string | null
@@ -185,6 +262,7 @@ export type Database = {
           street?: string | null
         }
         Update: {
+          branch_id?: string
           city?: string | null
           id?: string
           name?: string | null
@@ -192,10 +270,19 @@ export type Database = {
           number?: string | null
           street?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_profile_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       equipment: {
         Row: {
+          branch_id: string
           close_time: string | null
           created_at: string | null
           description: string | null
@@ -209,6 +296,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id: string
           close_time?: string | null
           created_at?: string | null
           description?: string | null
@@ -222,6 +310,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string
           close_time?: string | null
           created_at?: string | null
           description?: string | null
@@ -238,6 +327,7 @@ export type Database = {
       }
       equipment_availability: {
         Row: {
+          branch_id: string
           created_at: string | null
           end_time: string
           equipment_id: string
@@ -245,6 +335,7 @@ export type Database = {
           start_time: string
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           end_time: string
           equipment_id: string
@@ -252,6 +343,7 @@ export type Database = {
           start_time: string
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           equipment_id?: string
@@ -259,6 +351,13 @@ export type Database = {
           start_time?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "equipment_availability_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "equipment_availability_equipment_id_fkey"
             columns: ["equipment_id"]
@@ -268,8 +367,41 @@ export type Database = {
           },
         ]
       }
+      equipment_photos: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          equipment_id: string
+          id: string
+          url: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          url: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_photos_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_schedules: {
         Row: {
+          branch_id: string
           created_at: string | null
           end_time: string
           equipment_id: string
@@ -279,6 +411,7 @@ export type Database = {
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           end_time: string
           equipment_id: string
@@ -288,6 +421,7 @@ export type Database = {
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           equipment_id?: string
@@ -297,6 +431,13 @@ export type Database = {
           weekday?: Database["public"]["Enums"]["weekday"]
         }
         Relationships: [
+          {
+            foreignKeyName: "equipment_schedules_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "equipment_schedules_equipment_id_fkey"
             columns: ["equipment_id"]
@@ -309,6 +450,7 @@ export type Database = {
       messages: {
         Row: {
           booking_id: string
+          branch_id: string
           content: string
           created_at: string | null
           id: string
@@ -316,6 +458,7 @@ export type Database = {
         }
         Insert: {
           booking_id: string
+          branch_id: string
           content: string
           created_at?: string | null
           id?: string
@@ -323,6 +466,7 @@ export type Database = {
         }
         Update: {
           booking_id?: string
+          branch_id?: string
           content?: string
           created_at?: string | null
           id?: string
@@ -336,10 +480,18 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
         ]
       }
       order_items: {
         Row: {
+          branch_id: string
           created_at: string | null
           id: string
           order_id: string
@@ -348,6 +500,7 @@ export type Database = {
           quantity: number
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           id?: string
           order_id: string
@@ -356,6 +509,7 @@ export type Database = {
           quantity?: number
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           id?: string
           order_id?: string
@@ -382,6 +536,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          branch_id: string
           created_at: string | null
           id: string
           status: string
@@ -392,6 +547,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           id?: string
           status?: string
@@ -402,6 +558,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           id?: string
           status?: string
@@ -411,10 +568,51 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_orders_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_photos: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+          url: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+          url: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_photos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
+          branch_id: string
           created_at: string | null
           description: string | null
           equipment_id: string | null
@@ -429,6 +627,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           description?: string | null
           equipment_id?: string | null
@@ -443,6 +642,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           description?: string | null
           equipment_id?: string | null
@@ -468,6 +668,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          branch_id: string | null
           cep: string | null
           city: string | null
           cnpj: string | null
@@ -487,6 +688,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id?: string | null
           cep?: string | null
           city?: string | null
           cnpj?: string | null
@@ -506,6 +708,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string | null
           cep?: string | null
           city?: string | null
           cnpj?: string | null
@@ -524,10 +727,19 @@ export type Database = {
           street?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       room_availability: {
         Row: {
+          branch_id: string
           created_at: string | null
           end_time: string
           id: string
@@ -535,6 +747,7 @@ export type Database = {
           start_time: string
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           end_time: string
           id?: string
@@ -542,6 +755,7 @@ export type Database = {
           start_time: string
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           id?: string
@@ -549,6 +763,13 @@ export type Database = {
           start_time?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "room_availability_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_availability_room_id_fkey"
             columns: ["room_id"]
@@ -560,24 +781,34 @@ export type Database = {
       }
       room_photos: {
         Row: {
+          branch_id: string
           created_at: string | null
           id: string
           room_id: string
           url: string
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           id?: string
           room_id: string
           url: string
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           id?: string
           room_id?: string
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "room_photos_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_photos_room_id_fkey"
             columns: ["room_id"]
@@ -589,6 +820,7 @@ export type Database = {
       }
       room_schedules: {
         Row: {
+          branch_id: string
           created_at: string | null
           end_time: string
           id: string
@@ -598,6 +830,7 @@ export type Database = {
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Insert: {
+          branch_id: string
           created_at?: string | null
           end_time: string
           id?: string
@@ -607,6 +840,7 @@ export type Database = {
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Update: {
+          branch_id?: string
           created_at?: string | null
           end_time?: string
           id?: string
@@ -616,6 +850,13 @@ export type Database = {
           weekday?: Database["public"]["Enums"]["weekday"]
         }
         Relationships: [
+          {
+            foreignKeyName: "room_schedules_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_schedules_room_id_fkey"
             columns: ["room_id"]
@@ -627,6 +868,7 @@ export type Database = {
       }
       rooms: {
         Row: {
+          branch_id: string
           close_time: string | null
           created_at: string | null
           description: string | null
@@ -645,6 +887,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id: string
           close_time?: string | null
           created_at?: string | null
           description?: string | null
@@ -663,6 +906,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string
           close_time?: string | null
           created_at?: string | null
           description?: string | null
@@ -682,27 +926,6 @@ export type Database = {
         }
         Relationships: []
       }
-      branches: {
-        Row: {
-          id: string;
-          name: string;
-          city: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          city: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          city?: string;
-          created_at?: string;
-        };
-        Relationships: [];
-      }
     }
     Views: {
       [_ in never]: never
@@ -717,6 +940,7 @@ export type Database = {
           p_metadata: Json
         }
         Returns: {
+          branch_id: string
           created_at: string
           expires_at: string | null
           id: string
@@ -745,6 +969,7 @@ export type Database = {
       get_cart: {
         Args: { p_user_id: string }
         Returns: {
+          branch_id: string
           created_at: string
           expires_at: string | null
           id: string
@@ -762,34 +987,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      is_owner_or_admin: {
-        Args: { owner_id: string }
-        Returns: boolean
-      }
       remove_from_cart: {
         Args: { p_id: string }
         Returns: boolean
       }
       update_cart: {
         Args: { p_id: string; p_quantity: number }
-        Returns: {
-          created_at: string
-          expires_at: string | null
-          id: string
-          item_id: string
-          item_type: string
-          metadata: Json
-          price: number
-          quantity: number
-          reserved_booking_id: string | null
-          reserved_equipment_booking_id: string | null
-          user_id: string | null
-        }
+        Returns: boolean
       }
     }
     Enums: {
-      booking_status: "pending" | "confirmed" | "cancelled" | "cancelled_unpaid"
-      user_role: "admin" | "client"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "cancelled"
+        | "cancelled_unpaid"
+        | "pago"
+        | "falta pagar"
+        | "cancelado por falta de pagamento"
+      user_role: "admin" | "client" | "superadmin" | "super_admin"
       weekday:
         | "monday"
         | "tuesday"
@@ -913,8 +1129,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      booking_status: ["pending", "confirmed", "cancelled", "cancelled_unpaid"],
-      user_role: ["admin", "client"],
+      booking_status: [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "cancelled_unpaid",
+        "pago",
+        "falta pagar",
+        "cancelado por falta de pagamento",
+      ],
+      user_role: ["admin", "client", "superadmin", "super_admin"],
       weekday: [
         "monday",
         "tuesday",

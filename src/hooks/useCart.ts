@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+// Interface que define a estrutura de um item do carrinho
 export interface CartItem {
   id: string;
   user_id: string;
@@ -24,29 +25,32 @@ export const useCart = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Query para buscar itens do carrinho do usuário
   const { data: cartItems = [], isLoading, refetch } = useQuery({
     queryKey: ["cart", user?.id],
     queryFn: async () => {
       if (!user) return [];
       
-      console.log("Fetching cart for user:", user.id);
+      console.log("Buscando carrinho para usuário:", user.id);
       
+      // Chama a function do Supabase para buscar o carrinho
       const { data, error } = await supabase.rpc("get_cart", {
         p_user_id: user.id
       });
 
       if (error) {
-        console.error("Error fetching cart:", error);
+        console.error("Erro ao buscar carrinho:", error);
         throw error;
       }
       
-      console.log("Cart data received:", data);
+      console.log("Dados do carrinho recebidos:", data);
       return data as CartItem[];
     },
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Atualiza a cada 30 segundos
   });
 
+  // Mutation para adicionar item ao carrinho
   const addToCartMutation = useMutation({
     mutationFn: async ({
       itemType,
@@ -61,7 +65,7 @@ export const useCart = () => {
     }) => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      console.log("Adding to cart:", { 
+      console.log("Adicionando ao carrinho:", { 
         itemType, 
         itemId, 
         quantity, 
@@ -69,9 +73,10 @@ export const useCart = () => {
         userId: user.id 
       });
 
-      // Ensure metadata is a valid object
+      // Garantir que metadata seja um objeto válido
       const validMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
+      // Chama a function do Supabase para adicionar ao carrinho
       const { data, error } = await supabase.rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: itemType,
@@ -81,14 +86,15 @@ export const useCart = () => {
       });
 
       if (error) {
-        console.error("Error adding to cart:", error);
+        console.error("Erro ao adicionar ao carrinho:", error);
         throw error;
       }
       
-      console.log("Item added to cart successfully:", data);
+      console.log("Item adicionado ao carrinho com sucesso:", data);
       return data;
     },
     onSuccess: () => {
+      // Invalidar cache para atualizar a lista
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
       toast({
         title: "Item adicionado ao carrinho",
@@ -96,7 +102,7 @@ export const useCart = () => {
       });
     },
     onError: (error: any) => {
-      console.error("Cart mutation error:", error);
+      console.error("Erro na mutation do carrinho:", error);
       toast({
         variant: "destructive",
         title: "Erro ao adicionar item",
@@ -105,21 +111,24 @@ export const useCart = () => {
     },
   });
 
+  // Mutation para remover item do carrinho
   const removeFromCartMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      console.log("Removing item from cart:", itemId);
+      console.log("Removendo item do carrinho:", itemId);
       
+      // Chama a function do Supabase para remover do carrinho
       const { data, error } = await supabase.rpc("remove_from_cart", {
         p_id: itemId
       });
 
       if (error) {
-        console.error("Error removing from cart:", error);
+        console.error("Erro ao remover do carrinho:", error);
         throw error;
       }
       return data;
     },
     onSuccess: () => {
+      // Invalidar cache para atualizar a lista
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
       toast({
         title: "Item removido",
@@ -127,7 +136,7 @@ export const useCart = () => {
       });
     },
     onError: (error: any) => {
-      console.error("Remove from cart error:", error);
+      console.error("Erro ao remover do carrinho:", error);
       toast({
         variant: "destructive",
         title: "Erro ao remover item",
@@ -136,26 +145,29 @@ export const useCart = () => {
     },
   });
 
+  // Mutation para atualizar quantidade no carrinho
   const updateCartMutation = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
-      console.log("Updating cart item:", { itemId, quantity });
+      console.log("Atualizando item do carrinho:", { itemId, quantity });
       
+      // Chama a function do Supabase para atualizar o carrinho
       const { data, error } = await supabase.rpc("update_cart", {
         p_id: itemId,
         p_quantity: quantity
       });
 
       if (error) {
-        console.error("Error updating cart:", error);
+        console.error("Erro ao atualizar carrinho:", error);
         throw error;
       }
       return data;
     },
     onSuccess: () => {
+      // Invalidar cache para atualizar a lista
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
     },
     onError: (error: any) => {
-      console.error("Update cart error:", error);
+      console.error("Erro ao atualizar carrinho:", error);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar item",
@@ -164,23 +176,26 @@ export const useCart = () => {
     },
   });
 
+  // Mutation para limpar carrinho
   const clearCartMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      console.log("Clearing cart for user:", user.id);
+      console.log("Limpando carrinho para usuário:", user.id);
 
+      // Chama a function do Supabase para limpar o carrinho
       const { data, error } = await supabase.rpc("clear_cart", {
         p_user_id: user.id
       });
 
       if (error) {
-        console.error("Error clearing cart:", error);
+        console.error("Erro ao limpar carrinho:", error);
         throw error;
       }
       return data;
     },
     onSuccess: () => {
+      // Invalidar cache para atualizar a lista
       queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
       toast({
         title: "Carrinho limpo",
@@ -188,7 +203,7 @@ export const useCart = () => {
       });
     },
     onError: (error: any) => {
-      console.error("Clear cart error:", error);
+      console.error("Erro ao limpar carrinho:", error);
       toast({
         variant: "destructive",
         title: "Erro ao limpar carrinho",
@@ -197,10 +212,12 @@ export const useCart = () => {
     },
   });
 
+  // Calcular o total do carrinho
   const cartTotal = cartItems.reduce((total, item) => {
     return total + (item.price * item.quantity);
   }, 0);
 
+  // Calcular a quantidade total de itens
   const cartCount = cartItems.reduce((count, item) => {
     return count + item.quantity;
   }, 0);

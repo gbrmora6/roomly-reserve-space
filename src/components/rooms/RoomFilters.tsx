@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -7,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CityFilter } from "@/components/shared/CityFilter";
 
 interface RoomFiltersProps {
   filters: {
@@ -25,15 +27,10 @@ interface RoomFiltersProps {
   onClear: () => void;
 }
 
+// Opções de horários disponíveis para reserva
 const timeOptions = [
   "08:00", "09:00", "10:00", "11:00", "12:00",
   "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"
-];
-
-const cityOptions = [
-  { value: "sao_paulo", label: "São Paulo" },
-  { value: "rio_de_janeiro", label: "Rio de Janeiro" },
-  { value: "belo_horizonte", label: "Belo Horizonte" },
 ];
 
 export const RoomFilters: React.FC<RoomFiltersProps> = ({ 
@@ -47,30 +44,21 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
       <CardContent className="p-6">
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-roomly-700">Filtrar por Data &amp; Hora</h2>
+            <h2 className="text-xl font-semibold mb-4 text-roomly-700">Filtrar por Data & Hora</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-            {/* Cidade */}
+            {/* Filtro de Cidade - agora usando CityFilter que busca das filiais */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
-              <Select
-                value={filters.city || undefined}
-                onValueChange={(value) => setFilters({ ...filters, city: value })}
-              >
-                <SelectTrigger className="w-full border-gray-300">
-                  <SelectValue placeholder="Selecione a cidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cityOptions.map((city) => (
-                    <SelectItem key={city.value} value={city.value}>
-                      {city.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CityFilter
+                selectedCity={filters.city || "all"}
+                onCityChange={(value) => setFilters({ ...filters, city: value === "all" ? null : value })}
+                placeholder="Selecione a cidade"
+              />
             </div>
-            {/* Data */}
+
+            {/* Seletor de Data */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Data</label>
               <Popover>
@@ -99,7 +87,8 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                 </PopoverContent>
               </Popover>
             </div>
-            {/* Start Time picker */}
+
+            {/* Seletor de Horário de Início */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Horário Inicial</label>
               <Select
@@ -107,14 +96,14 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                 onValueChange={(value) => setFilters({ ...filters, startTime: value || null })}
               >
                 <SelectTrigger className="w-full border-gray-300">
-                  <SelectValue placeholder="Start Time">
+                  <SelectValue placeholder="Horário inicial">
                     {filters.startTime ? (
                       <div className="flex items-center">
                         <Clock className="mr-2 h-4 w-4" />
                         {filters.startTime}
                       </div>
                     ) : (
-                      <span>Start Time</span>
+                      <span>Horário inicial</span>
                     )}
                   </SelectValue>
                 </SelectTrigger>
@@ -127,7 +116,8 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            {/* End Time picker */}
+
+            {/* Seletor de Horário de Término */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Horário Final</label>
               <Select
@@ -135,18 +125,19 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                 onValueChange={(value) => setFilters({ ...filters, endTime: value || null })}
               >
                 <SelectTrigger className="w-full border-gray-300">
-                  <SelectValue placeholder="End Time">
+                  <SelectValue placeholder="Horário final">
                     {filters.endTime ? (
                       <div className="flex items-center">
                         <Clock className="mr-2 h-4 w-4" />
                         {filters.endTime}
                       </div>
                     ) : (
-                      <span>End Time</span>
+                      <span>Horário final</span>
                     )}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Filtrar horários que são posteriores ao horário de início */}
                   {timeOptions.filter(time => !filters.startTime || time > filters.startTime).map((time) => (
                     <SelectItem key={time} value={time}>
                       {time}
@@ -155,14 +146,15 @@ export const RoomFilters: React.FC<RoomFiltersProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            {/* Botão de busca */}
+
+            {/* Botão de Busca */}
             <div className="flex items-end h-full">
               <Button
                 onClick={onFilter}
                 className="w-full px-6 bg-[#23406e] hover:bg-[#1a2e4d] text-white text-base font-semibold rounded-md shadow"
-                disabled={!filters.date || !filters.startTime || !filters.endTime || !filters.city}
+                disabled={!filters.date || !filters.startTime || !filters.endTime}
               >
-                Search
+                Buscar Salas
               </Button>
             </div>
           </div>
