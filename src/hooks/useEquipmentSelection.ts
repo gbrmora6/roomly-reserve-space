@@ -34,13 +34,6 @@ export function useEquipmentSelection(
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      // Get user's branch_id
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("branch_id")
-        .eq("id", user.id)
-        .single();
-
       const equipmentToAdd = Object.entries(selectedEquipment).map(([id, quantity]) => ({
         equipment_id: id,
         booking_id: bookingId,
@@ -48,8 +41,7 @@ export function useEquipmentSelection(
         quantity,
         start_time: startTime!.toISOString(),
         end_time: endTime!.toISOString(),
-        status: 'pending' as const,
-        branch_id: profile?.branch_id || ""
+        status: 'pending' as const
       }));
 
       const { error } = await supabase

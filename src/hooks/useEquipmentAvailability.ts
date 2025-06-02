@@ -19,22 +19,19 @@ const getWeekdayFromNumber = (day: number): WeekdayEnum => {
   return weekdays[day];
 };
 
-interface EquipmentWithBranch {
-  id: string;
-  name: string;
-  description: string | null;
-  quantity: number;
-  available: number;
-  price_per_hour: number;
-  is_active: boolean;
-  open_time?: string;
-  close_time?: string;
-  open_days?: WeekdayEnum[];
-  branch?: { city: string; name: string };
-}
-
-export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null, selectedCity?: string) {
-  const [availableEquipment, setAvailableEquipment] = useState<EquipmentWithBranch[]>([]);
+export function useEquipmentAvailability(startTime: Date | null, endTime: Date | null) {
+  const [availableEquipment, setAvailableEquipment] = useState<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    quantity: number;
+    available: number;
+    price_per_hour: number;
+    is_active: boolean;
+    open_time?: string;
+    close_time?: string;
+    open_days?: WeekdayEnum[];
+  }>>([]);
   const [loading, setLoading] = useState(false);
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
 
@@ -62,24 +59,13 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("Start time:", startTime.toISOString());
         console.log("End time:", endTime.toISOString());
         console.log("Weekday enum:", weekdayEnum);
-        console.log("Selected city:", selectedCity);
 
-        // Get all equipment with branch information for city filtering
-        let query = supabase
+        // Get all equipment
+        const { data: allEquipment, error: equipmentError } = await supabase
           .from("equipment")
-          .select(`
-            *,
-            branch:branches!equipment_branch_id_fkey(name, city)
-          `)
+          .select("*")
           .eq("is_active", true)
           .order("name");
-
-        // Filter by city if selected
-        if (selectedCity && selectedCity !== "all") {
-          query = query.eq("branches.city", selectedCity);
-        }
-
-        const { data: allEquipment, error: equipmentError } = await query;
 
         if (equipmentError) {
           console.error("Error fetching equipment:", equipmentError);
@@ -150,7 +136,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return { 
             ...equipment, 
             available: Math.max(0, available),
-            branch: equipment.branch?.[0] || { city: "", name: "" }
+            hourlyBookings
           };
         });
 
@@ -180,7 +166,9 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         console.log("Blocked hours:", blocked);
 
         // Filter to only show equipment with available quantities
-        const availableItems = availabilityResults.filter(item => item.available > 0);
+        const availableItems = availabilityResults
+          .filter(item => item.available > 0)
+          .map(({ hourlyBookings, ...rest }) => rest); // Remove hourlyBookings from result
         
         console.log("Available equipment:", availableItems.length);
         setAvailableEquipment(availableItems);
@@ -192,8 +180,12 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
       }
     };
 
-    fetchEquipment();
-  }, [startTime, endTime, selectedCity]);
+    if (startTime && endTime) {
+      fetchEquipment();
+    } else {
+      setLoading(false);
+    }
+  }, [startTime, endTime]);
 
   return { availableEquipment, blockedHours, loading };
 }
