@@ -1,17 +1,16 @@
 
 /**
- * Utilitário de logging seguro que controla exibição de logs baseado no ambiente
- * Previne que dados sensíveis sejam logados em produção
+ * Secure logger utility that conditionally displays logs based on environment
+ * Prevents sensitive data from being logged in production
  */
 
-// Verifica se estamos em ambiente de desenvolvimento
+// Check if we're in development mode
 const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
 
 /**
- * Registra informações apenas em ambientes de desenvolvimento
- * Use para dados que podem conter informações sensíveis
- * @param message - Mensagem a ser logada
- * @param data - Dados opcionais a serem logados (dados sensíveis devem ir aqui)
+ * Log information only in development environments
+ * @param message - Message to log
+ * @param data - Optional data to log (sensitive data should go here)
  */
 export const devLog = (message: string, data?: any): void => {
   if (isDev) {
@@ -24,24 +23,23 @@ export const devLog = (message: string, data?: any): void => {
 };
 
 /**
- * Registra erros em qualquer ambiente, mas sanitiza dados sensíveis em produção
- * @param message - Mensagem de erro a ser logada
- * @param error - Objeto de erro ou dados sensíveis
+ * Log errors in any environment, but sanitize sensitive data in production
+ * @param message - Error message to log
+ * @param error - Error object or sensitive data
  */
 export const errorLog = (message: string, error?: any): void => {
   if (isDev) {
-    // Em desenvolvimento, loga todos os detalhes do erro
     console.error(`[ERROR] ${message}:`, error);
   } else {
-    // Em produção, não loga detalhes potencialmente sensíveis do erro
+    // In production, don't log potentially sensitive error details
     console.error(`[ERROR] ${message}`);
   }
 };
 
 /**
- * Registra informações em qualquer ambiente (use apenas para dados não-sensíveis)
- * @param message - Mensagem a ser logada
- * @param data - Dados não-sensíveis a serem logados
+ * Log information in any environment (use for non-sensitive data only)
+ * @param message - Message to log
+ * @param data - Non-sensitive data to log
  */
 export const infoLog = (message: string, data?: any): void => {
   if (data) {

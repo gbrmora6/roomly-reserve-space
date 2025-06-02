@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
@@ -9,8 +8,6 @@ import { BookingsHeader } from "./components/BookingsHeader";
 import { BookingTabs } from "./components/BookingTabs";
 import { CompanyAddressDialog } from "./components/CompanyAddressDialog";
 import { LoadingBookings } from "@/components/bookings/LoadingBookings";
-
-type TabType = "equipment" | "rooms" | "products";
 
 const MyBookings = () => {
   const { user } = useAuth();
@@ -33,14 +30,6 @@ const MyBookings = () => {
     handleShowAddress
   } = useCompanyProfile();
 
-  const handleTabChange = (tab: TabType) => {
-    if (tab === "products") {
-      // Handle products tab - you might want to add state for this
-      return;
-    }
-    setActiveTab(tab);
-  };
-
   // Show loading state
   if ((isLoading && !roomBookings && !equipmentBookings) || isLoadingOrders) {
     return (
@@ -59,7 +48,7 @@ const MyBookings = () => {
         
         <BookingTabs 
           activeTab={activeTab}
-          setActiveTab={handleTabChange}
+          setActiveTab={setActiveTab}
           roomBookings={roomBookings}
           equipmentBookings={equipmentBookings}
           productOrders={productOrders}

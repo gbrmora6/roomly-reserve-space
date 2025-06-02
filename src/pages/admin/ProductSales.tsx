@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Mapeamento dos status dos pedidos para tradução em português
 const STATUS_MAP = {
   all: "Todas",
   paid: "Pago",
@@ -25,24 +23,20 @@ const STATUS_MAP = {
   cancelled: "Cancelado por falta de pagamento",
 };
 
-/**
- * Função para traduzir status dos pedidos para português
- * @param status - Status do pedido em inglês
- * @returns Status traduzido para português
- */
-function translateStatus(status: string) {
+const STATUS_BADGE = {
+  paid: "bg-green-100 text-green-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
+function translateStatus(status) {
   if (status === "paid") return "Pago";
   if (status === "pending" || status === "awaiting_payment") return "Falta pagar";
   if (status === "cancelled" || status === "cancelled_due_to_payment") return "Cancelado por falta de pagamento";
   return status;
 }
 
-/**
- * Função para converter aba selecionada em array de status para filtro
- * @param tab - Aba ativa selecionada
- * @returns Array de status ou null para todos
- */
-function statusForTab(tab: string) {
+function statusForTab(tab) {
   if (tab === "all") return null;
   if (tab === "paid") return ["paid"];
   if (tab === "pending") return ["pending", "awaiting_payment"];
@@ -50,44 +44,21 @@ function statusForTab(tab: string) {
   return null;
 }
 
-/**
- * Componente principal da página de vendas de produtos
- * Exibe lista de pedidos, estatísticas e permite gerenciamento para admins
- */
 export default function ProductSales() {
-  // Estado para controlar qual aba está ativa (todas, pagas, pendentes, canceladas)
   const [activeTab, setActiveTab] = useState("all");
-  
-  // Hook personalizado para filtrar por filial (branch)
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
-  
-  // Estado para controlar qual pedido está selecionado no modal de detalhes
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
-  
-  // Estado para controlar se o modal de detalhes está aberto
   const [showDetails, setShowDetails] = useState(false);
-  
-  // Estado para controlar loading durante ações (cancelar, marcar como pago)
   const [actionLoading, setActionLoading] = useState(false);
-  
-  // Estado para controlar o termo de busca por cliente
   const [search, setSearch] = useState("");
-  
-  // Estados para controle de paginação
   const [page, setPage] = useState(1);
   const perPage = 10;
-  
-  // Estado para armazenar ID do último pedido (para notificação de novos pedidos)
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
-  // Query para buscar pedidos da filial selecionada
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ["admin-product-sales", activeTab, branchId],
     queryFn: async () => {
-      // Se não há filial selecionada, retorna array vazio
       if (!branchId) return [];
-      
-      // Monta query base para buscar pedidos com itens e produtos relacionados
       let query = supabase
         .from("orders")
         .select(`
@@ -101,69 +72,40 @@ export default function ProductSales() {
             quantity,
             price_per_unit,
             product:products(name)
-          )
+          ),
+          user:profiles!orders_user_id_fkey(first_name, last_name, email)
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
-        
-      // Aplica filtro de status se não for "all"
       const statusList = statusForTab(activeTab);
       if (statusList) {
         query = query.in("status", statusList);
       }
-      
-      // Executa query para buscar pedidos
-      const { data: ordersData, error: ordersError } = await query;
-      if (ordersError) throw ordersError;
-      
-      if (!ordersData || ordersData.length === 0) return [];
-
-      // Busca dados dos usuários separadamente para evitar problemas de RLS
-      const userIds = [...new Set(ordersData.map(order => order.user_id))];
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
-        .in("id", userIds);
-
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        // Retorna pedidos sem dados do usuário se não conseguir buscar perfis
-        return ordersData.map(order => ({ ...order, user: null }));
-      }
-
-      // Cria mapa de perfis para busca rápida
-      const profilesMap = new Map(profiles?.map(profile => [profile.id, profile]) || []);
-
-      // Combina dados dos pedidos com dados dos usuários
-      return ordersData.map(order => ({
-        ...order,
-        user: profilesMap.get(order.user_id) || null
-      }));
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!branchId, // Só executa se há filial selecionada
-    refetchInterval: 30000, // Atualiza automaticamente a cada 30 segundos
+    enabled: !!branchId,
+    refetchInterval: 30000, // 30 segundos
   });
 
-  // Efeito para notificar sobre novos pedidos
+  // Notificação de novo pedido
   React.useEffect(() => {
     if (!orders || orders.length === 0) return;
     if (!lastOrderId) {
       setLastOrderId(orders[0].id);
       return;
     }
-    // Se o primeiro pedido mudou, significa que há um novo pedido
     if (orders[0].id !== lastOrderId) {
       setLastOrderId(orders[0].id);
-      const user = orders[0].user;
-      const userName = user?.first_name || 'um cliente';
       toast({
         title: "Novo pedido recebido!",
-        description: `Um novo pedido foi realizado por ${userName}.`,
+        description: `Um novo pedido foi realizado por ${orders[0].user && typeof orders[0].user === 'object' ? orders[0].user.first_name : 'um cliente'}.`,
       });
     }
-  }, [orders, lastOrderId]);
+  }, [orders]);
 
-  // Cálculo das estatísticas de resumo (total, faturado, pagas, pendentes, canceladas)
+  // Cálculos de resumo
   const resumo = useMemo(() => {
     if (!orders) return {
       total: 0,
@@ -172,14 +114,11 @@ export default function ProductSales() {
       pendentes: 0,
       canceladas: 0,
     };
-    
     let total = orders.length;
     let faturado = 0;
     let pagas = 0;
     let pendentes = 0;
     let canceladas = 0;
-    
-    // Conta pedidos por status e calcula faturamento
     orders.forEach(order => {
       if (order.status === "paid") {
         pagas++;
@@ -190,7 +129,6 @@ export default function ProductSales() {
         canceladas++;
       }
     });
-    
     return {
       total,
       faturado,
@@ -200,33 +138,28 @@ export default function ProductSales() {
     };
   }, [orders]);
 
-  // Filtro de busca por nome do cliente
+  // Filtro de busca
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
     if (!search.trim()) return orders;
-    
     const s = search.trim().toLowerCase();
     return orders.filter(order => {
-      const user = order.user;
-      const name = user?.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
-      return name.includes(s);
+      const name = order.user && typeof order.user === 'object' ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.toLowerCase() : "";
+      const email = order.user && typeof order.user === 'object' ? (order.user.email || '').toLowerCase() : "";
+      return name.includes(s) || email.includes(s);
     });
   }, [orders, search]);
 
-  // Paginação dos resultados filtrados
+  // Paginação
   const totalPages = Math.ceil(filteredOrders.length / perPage) || 1;
   const paginatedOrders = useMemo(() => {
     const start = (page - 1) * perPage;
     return filteredOrders.slice(start, start + perPage);
   }, [filteredOrders, page]);
 
-  // Reseta página ao alterar busca, aba ou filial
+  // Resetar página ao buscar
   React.useEffect(() => { setPage(1); }, [search, activeTab, branchId]);
 
-  /**
-   * Função para exportar relatório em Excel
-   * Disponível apenas para super admins
-   */
   const downloadReport = () => {
     if (!orders || orders.length === 0) {
       toast({
@@ -235,34 +168,30 @@ export default function ProductSales() {
       });
       return;
     }
-    
     try {
-      // Prepara dados para exportação
       const exportData = orders.map(order => {
         const produtos = order.order_items && order.order_items.length > 0
           ? order.order_items.map(item => `${item.quantity}x ${item.product?.name || "Produto"}`).join("; ")
           : "-";
-        const user = order.user;
-        
         return {
           "ID": order.id,
-          "Cliente": user?.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : order.user_id,
+          "Cliente": order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
+            ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
+            : order.user_id,
+          "Email": order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
+            ? order.user.email
+            : '-',
           "Data": format(new Date(order.created_at), "dd/MM/yyyy"),
           "Produtos": produtos,
           "Valor Total": `R$ ${order.total_amount?.toFixed(2) || "0.00"}`,
           "Status": translateStatus(order.status)
         };
       });
-      
-      // Cria planilha Excel
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Vendas de Produtos");
-      
-      // Gera arquivo com data atual no nome
       const fileName = `Relatorio_Vendas_Produtos_${format(new Date(), "dd-MM-yyyy")}.xlsx`;
       XLSX.writeFile(workbook, fileName);
-      
       toast({
         title: "Relatório gerado com sucesso",
         description: `O arquivo ${fileName} foi baixado.`
@@ -276,45 +205,33 @@ export default function ProductSales() {
     }
   };
 
-  /**
-   * Função para cancelar um pedido
-   * Disponível apenas para super admins
-   * @param orderId - ID do pedido a ser cancelado
-   */
-  const handleCancelOrder = async (orderId: string) => {
+  // Função para cancelar pedido
+  const handleCancelOrder = async (orderId) => {
     if (!window.confirm("Tem certeza que deseja cancelar este pedido?")) return;
-    
     setActionLoading(true);
     const { error } = await supabase
       .from("orders")
       .update({ status: "cancelled_due_to_payment" })
       .eq("id", orderId);
     setActionLoading(false);
-    
     if (error) {
       toast({ variant: "destructive", title: "Erro ao cancelar", description: error.message });
     } else {
       toast({ title: "Pedido cancelado", description: "O pedido foi cancelado com sucesso." });
-      // Atualiza lista de pedidos
+      // Refetch
       await refetch();
     }
   };
 
-  /**
-   * Função para marcar pedido como pago
-   * Disponível apenas para super admins
-   * @param orderId - ID do pedido a ser marcado como pago
-   */
-  const handleMarkAsPaid = async (orderId: string) => {
+  // Função para marcar como pago
+  const handleMarkAsPaid = async (orderId) => {
     if (!window.confirm("Marcar este pedido como pago?")) return;
-    
     setActionLoading(true);
     const { error } = await supabase
       .from("orders")
       .update({ status: "paid" })
       .eq("id", orderId);
     setActionLoading(false);
-    
     if (error) {
       toast({ variant: "destructive", title: "Erro ao marcar como pago", description: error.message });
     } else {
@@ -323,19 +240,8 @@ export default function ProductSales() {
     }
   };
 
-  /**
-   * Função para obter nome do usuário ou fallback
-   * @param user - Objeto do usuário
-   * @returns Nome formatado ou "Cliente" se não disponível
-   */
-  const getUserName = (user: any) => {
-    if (!user) return "Cliente";
-    return user.first_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Cliente" : "Cliente";
-  };
-
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
-      {/* Seletor de filial - visível apenas para super admins */}
       {isSuperAdmin && branches && (
         <div className="mb-4 max-w-xs">
           <Select value={branchId || undefined} onValueChange={setBranchId!}>
@@ -350,8 +256,7 @@ export default function ProductSales() {
           </Select>
         </div>
       )}
-      
-      {/* Cabeçalho da página com título e botão de exportação */}
+      {/* Título e ação */}
       <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
@@ -368,32 +273,28 @@ export default function ProductSales() {
                 <p className="text-muted-foreground mt-1 text-base">Acompanhe todos os pedidos e vendas de produtos realizados na plataforma.</p>
               </div>
             </div>
-            {/* Botão de exportação - disponível apenas para super admin */}
             {isSuperAdmin ? (
               <Button variant="outline" onClick={downloadReport} className="h-12 text-base font-semibold">
                 <Download className="mr-2 h-5 w-5" />
                 Baixar Relatório
               </Button>
             ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" className="h-12 text-base font-semibold" disabled>
-                      <Download className="mr-2 h-5 w-5" />
-                      Baixar Relatório
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" className="h-12 text-base font-semibold" disabled>
+                    <Download className="mr-2 h-5 w-5" />
+                    Baixar Relatório
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
+              </Tooltip>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Cards de estatísticas resumidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-        {/* Total de vendas */}
+      {/* Cards de resumo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -409,8 +310,6 @@ export default function ProductSales() {
             <TooltipContent>Total de pedidos realizados nesta filial</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
-        {/* Faturamento total */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -426,8 +325,6 @@ export default function ProductSales() {
             <TooltipContent>Somatório dos valores pagos</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
-        {/* Vendas pagas */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -443,8 +340,6 @@ export default function ProductSales() {
             <TooltipContent>Pedidos já pagos e confirmados</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
-        {/* Vendas pendentes */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -460,8 +355,6 @@ export default function ProductSales() {
             <TooltipContent>Pedidos aguardando pagamento</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
-        {/* Vendas canceladas */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -479,17 +372,14 @@ export default function ProductSales() {
         </TooltipProvider>
       </div>
 
-      {/* Barra de busca e controles de paginação */}
+      {/* Campo de busca e paginação */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-        {/* Campo de busca por nome do cliente */}
         <Input
           placeholder="Buscar por nome ou email do cliente..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="max-w-xs"
         />
-        
-        {/* Controles de paginação */}
         <div className="flex items-center gap-2 mt-2 md:mt-0">
           <span className="text-sm text-muted-foreground">{filteredOrders.length} pedidos</span>
           <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(1)}>&laquo;</Button>
@@ -500,7 +390,7 @@ export default function ProductSales() {
         </div>
       </div>
 
-      {/* Abas para filtrar por status dos pedidos */}
+      {/* Tabs e tabela */}
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
@@ -508,10 +398,7 @@ export default function ProductSales() {
           <TabsTrigger value="pending">Falta pagar</TabsTrigger>
           <TabsTrigger value="cancelled">Cancelado</TabsTrigger>
         </TabsList>
-        
-        {/* Conteúdo da aba ativa */}
         <TabsContent value={activeTab} className="mt-6">
-          {/* Estado de carregamento */}
           {isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-10 w-full" />
@@ -519,7 +406,6 @@ export default function ProductSales() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : error ? (
-            /* Estado de erro */
             <div className="rounded-lg bg-destructive/10 p-6 text-center">
               <p className="text-destructive font-medium">Erro ao carregar vendas</p>
               <p className="text-sm text-muted-foreground mt-2">
@@ -527,7 +413,6 @@ export default function ProductSales() {
               </p>
             </div>
           ) : !orders || orders.length === 0 ? (
-            /* Estado vazio - nenhuma venda encontrada */
             <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
               <Smile className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhuma venda de produto encontrada</h3>
@@ -535,7 +420,6 @@ export default function ProductSales() {
               <span className="text-xs text-muted-foreground">As vendas aparecerão aqui assim que forem realizadas.</span>
             </div>
           ) : (
-            /* Tabela de pedidos */
             <div className="border rounded-md overflow-x-auto bg-white">
               <Table className="min-w-[800px]">
                 <TableHeader>
@@ -552,16 +436,17 @@ export default function ProductSales() {
                 <TableBody>
                   {paginatedOrders.map(order => (
                     <TableRow key={order.id}>
-                      {/* Nome do cliente */}
-                      <TableCell>{getUserName(order.user)}</TableCell>
-                      
-                      {/* Email/ID do usuário */}
-                      <TableCell>{order.user_id || '-'}</TableCell>
-                      
-                      {/* Data do pedido */}
+                      <TableCell>{
+                        order.user && typeof order.user === 'object' && 'first_name' in order.user && order.user.first_name !== undefined
+                          ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim()
+                          : order.user_id
+                      }</TableCell>
+                      <TableCell>{
+                        order.user && typeof order.user === 'object' && 'email' in order.user && order.user.email !== undefined
+                          ? order.user.email
+                          : '-'
+                      }</TableCell>
                       <TableCell>{format(new Date(order.created_at), "dd/MM/yyyy")}</TableCell>
-                      
-                      {/* Lista de produtos */}
                       <TableCell>
                         {order.order_items && order.order_items.length > 0 ? (
                           <ul className="list-disc list-inside">
@@ -575,11 +460,7 @@ export default function ProductSales() {
                           "-"
                         )}
                       </TableCell>
-                      
-                      {/* Valor total */}
                       <TableCell>R$ {order.total_amount?.toFixed(2) || "0,00"}</TableCell>
-                      
-                      {/* Status com cores */}
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold shadow-sm
                           ${order.status === "paid"
@@ -591,19 +472,13 @@ export default function ProductSales() {
                           {translateStatus(order.status)}
                         </span>
                       </TableCell>
-                      
-                      {/* Ações disponíveis */}
                       <TableCell>
                         <div className="flex gap-2">
-                          {/* Botão para ver detalhes (sempre disponível) */}
                           <Button size="icon" variant="ghost" title="Ver detalhes" onClick={() => { setSelectedOrder(order); setShowDetails(true); }}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
-                          {/* Ações para pedidos pendentes */}
                           {(order.status === "pending" || order.status === "awaiting_payment") && (
                             isSuperAdmin ? (
-                              /* Botões para super admin */
                               <>
                                 <Button size="icon" variant="ghost" title="Marcar como pago" disabled={actionLoading} onClick={() => handleMarkAsPaid(order.id)}>
                                   {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 text-green-600" />}
@@ -613,22 +488,19 @@ export default function ProductSales() {
                                 </Button>
                               </>
                             ) : (
-                              /* Botões desabilitados para não-admin com tooltip explicativo */
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span>
-                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                      </Button>
-                                      <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
-                                        <XCircle className="h-4 w-4 text-red-600" />
-                                      </Button>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" disabled title="Apenas superadmin">
+                                      <XCircle className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>Somente superadmin pode alterar status de pedidos</TooltipContent>
+                              </Tooltip>
                             )
                           )}
                         </div>
@@ -653,30 +525,23 @@ export default function ProductSales() {
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-3">
-              {/* Informações do cliente */}
               <div>
-                <span className="font-semibold">Cliente:</span> {getUserName(selectedOrder.user)}
+                <span className="font-semibold">Cliente:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? `${selectedOrder.user.first_name || ''} ${selectedOrder.user.last_name || ''}`.trim() : selectedOrder.user_id}
               </div>
               <div>
-                <span className="font-semibold">Email:</span> {selectedOrder.user_id || '-'}
+                <span className="font-semibold">Email:</span> {selectedOrder.user && typeof selectedOrder.user === 'object' ? selectedOrder.user.email : '-'}
               </div>
-              
-              {/* Data e hora do pedido */}
               <div>
                 <span className="font-semibold">Data:</span> {format(new Date(selectedOrder.created_at), "dd/MM/yyyy HH:mm")}
               </div>
-              
-              {/* Status atual */}
               <div>
                 <span className="font-semibold">Status:</span> {translateStatus(selectedOrder.status)}
               </div>
-              
-              {/* Lista detalhada de produtos */}
               <div>
                 <span className="font-semibold">Produtos:</span>
                 {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
                   <ul className="list-disc list-inside ml-4">
-                    {selectedOrder.order_items.map((item: any, idx: number) => (
+                    {selectedOrder.order_items.map((item, idx) => (
                       <li key={idx}>{item.quantity}x {item.product?.name || "Produto"} (R$ {item.price_per_unit?.toFixed(2) || "-"})</li>
                     ))}
                   </ul>
@@ -684,8 +549,6 @@ export default function ProductSales() {
                   <span> - </span>
                 )}
               </div>
-              
-              {/* Valor total */}
               <div>
                 <span className="font-semibold">Valor Total:</span> R$ {selectedOrder.total_amount?.toFixed(2) || "0,00"}
               </div>
@@ -695,4 +558,4 @@ export default function ProductSales() {
       </Dialog>
     </div>
   );
-}
+} 
