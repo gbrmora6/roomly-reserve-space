@@ -280,6 +280,134 @@ export type Database = {
           },
         ]
       }
+      coupon_usage: {
+        Row: {
+          booking_id: string | null
+          branch_id: string
+          coupon_id: string
+          created_at: string
+          discount_applied: number
+          equipment_booking_id: string | null
+          id: string
+          order_id: string | null
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          branch_id: string
+          coupon_id: string
+          created_at?: string
+          discount_applied: number
+          equipment_booking_id?: string | null
+          id?: string
+          order_id?: string | null
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          branch_id?: string
+          coupon_id?: string
+          created_at?: string
+          discount_applied?: number
+          equipment_booking_id?: string | null
+          id?: string
+          order_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          applicable_to: string
+          branch_id: string
+          code: string
+          created_at: string
+          created_by: string
+          cumulative_with_promotions: boolean | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          first_purchase_only: boolean | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          max_uses_per_user: number | null
+          minimum_amount: number | null
+          minimum_items: number | null
+          name: string
+          payment_methods: string[] | null
+          specific_items: Json | null
+          updated_at: string
+          valid_days: number[] | null
+          valid_from: string
+          valid_hours_end: string | null
+          valid_hours_start: string | null
+          valid_until: string
+        }
+        Insert: {
+          applicable_to?: string
+          branch_id: string
+          code: string
+          created_at?: string
+          created_by: string
+          cumulative_with_promotions?: boolean | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          first_purchase_only?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          minimum_amount?: number | null
+          minimum_items?: number | null
+          name: string
+          payment_methods?: string[] | null
+          specific_items?: Json | null
+          updated_at?: string
+          valid_days?: number[] | null
+          valid_from: string
+          valid_hours_end?: string | null
+          valid_hours_start?: string | null
+          valid_until: string
+        }
+        Update: {
+          applicable_to?: string
+          branch_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string
+          cumulative_with_promotions?: boolean | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          first_purchase_only?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          minimum_amount?: number | null
+          minimum_items?: number | null
+          name?: string
+          payment_methods?: string[] | null
+          specific_items?: Json | null
+          updated_at?: string
+          valid_days?: number[] | null
+          valid_from?: string
+          valid_hours_end?: string | null
+          valid_hours_start?: string | null
+          valid_until?: string
+        }
+        Relationships: []
+      }
       equipment: {
         Row: {
           branch_id: string
@@ -446,6 +574,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      invoice_files: {
+        Row: {
+          booking_id: string | null
+          branch_id: string
+          created_at: string
+          equipment_booking_id: string | null
+          id: string
+          order_id: string | null
+          pdf_url: string | null
+          updated_at: string
+          uploaded_by: string
+          xml_url: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          branch_id: string
+          created_at?: string
+          equipment_booking_id?: string | null
+          id?: string
+          order_id?: string | null
+          pdf_url?: string | null
+          updated_at?: string
+          uploaded_by: string
+          xml_url?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          branch_id?: string
+          created_at?: string
+          equipment_booking_id?: string | null
+          id?: string
+          order_id?: string | null
+          pdf_url?: string | null
+          updated_at?: string
+          uploaded_by?: string
+          xml_url?: string | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -675,6 +842,7 @@ export type Database = {
           cpf: string | null
           created_at: string | null
           crp: string | null
+          email: string | null
           first_name: string | null
           house_number: string | null
           id: string
@@ -695,6 +863,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           crp?: string | null
+          email?: string | null
           first_name?: string | null
           house_number?: string | null
           id: string
@@ -715,6 +884,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string | null
           crp?: string | null
+          email?: string | null
           first_name?: string | null
           house_number?: string | null
           id?: string
@@ -994,6 +1164,21 @@ export type Database = {
       update_cart: {
         Args: { p_id: string; p_quantity: number }
         Returns: boolean
+      }
+      validate_coupon: {
+        Args: {
+          p_code: string
+          p_user_id: string
+          p_total_amount: number
+          p_item_count: number
+          p_applicable_type?: string
+        }
+        Returns: {
+          is_valid: boolean
+          coupon_id: string
+          discount_amount: number
+          error_message: string
+        }[]
       }
     }
     Enums: {

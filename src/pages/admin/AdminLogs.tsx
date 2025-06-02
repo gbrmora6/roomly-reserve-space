@@ -1,186 +1,248 @@
 
-import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FileText, Eye, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
-
-const ACTIONS = [
-  { value: "", label: "Todas" },
-  { value: "CANCEL_ORDER", label: "Cancelou pedido" },
-  { value: "MARK_PAID", label: "Marcou como pago" },
-  { value: "EDIT_PRODUCT", label: "Editou produto" },
-  { value: "CREATE_PRODUCT", label: "Criou produto" },
-  { value: "DELETE_PRODUCT", label: "Excluiu produto" },
-  // Adicione mais ações conforme necessário
-];
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 export default function AdminLogs() {
-  const [search, setSearch] = useState("");
-  const [action, setAction] = useState("");
-  const [adminId, setAdminId] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [page, setPage] = useState(1);
-  const perPage = 15;
+  const { branchId } = useBranchFilter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
   const [selectedLog, setSelectedLog] = useState<any>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  // Buscar admins para filtro
-  const { data: admins = [] } = useQuery({
-    queryKey: ["admin-logs-admins"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
-        .eq("role", "admin");
-      return data || [];
-    },
-  });
-
-  // Buscar logs
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["admin-logs", action, adminId, dateFrom, dateTo],
+    queryKey: ["admin-logs", branchId, searchTerm, actionFilter],
     queryFn: async () => {
+      if (!branchId) return [];
+      
       let query = supabase
         .from("admin_logs")
-        .select("id, admin_id, admin_email, action, details, created_at")
+        .select("*")
+        .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
-      if (action) query = query.eq("action", action);
-      if (adminId) query = query.eq("admin_id", adminId);
-      if (dateFrom) query = query.gte("created_at", dateFrom);
-      if (dateTo) query = query.lte("created_at", dateTo + " 23:59:59");
-      const { data } = await query;
-      return data || [];
+
+      if (searchTerm) {
+        query = query.or(`admin_email.ilike.%${searchTerm}%,action.ilike.%${searchTerm}%`);
+      }
+
+      if (actionFilter !== "all") {
+        query = query.eq("action", actionFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!branchId,
+  });
+
+  // Função para criar log de administrador
+  const createLogMutation = useMutation({
+    mutationFn: async (logData: {
+      action: string;
+      details: any;
+      admin_email?: string;
+    }) => {
+      const { error } = await supabase
+        .from("admin_logs")
+        .insert({
+          admin_id: (await supabase.auth.getUser()).data.user?.id,
+          action: logData.action,
+          details: logData.details,
+          admin_email: logData.admin_email,
+          branch_id: branchId
+        });
+
+      if (error) throw error;
     },
   });
 
-  // Filtro de busca
-  const filteredLogs = useMemo(() => {
-    if (!search.trim()) return logs;
-    const s = search.trim().toLowerCase();
-    return logs.filter(log =>
-      (log.admin_email || "").toLowerCase().includes(s) ||
-      (log.action || "").toLowerCase().includes(s) ||
-      JSON.stringify(log.details || {}).toLowerCase().includes(s)
-    );
-  }, [logs, search]);
+  // Função para registrar ação do administrador
+  const logAdminAction = (action: string, details: any, adminEmail?: string) => {
+    createLogMutation.mutate({
+      action,
+      details,
+      admin_email: adminEmail
+    });
+  };
 
-  // Paginação
-  const totalPages = Math.ceil(filteredLogs.length / perPage) || 1;
-  const paginatedLogs = useMemo(() => {
-    const start = (page - 1) * perPage;
-    return filteredLogs.slice(start, start + perPage);
-  }, [filteredLogs, page]);
+  const getActionBadgeVariant = (action: string) => {
+    switch (action.toLowerCase()) {
+      case "create":
+      case "created":
+        return "default";
+      case "update":
+      case "updated":
+        return "secondary";
+      case "delete":
+      case "deleted":
+        return "destructive";
+      case "login":
+        return "outline";
+      default:
+        return "secondary";
+    }
+  };
 
-  React.useEffect(() => { setPage(1); }, [search, action, adminId, dateFrom, dateTo]);
+  const uniqueActions = [...new Set(logs.map(log => log.action))];
+
+  const handleViewDetails = (log: any) => {
+    setSelectedLog(log);
+    setShowDetailsDialog(true);
+  };
+
+  React.useEffect(() => {
+    // Registrar acesso à página de logs
+    logAdminAction("view_admin_logs", { page: "admin_logs" });
+  }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+    <div className="space-y-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-gray-900">Logs de Administradores</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-6 w-6" />
+            Logs de Administradores
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row md:items-end gap-4 mb-4">
-            <Input
-              placeholder="Buscar por email, ação ou palavra-chave..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="max-w-xs"
-            />
-            <Select value={action} onValueChange={setAction}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="Ação" /></SelectTrigger>
+          {/* Filtros */}
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1">
+              <Input
+                placeholder="Buscar por email do admin ou ação..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={actionFilter} onValueChange={setActionFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por ação" />
+              </SelectTrigger>
               <SelectContent>
-                {ACTIONS.map(a => (
-                  <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={adminId} onValueChange={setAdminId}>
-              <SelectTrigger className="w-56"><SelectValue placeholder="Administrador" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
-                {admins.map((a: any) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.first_name && a.last_name ? `${a.first_name} ${a.last_name}` : a.id}
+                <SelectItem value="all">Todas as ações</SelectItem>
+                {uniqueActions.map((action) => (
+                  <SelectItem key={action} value={action}>
+                    {action}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-              <span className="text-muted-foreground">até</span>
-              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-            </div>
           </div>
-          <div className="border rounded-md overflow-x-auto bg-white">
-            <Table className="min-w-[900px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Admin</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Ação</TableHead>
-                  <TableHead>Detalhes</TableHead>
+
+          {/* Tabela de logs */}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data/Hora</TableHead>
+                <TableHead>Administrador</TableHead>
+                <TableHead>Ação</TableHead>
+                <TableHead>Detalhes</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      {log.admin_email || "Sistema"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getActionBadgeVariant(log.action)}>
+                      {log.action}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[300px] truncate">
+                    {typeof log.details === "object" 
+                      ? JSON.stringify(log.details).substring(0, 100) + "..."
+                      : log.details?.toString().substring(0, 100) + "..."
+                    }
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDetails(log)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedLogs.map(log => {
-                  const admin = admins.find((a: any) => a.id === log.admin_id);
-                  return (
-                    <TableRow key={log.id}>
-                      <TableCell>{format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
-                      <TableCell>
-                        {admin?.first_name && admin?.last_name 
-                          ? `${admin.first_name} ${admin.last_name}` 
-                          : "-"}
-                      </TableCell>
-                      <TableCell>{log.admin_email}</TableCell>
-                      <TableCell>{ACTIONS.find(a => a.value === log.action)?.label || log.action}</TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline" onClick={() => { setSelectedLog(log); setShowDetails(true); }}>Ver</Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {paginatedLogs.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum log encontrado</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {/* Paginação */}
-          <div className="flex items-center gap-2 mt-4">
-            <span className="text-sm text-muted-foreground">{filteredLogs.length} logs</span>
-            <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(1)}>&laquo;</Button>
-            <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>&lsaquo;</Button>
-            <span className="text-sm">Página {page} de {totalPages}</span>
-            <Button variant="ghost" size="icon" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>&rsaquo;</Button>
-            <Button variant="ghost" size="icon" disabled={page === totalPages} onClick={() => setPage(totalPages)}>&raquo;</Button>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
+
+          {logs.length === 0 && !isLoading && (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum log encontrado.
+            </div>
+          )}
         </CardContent>
       </Card>
-      {/* Modal de detalhes */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+
+      {/* Dialog de detalhes */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Log</DialogTitle>
           </DialogHeader>
           {selectedLog && (
-            <pre className="bg-gray-100 rounded p-4 text-xs overflow-x-auto max-h-96">
-              {JSON.stringify(selectedLog.details, null, 2)}
-            </pre>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Data/Hora:</label>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(selectedLog.created_at), "dd/MM/yyyy HH:mm:ss")}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Administrador:</label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedLog.admin_email || "Sistema"}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Ação:</label>
+                  <Badge variant={getActionBadgeVariant(selectedLog.action)}>
+                    {selectedLog.action}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">ID do Log:</label>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {selectedLog.id}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Detalhes:</label>
+                <pre className="mt-2 p-4 bg-muted rounded-lg text-sm overflow-auto max-h-[300px]">
+                  {JSON.stringify(selectedLog.details, null, 2)}
+                </pre>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
-} 
+}

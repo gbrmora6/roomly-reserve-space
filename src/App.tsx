@@ -43,6 +43,9 @@ import CompanyProfile from "./pages/admin/CompanyProfile";
 import BranchesPage from "./pages/admin/Branches";
 import AdminsPage from "./pages/admin/Admins";
 import ProductSales from "./pages/admin/ProductSales";
+import AdminUsers from "@/pages/admin/AdminUsers";
+import TodayReservations from "@/pages/admin/TodayReservations";
+import Coupons from "@/pages/admin/Coupons";
 
 const queryClient = new QueryClient();
 
@@ -131,6 +134,9 @@ function App() {
                       <Route path="clients" element={<Clients />} />
                       <Route path="company-profile" element={<CompanyProfile />} />
                       <Route path="product-sales" element={<ProductSales />} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="today-reservations" element={<TodayReservations />} />
+                      <Route path="coupons" element={<Coupons />} />
                       {/* Rotas exclusivas do superadmin */}
                       {/* <Route path="branches" element={<ProtectedRoute requireAdmin requireSuperAdmin><BranchesPage /></ProtectedRoute>} /> */}
                       {/* <Route path="admins" element={<ProtectedRoute requireAdmin requireSuperAdmin><AdminsPage /></ProtectedRoute>} /> */}
