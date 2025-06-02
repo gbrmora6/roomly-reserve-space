@@ -29,12 +29,12 @@ export default function TodayReservations() {
         .select(`
           *,
           room:rooms(name),
-          profiles!bookings_user_id_fkey(first_name, last_name, email)
+          user:profiles!bookings_user_id_fkey(first_name, last_name, email)
         `)
         .eq("branch_id", branchId)
         .gte("start_time", startOfToday)
         .lte("start_time", endOfToday)
-        .in("status", ["paid", "confirmed"]);
+        .in("status", ["confirmed"]);
 
       if (roomError) throw roomError;
 
@@ -44,12 +44,12 @@ export default function TodayReservations() {
         .select(`
           *,
           equipment(name),
-          profiles!booking_equipment_user_id_fkey(first_name, last_name, email)
+          user:profiles!booking_equipment_user_id_fkey(first_name, last_name, email)
         `)
         .eq("branch_id", branchId)
         .gte("start_time", startOfToday)
         .lte("start_time", endOfToday)
-        .in("status", ["paid", "confirmed"]);
+        .in("status", ["confirmed"]);
 
       if (equipmentError) throw equipmentError;
 
@@ -59,37 +59,34 @@ export default function TodayReservations() {
         .select(`
           *,
           order_items(quantity, product:products(name)),
-          profiles!orders_user_id_fkey(first_name, last_name, email)
+          user:profiles!orders_user_id_fkey(first_name, last_name, email)
         `)
         .eq("branch_id", branchId)
         .gte("created_at", startOfToday)
         .lte("created_at", endOfToday)
-        .in("status", ["paid", "confirmed"]);
+        .eq("status", "confirmed");
 
       if (ordersError) throw ordersError;
 
       // Combinar todos os dados
       const allReservations = [
-        ...roomBookings.map(booking => ({
+        ...(roomBookings || []).map(booking => ({
           ...booking,
-          type: "room",
-          user: booking.profiles,
+          type: "room" as const,
           title: booking.room?.name || "Sala",
           time: booking.start_time,
           details: `${format(new Date(booking.start_time), "HH:mm")} - ${format(new Date(booking.end_time), "HH:mm")}`
         })),
-        ...equipmentBookings.map(booking => ({
+        ...(equipmentBookings || []).map(booking => ({
           ...booking,
-          type: "equipment",
-          user: booking.profiles,
+          type: "equipment" as const,
           title: booking.equipment?.name || "Equipamento",
           time: booking.start_time,
           details: `${booking.quantity}x - ${format(new Date(booking.start_time), "HH:mm")} - ${format(new Date(booking.end_time), "HH:mm")}`
         })),
-        ...orders.map(order => ({
+        ...(orders || []).map(order => ({
           ...order,
-          type: "order",
-          user: order.profiles,
+          type: "order" as const,
           title: "Compra de Produtos",
           time: order.created_at,
           details: order.order_items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(", ") || ""
@@ -105,8 +102,16 @@ export default function TodayReservations() {
   const filteredData = todayData.filter(item => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
-    const userName = `${item.user?.first_name || ""} ${item.user?.last_name || ""}`.toLowerCase();
-    const userEmail = item.user?.email?.toLowerCase() || "";
+    
+    // Verificar se user existe e tem as propriedades esperadas
+    const userName = item.user && typeof item.user === 'object' && 'first_name' in item.user && 'last_name' in item.user
+      ? `${item.user.first_name || ""} ${item.user.last_name || ""}`.toLowerCase()
+      : "";
+    
+    const userEmail = item.user && typeof item.user === 'object' && 'email' in item.user
+      ? (item.user.email || "").toLowerCase()
+      : "";
+    
     const title = item.title?.toLowerCase() || "";
     
     return userName.includes(searchLower) || 
@@ -181,10 +186,16 @@ export default function TodayReservations() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      {item.user?.first_name} {item.user?.last_name}
+                      {item.user && typeof item.user === 'object' && 'first_name' in item.user && 'last_name' in item.user
+                        ? `${item.user.first_name || ""} ${item.user.last_name || ""}`
+                        : "Usuário não encontrado"}
                     </div>
                   </TableCell>
-                  <TableCell>{item.user?.email}</TableCell>
+                  <TableCell>
+                    {item.user && typeof item.user === 'object' && 'email' in item.user
+                      ? item.user.email || ""
+                      : ""}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getTypeIcon(item.type)}
@@ -202,11 +213,12 @@ export default function TodayReservations() {
                     }
                   </TableCell>
                   <TableCell>
-                    R$ {item.total_price?.toFixed(2) || "0,00"}
+                    R$ {"total_price" in item ? (item.total_price?.toFixed(2) || "0,00") : 
+                        "total_amount" in item ? (item.total_amount?.toFixed(2) || "0,00") : "0,00"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={item.status === "paid" ? "default" : "secondary"}>
-                      {item.status === "paid" ? "Pago" : "Confirmado"}
+                    <Badge variant="default">
+                      Confirmado
                     </Badge>
                   </TableCell>
                 </TableRow>

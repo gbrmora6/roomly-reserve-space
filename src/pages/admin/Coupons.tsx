@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,10 +67,20 @@ export default function Coupons() {
       if (!branchId) return [];
       const { data, error } = await supabase
         .from("coupon_usage")
-        .select("coupon_id, count(*)")
+        .select("coupon_id")
         .eq("branch_id", branchId);
       if (error) throw error;
-      return data;
+      
+      // Contar uso por cupom
+      const usageCount = data.reduce((acc: Record<string, number>, usage) => {
+        acc[usage.coupon_id] = (acc[usage.coupon_id] || 0) + 1;
+        return acc;
+      }, {});
+      
+      return Object.entries(usageCount).map(([coupon_id, count]) => ({
+        coupon_id,
+        count
+      }));
     },
     enabled: !!branchId,
   });

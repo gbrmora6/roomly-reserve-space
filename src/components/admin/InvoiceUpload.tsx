@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Upload, FileText, File } from "lucide-react";
 import { useAdminLogger } from "@/hooks/useAdminLogger";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 interface InvoiceUploadProps {
   bookingId?: string;
@@ -29,9 +30,12 @@ export const InvoiceUpload = ({
   const [xmlFile, setXmlFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
   const { logAction } = useAdminLogger();
+  const { branchId } = useBranchFilter();
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
+      if (!branchId) throw new Error("Branch ID não encontrado");
+      
       let pdfUrl = null;
       let xmlUrl = null;
 
@@ -76,7 +80,8 @@ export const InvoiceUpload = ({
           order_id: orderId || null,
           pdf_url: pdfUrl,
           xml_url: xmlUrl,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id || "",
+          branch_id: branchId,
         });
 
       if (dbError) throw dbError;
