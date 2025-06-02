@@ -24,6 +24,15 @@ export function useRoomReservation(room: Room, onClose: () => void) {
     }
 
     try {
+      // Buscar o branch_id do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("branch_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
       // Check for overlapping bookings
       const { data: existingBookings, error: queryError } = await supabase
         .from("bookings")
@@ -53,6 +62,7 @@ export function useRoomReservation(room: Room, onClose: () => void) {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         status: "pending",
+        branch_id: profile.branch_id,
       }).select().single();
 
       if (error) {

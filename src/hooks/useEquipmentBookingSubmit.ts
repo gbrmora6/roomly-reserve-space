@@ -38,6 +38,15 @@ export function useEquipmentBookingSubmit({
     setIsSubmitting(true);
 
     try {
+      // Buscar o branch_id do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("branch_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
       // Create date objects for start and end times
       const startDate = new Date(selectedDate);
       const endDate = new Date(selectedDate);
@@ -58,7 +67,8 @@ export function useEquipmentBookingSubmit({
           start_time: startDate.toISOString(),
           end_time: endDate.toISOString(),
           status: "pending",
-          booking_id: null // Explicitly set booking_id to null
+          booking_id: null,
+          branch_id: profile.branch_id
         });
 
       if (equipmentError) throw equipmentError;
