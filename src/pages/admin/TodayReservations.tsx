@@ -143,6 +143,18 @@ export default function TodayReservations() {
     return <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>;
   };
 
+  const getUserName = (user: any) => {
+    if (!user || typeof user !== 'object') return "Usuário não encontrado";
+    if (!('first_name' in user) || !('last_name' in user)) return "Usuário não encontrado";
+    return `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Usuário não encontrado";
+  };
+
+  const getUserEmail = (user: any) => {
+    if (!user || typeof user !== 'object') return "";
+    if (!('email' in user)) return "";
+    return user.email || "";
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -186,15 +198,11 @@ export default function TodayReservations() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      {item.user && typeof item.user === 'object' && 'first_name' in item.user && 'last_name' in item.user
-                        ? `${item.user.first_name || ""} ${item.user.last_name || ""}`
-                        : "Usuário não encontrado"}
+                      {getUserName(item.user)}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {item.user && typeof item.user === 'object' && 'email' in item.user
-                      ? item.user.email || ""
-                      : ""}
+                    {getUserEmail(item.user)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
