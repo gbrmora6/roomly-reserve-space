@@ -103,15 +103,9 @@ export default function TodayReservations() {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     
-    // Verificar se user existe e tem as propriedades esperadas
-    const userName = item.user && typeof item.user === 'object' && 'first_name' in item.user && 'last_name' in item.user
-      ? `${item.user.first_name || ""} ${item.user.last_name || ""}`.toLowerCase()
-      : "";
-    
-    const userEmail = item.user && typeof item.user === 'object' && 'email' in item.user
-      ? (item.user.email || "").toLowerCase()
-      : "";
-    
+    // Use helper functions for safe access
+    const userName = getUserName(item.user).toLowerCase();
+    const userEmail = getUserEmail(item.user).toLowerCase();
     const title = item.title?.toLowerCase() || "";
     
     return userName.includes(searchLower) || 
