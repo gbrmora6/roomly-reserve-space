@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -17,6 +18,9 @@ import {
   Users,
   ShoppingBag,
   FileText,
+  Calendar,
+  UserPlus,
+  Tag,
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,83 +39,119 @@ export const AdminSidebarMenu: React.FC = () => {
 
   return (
     <SidebarGroup>
-      <SidebarMenu className="bg-gradient-to-b from-[#232c43] to-[#1a2233] flex-1 px-6 rounded-r-3xl shadow-2xl flex flex-col gap-4 min-w-[260px] h-full justify-start py-8">
+      <SidebarMenu className="bg-gradient-to-b from-[#232c43] to-[#1a2233] flex-1 px-4 rounded-r-3xl shadow-2xl flex flex-col gap-2 min-w-[260px] h-full justify-start py-4 overflow-y-auto max-h-[calc(100vh-120px)]">
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <LayoutDashboard className="h-5 w-5" />
+            <Link to="/admin" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <LayoutDashboard className="h-4 w-4" />
               <span>Dashboard</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+        
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/company-profile" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/company-profile") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <Building className="h-5 w-5" />
+            <Link to="/admin/today-reservations" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/today-reservations") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Calendar className="h-4 w-4" />
+              <span>Reservas de Hoje</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/company-profile" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/company-profile") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Building className="h-4 w-4" />
               <span>Perfil da empresa</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/rooms" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/rooms") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <Bed className="h-5 w-5" />
+            <Link to="/admin/rooms" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/rooms") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Bed className="h-4 w-4" />
               <span>Salas</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/equipment" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/equipment") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <Mic className="h-5 w-5" />
+            <Link to="/admin/equipment" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/equipment") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Mic className="h-4 w-4" />
               <span>Equipamentos</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/products" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/products") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <ShoppingBag className="h-5 w-5" />
+            <Link to="/admin/products" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/products") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <ShoppingBag className="h-4 w-4" />
               <span>Produtos</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/bookings" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/bookings") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <BookOpen className="h-5 w-5" />
+            <Link to="/admin/coupons" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/coupons") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Tag className="h-4 w-4" />
+              <span>Cupons</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/bookings" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/bookings") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <BookOpen className="h-4 w-4" />
               <span>Reserva de salas</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/equipment-bookings" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/equipment-bookings") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <Package className="h-5 w-5" />
+            <Link to="/admin/equipment-bookings" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/equipment-bookings") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Package className="h-4 w-4" />
               <span>Reserva de equipamentos</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/product-sales" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/product-sales") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <ShoppingBag className="h-5 w-5" />
+            <Link to="/admin/product-sales" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/product-sales") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <ShoppingBag className="h-4 w-4" />
               <span>Vendas de produtos</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/clients" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/clients") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <Users className="h-5 w-5" />
+            <Link to="/admin/clients" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/clients") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Users className="h-4 w-4" />
               <span>Clientes</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
+
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <Link to="/admin/logs" className={`flex items-center gap-3 text-white text-base py-3 px-4 rounded-xl transition-all duration-200 ${isActive("/admin/logs") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
-              <FileText className="h-5 w-5" />
+            <Link to="/admin/users" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/users") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <UserPlus className="h-4 w-4" />
+              <span>Criar Usuários Admin</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/logs" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/logs") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <FileText className="h-4 w-4" />
               <span>Logs de Admin</span>
             </Link>
           </SidebarMenuButton>
