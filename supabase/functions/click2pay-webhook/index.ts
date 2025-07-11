@@ -51,34 +51,34 @@ serve(async (req) => {
       valorPago
     });
 
-    // Mapear eventos da Click2Pay
+    // Mapear eventos da Click2Pay baseado na documentação
     if (tipoEvento === "PAYMENT_RECEIVED" && status === "paid") {
-      // Pagamento confirmado - atualizar pedido
+      // Pagamento confirmado - atualizar pedido usando o tid da Click2Pay
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           status: "paid",
           updated_at: new Date().toISOString()
         })
-        .eq("external_identifier", externalId);
+        .eq("click2pay_tid", transacaoId);
 
       if (updateError) {
         console.error("Erro ao atualizar pedido:", updateError);
         throw new Error("Falha ao atualizar status do pedido");
       }
 
-      // Confirmar carrinho (confirmar reservas de salas e equipamentos)
+      // Buscar a ordem para confirmar o carrinho
       const { data: order } = await supabase
         .from("orders")
-        .select("user_id")
-        .eq("external_identifier", externalId)
+        .select("id, user_id")
+        .eq("click2pay_tid", transacaoId)
         .single();
 
       if (order) {
         const { error: confirmError } = await supabase
           .rpc("confirm_cart_payment", { 
             p_user_id: order.user_id, 
-            p_order_id: externalId 
+            p_order_id: order.id 
           });
 
         if (confirmError) {
@@ -88,26 +88,43 @@ serve(async (req) => {
         }
       }
 
-      console.log(`Pedido ${externalId} marcado como pago via ${metodo}.`);
+      console.log(`Pedido com TID ${transacaoId} marcado como pago via ${metodo}.`);
 
-    } else if (status === "cancelled" || status === "recused") {
-      // Pagamento cancelado/recusado
+    } else if (status === "cancelled" || status === "recused" || status === "expired") {
+      // Pagamento cancelado/recusado/expirado
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           status: "cancelled",
           updated_at: new Date().toISOString()
         })
-        .eq("external_identifier", externalId);
+        .eq("click2pay_tid", transacaoId);
 
       if (updateError) {
         console.error("Erro ao cancelar pedido:", updateError);
         throw new Error("Falha ao cancelar pedido");
       }
 
-      console.log(`Pedido ${externalId} cancelado/recusado.`);
+      console.log(`Pedido com TID ${transacaoId} cancelado/recusado/expirado.`);
+      
+    } else if (status === "authorized") {
+      // Pagamento autorizado (cartão de crédito) - aguardando captura
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ 
+          status: "authorized",
+          updated_at: new Date().toISOString()
+        })
+        .eq("click2pay_tid", transacaoId);
+
+      if (updateError) {
+        console.error("Erro ao atualizar pedido:", updateError);
+      }
+
+      console.log(`Pedido com TID ${transacaoId} autorizado - aguardando captura.`);
+      
     } else {
-      console.log(`Evento não tratado: type=${tipoEvento}, status=${status}.`);
+      console.log(`Evento não tratado: type=${tipoEvento}, status=${status}, tid=${transacaoId}`);
     }
 
     return new Response("OK", { 
