@@ -222,6 +222,20 @@ serve(async (req) => {
           throw new Error("Valor total inválido");
         }
 
+        // Buscar branch_id do usuário
+        const { data: userProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("branch_id")
+          .eq("id", userId)
+          .single();
+
+        if (profileError || !userProfile?.branch_id) {
+          console.error("Erro ao buscar branch do usuário:", profileError);
+          throw new Error("Branch do usuário não encontrado");
+        }
+
+        console.log("Branch ID do usuário:", userProfile.branch_id);
+
         // Criar pedido
         const externalId = `order_${Date.now()}_${userId.slice(0, 8)}`;
         const { data: order, error: orderError } = await supabase
@@ -231,7 +245,8 @@ serve(async (req) => {
             total_amount: totalAmount,
             status: "pending",
             payment_method: paymentMethod,
-            external_identifier: externalId
+            external_identifier: externalId,
+            branch_id: userProfile.branch_id
           })
           .select()
           .single();
@@ -290,43 +305,7 @@ serve(async (req) => {
             }
             transactionResult = await createCardTransaction(accessToken, totalAmount, externalId, payerData, paymentData);
             break;
-      case "approve-boleto-sandbox":
-        // Função para aprovar boleto no sandbox para testes
-        if (!req.body || !req.body.tid) {
-          throw new Error("TID do boleto é obrigatório");
-        }
-
-        const { tid } = await req.json();
-        console.log("Aprovando boleto no sandbox:", tid);
-
-        const approveResponse = await fetch(`https://apisandbox.click2pay.com.br/v1/transactions/boleto/${tid}/approve`, {
-          method: "POST",
-          headers: {
-            "accept": "application/json"
-          }
-        });
-
-        const approveData = await approveResponse.json();
-        
-        if (!approveResponse.ok) {
-          console.error("Erro ao aprovar boleto:", approveData);
-          throw new Error("Falha ao aprovar boleto no sandbox");
-        }
-
-        console.log("Boleto aprovado com sucesso:", approveData);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Boleto aprovado no sandbox",
-            data: approveData
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-
-      default:
+          default:
             throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
         }
 
@@ -374,6 +353,43 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify(responseData),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+
+      case "approve-boleto-sandbox":
+        // Função para aprovar boleto no sandbox para testes
+        const body = await req.json();
+        if (!body || !body.tid) {
+          throw new Error("TID do boleto é obrigatório");
+        }
+
+        const { tid } = body;
+        console.log("Aprovando boleto no sandbox:", tid);
+
+        const approveResponse = await fetch(`https://apisandbox.click2pay.com.br/v1/transactions/boleto/${tid}/approve`, {
+          method: "POST",
+          headers: {
+            "accept": "application/json"
+          }
+        });
+
+        const approveData = await approveResponse.json();
+        
+        if (!approveResponse.ok) {
+          console.error("Erro ao aprovar boleto:", approveData);
+          throw new Error("Falha ao aprovar boleto no sandbox");
+        }
+
+        console.log("Boleto aprovado com sucesso:", approveData);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Boleto aprovado no sandbox",
+            data: approveData
+          }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
