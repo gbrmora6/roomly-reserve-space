@@ -109,28 +109,46 @@ const Checkout = () => {
         }
       });
 
-      if (error) throw error;
-
-      if (!data.success) {
-        throw new Error(data.error || "Erro no processamento do pagamento");
+      if (error) {
+        console.error("Erro na chamada da função:", error);
+        throw new Error("Erro de conexão com o servidor");
       }
 
-      // Limpar carrinho
-      clearCart();
+      if (!data || !data.success) {
+        console.error("Resposta de erro da API:", data);
+        throw new Error(data?.error || "Erro no processamento do pagamento");
+      }
 
-      // Redirecionar baseado no método de pagamento
+      console.log("Resposta da API Click2Pay:", data);
+
+      // Verificar se a transação foi criada corretamente
+      if (!data.orderId) {
+        throw new Error("Erro: Ordem não foi criada corretamente");
+      }
+
+      // Redirecionar baseado no método de pagamento e status
       if (paymentMethod === "cartao") {
-        if (data.status === "paid") {
+        if (data.status === "paid" || data.status === "approved") {
+          // Limpar carrinho apenas se pagamento foi aprovado
+          clearCart();
           toast({
             title: "Pagamento aprovado!",
             description: "Seu pagamento foi processado com sucesso.",
           });
           navigate("/payment-success");
         } else {
-          throw new Error(data.message || "Cartão recusado");
+          throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
         }
       } else {
-        // Para boleto e Pix, redirecionar para página de instrução
+        // Para boleto e Pix, verificar se temos os dados necessários
+        if (!data.barcode && !data.qr_code && !data.pix_code) {
+          throw new Error("Erro: Dados de pagamento não foram gerados corretamente");
+        }
+        
+        // Limpar carrinho
+        clearCart();
+        
+        // Redirecionar para página de instrução
         navigate("/payment-instructions", { 
           state: { 
             paymentMethod, 
