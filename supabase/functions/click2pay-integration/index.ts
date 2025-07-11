@@ -18,8 +18,8 @@ interface PaymentData {
   card_hash?: string;
 }
 
-// Função para obter token de acesso OAuth2
-async function getAccessToken(): Promise<string> {
+// Função para criar headers de autenticação Basic HTTP
+function createBasicAuthHeaders(): Record<string, string> {
   const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID");
   const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET");
   
@@ -27,57 +27,35 @@ async function getAccessToken(): Promise<string> {
     throw new Error("Credenciais da Click2Pay não configuradas");
   }
 
-  const basicAuth = btoa(`${clientId}:${clientSecret}`);
-  console.log("Tentando autenticação OAuth2 com Click2Pay...");
-  
-  const response = await fetch("https://api-auth.sandbox.clik2pay.com/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${basicAuth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials&scope=payment_request/all",
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Erro na autenticação Click2Pay:", error);
-    throw new Error("Falha na autenticação Click2Pay");
-  }
-
-  const data = await response.json();
-  console.log("Token OAuth2 obtido com sucesso");
-  return data.access_token;
-}
-
-// Função para criar headers padrão para API
-function createHeaders(accessToken: string) {
+  const credentials = btoa(`${clientId}:${clientSecret}`);
   return {
-    "x-api-key": Deno.env.get("CLICK2PAY_PUBLIC_KEY") || "",
-    "Authorization": `Bearer ${accessToken}`,
+    "Authorization": `Basic ${credentials}`,
     "Content-Type": "application/json",
+    "Accept": "application/json"
   };
 }
 
 // Função para criar transação PIX
-async function createPixTransaction(accessToken: string, amount: number, externalId: string, payerData: any) {
+async function createPixTransaction(amount: number, externalId: string, payerData: any) {
   const payload = {
-    amount: amount,
-    merchantTransactionId: externalId,
-    expiresIn: 3600, // 1 hora
-    payer: {
+    id: externalId,
+    totalAmount: parseFloat(amount.toFixed(2)),
+    payerInfo: {
       name: payerData.nomeCompleto,
-      taxId: payerData.cpfCnpj.replace(/\D/g, ''),
+      taxid: payerData.cpfCnpj.replace(/\D/g, ''),
       email: payerData.email,
       phone: payerData.telefone
-    }
+    },
+    expiration: "86400", // 24 horas
+    returnQRCode: true,
+    callbackAddress: `${Deno.env.get("SUPABASE_URL")}/functions/v1/click2pay-webhook`
   };
 
-  console.log("Criando transação PIX com payload:", JSON.stringify(payload, null, 2));
+  console.log("Criando transação PIX:", JSON.stringify(payload, null, 2));
 
-  const response = await fetch("https://api.sandbox.clik2pay.com/open/v1/pix/transactions", {
+  const response = await fetch("https://apisandbox.click2pay.com.br/v1/transactions/pix", {
     method: "POST",
-    headers: createHeaders(accessToken),
+    headers: createBasicAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -86,31 +64,33 @@ async function createPixTransaction(accessToken: string, amount: number, externa
   
   if (!response.ok) {
     console.error("Erro ao criar transação PIX:", data);
-    throw new Error(data.errorDescription || data.message || "Erro ao criar transação PIX");
+    throw new Error(data.message || data.error || "Erro ao criar transação PIX");
   }
 
   return data;
 }
 
 // Função para criar transação de boleto
-async function createBoletoTransaction(accessToken: string, amount: number, externalId: string, payerData: any) {
+async function createBoletoTransaction(amount: number, externalId: string, payerData: any) {
   const payload = {
-    amount: amount,
-    merchantTransactionId: externalId,
-    expiresIn: 86400 * 3, // 3 dias
-    payer: {
+    id: externalId,
+    totalAmount: parseFloat(amount.toFixed(2)),
+    payerInfo: {
       name: payerData.nomeCompleto,
-      taxId: payerData.cpfCnpj.replace(/\D/g, ''),
+      taxid: payerData.cpfCnpj.replace(/\D/g, ''),
       email: payerData.email,
       phone: payerData.telefone
-    }
+    },
+    payment_limit_days: 3,
+    description: "Pagamento de produtos/serviços",
+    callbackAddress: `${Deno.env.get("SUPABASE_URL")}/functions/v1/click2pay-webhook`
   };
 
-  console.log("Criando boleto com payload:", JSON.stringify(payload, null, 2));
+  console.log("Criando boleto:", JSON.stringify(payload, null, 2));
 
-  const response = await fetch("https://api.sandbox.clik2pay.com/open/v1/boletos", {
+  const response = await fetch("https://apisandbox.click2pay.com.br/v1/transactions/boleto", {
     method: "POST",
-    headers: createHeaders(accessToken),
+    headers: createBasicAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -119,33 +99,35 @@ async function createBoletoTransaction(accessToken: string, amount: number, exte
   
   if (!response.ok) {
     console.error("Erro ao criar boleto:", data);
-    throw new Error(data.errorDescription || data.message || "Erro ao criar boleto");
+    throw new Error(data.message || data.error || "Erro ao criar boleto");
   }
 
   return data;
 }
 
 // Função para criar transação de cartão
-async function createCardTransaction(accessToken: string, amount: number, externalId: string, payerData: any, cardData: any) {
+async function createCardTransaction(amount: number, externalId: string, payerData: any, cardData: any) {
   const payload = {
-    amount: amount,
-    merchantTransactionId: externalId,
-    card_hash: cardData.card_hash,
-    saveCard: true,
-    installments: cardData.parcelas || 1,
-    payer: {
+    id: externalId,
+    totalAmount: parseFloat(amount.toFixed(2)),
+    payerInfo: {
       name: payerData.nomeCompleto,
-      taxId: payerData.cpfCnpj.replace(/\D/g, ''),
+      taxid: payerData.cpfCnpj.replace(/\D/g, ''),
       email: payerData.email,
       phone: payerData.telefone
-    }
+    },
+    cardHash: cardData.card_hash,
+    capture: true,
+    saveCard: false,
+    installments: cardData.parcelas || 1,
+    callbackAddress: `${Deno.env.get("SUPABASE_URL")}/functions/v1/click2pay-webhook`
   };
 
-  console.log("Criando transação cartão com payload:", JSON.stringify(payload, null, 2));
+  console.log("Criando transação cartão:", JSON.stringify(payload, null, 2));
 
-  const response = await fetch("https://api.sandbox.clik2pay.com/open/v1/transactions", {
+  const response = await fetch("https://apisandbox.click2pay.com.br/v1/transactions/creditcard", {
     method: "POST",
-    headers: createHeaders(accessToken),
+    headers: createBasicAuthHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -154,7 +136,7 @@ async function createCardTransaction(accessToken: string, amount: number, extern
   
   if (!response.ok) {
     console.error("Erro ao criar transação de cartão:", data);
-    throw new Error(data.errorDescription || data.message || "Erro ao criar transação de cartão");
+    throw new Error(data.message || data.error || "Erro ao criar transação de cartão");
   }
 
   return data;
@@ -170,7 +152,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, userId, productIds, quantities, paymentMethod, paymentData } = await req.json();
+    const { action, userId, paymentMethod, paymentData } = await req.json();
     console.log("=== CLICK2PAY INTEGRATION ===");
     console.log("Action:", action);
     console.log("User ID:", userId);
@@ -196,6 +178,18 @@ serve(async (req) => {
           throw new Error("Email do usuário não encontrado");
         }
 
+        // Buscar branch_id do usuário
+        const { data: userProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("branch_id")
+          .eq("id", userId)
+          .single();
+
+        if (profileError || !userProfile?.branch_id) {
+          console.error("Erro ao buscar branch do usuário:", profileError);
+          throw new Error("Branch do usuário não encontrado");
+        }
+
         // Buscar carrinho do usuário
         console.log("Buscando carrinho para usuário:", userId);
         const { data: cartItems, error: cartError } = await supabase
@@ -210,7 +204,7 @@ serve(async (req) => {
           throw new Error("Carrinho vazio");
         }
 
-        // Calcular total do carrinho (preco * quantidade)
+        // Calcular total do carrinho
         const totalAmount = cartItems.reduce((sum, item) => {
           const itemTotal = parseFloat(item.price) * parseInt(item.quantity);
           console.log(`Item ${item.id}: R$ ${item.price} x ${item.quantity} = R$ ${itemTotal}`);
@@ -221,20 +215,6 @@ serve(async (req) => {
         if (totalAmount <= 0) {
           throw new Error("Valor total inválido");
         }
-
-        // Buscar branch_id do usuário
-        const { data: userProfile, error: profileError } = await supabase
-          .from("profiles")
-          .select("branch_id")
-          .eq("id", userId)
-          .single();
-
-        if (profileError || !userProfile?.branch_id) {
-          console.error("Erro ao buscar branch do usuário:", profileError);
-          throw new Error("Branch do usuário não encontrado");
-        }
-
-        console.log("Branch ID do usuário:", userProfile.branch_id);
 
         // Criar pedido
         const externalId = `order_${Date.now()}_${userId.slice(0, 8)}`;
@@ -280,9 +260,6 @@ serve(async (req) => {
           }
         }
 
-        // Obter token de acesso OAuth2
-        const accessToken = await getAccessToken();
-        
         // Preparar dados do pagador
         const payerData = {
           ...paymentData,
@@ -294,37 +271,37 @@ serve(async (req) => {
         // Processar pagamento baseado no método
         switch (paymentMethod) {
           case "pix":
-            transactionResult = await createPixTransaction(accessToken, totalAmount, externalId, payerData);
+            transactionResult = await createPixTransaction(totalAmount, externalId, payerData);
             break;
           case "boleto":
-            transactionResult = await createBoletoTransaction(accessToken, totalAmount, externalId, payerData);
+            transactionResult = await createBoletoTransaction(totalAmount, externalId, payerData);
             break;
           case "cartao":
             if (!paymentData.card_hash) {
               throw new Error("Hash do cartão não fornecido - use cardc2p.js no frontend");
             }
-            transactionResult = await createCardTransaction(accessToken, totalAmount, externalId, payerData, paymentData);
+            transactionResult = await createCardTransaction(totalAmount, externalId, payerData, paymentData);
             break;
           default:
             throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
         }
 
-        // Atualizar pedido com ID da transação
+        // Atualizar pedido com TID da transação
         await supabase
           .from("orders")
           .update({
-            click2pay_tid: transactionResult.id,
+            click2pay_tid: transactionResult.tid,
             status: transactionResult.status === "paid" ? "paid" : "pending"
           })
           .eq("id", order.id);
 
-        console.log("Transação criada com sucesso:", transactionResult.id);
+        console.log("Transação criada com sucesso:", transactionResult.tid);
 
         // Preparar resposta baseada no método
-        let responseData = {
+        let responseData: any = {
           success: true,
           orderId: order.id,
-          transactionId: transactionResult.id,
+          tid: transactionResult.tid,
           status: transactionResult.status,
           paymentMethod
         };
@@ -335,19 +312,20 @@ serve(async (req) => {
             ...responseData,
             qrCode: transactionResult.qrCode,
             qrCodeImage: transactionResult.qrCodeImage,
-            pixCode: transactionResult.pixCode
+            pixCode: transactionResult.pixCode || transactionResult.copyPasteCode
           };
         } else if (paymentMethod === "boleto") {
           responseData = {
             ...responseData,
-            boletoUrl: transactionResult.boletoUrl,
-            barcodeNumber: transactionResult.barcodeNumber,
-            dueDate: transactionResult.dueDate
+            boletoUrl: transactionResult.url_slip || transactionResult.url,
+            barcodeNumber: transactionResult.digitable_line || transactionResult.barcode,
+            dueDate: transactionResult.due_date
           };
         } else if (paymentMethod === "cartao") {
           responseData = {
             ...responseData,
-            message: transactionResult.status === "paid" ? "Pagamento aprovado" : "Aguardando confirmação"
+            message: transactionResult.status === "paid" ? "Pagamento aprovado" : 
+                    transactionResult.status === "recused" ? "Cartão recusado" : "Aguardando confirmação"
           };
         }
 

@@ -1,30 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
-import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, c2p-hash",
 };
-
-// Função para verificar assinatura HMAC
-async function verifyHmacSignature(payload: string, signature: string, secret: string): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  
-  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
-  const computedSignature = Array.from(new Uint8Array(signatureBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  
-  return computedSignature === signature;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,16 +13,17 @@ serve(async (req) => {
 
   try {
     const payload = await req.text();
-    const signature = req.headers.get('x-signature');
-    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "";
+    const c2pHash = req.headers.get('c2p-hash');
+    const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID") || "";
     
     console.log("Webhook Click2Pay recebido");
     console.log("Payload:", payload);
-    console.log("Signature:", signature);
+    console.log("C2P-Hash:", c2pHash);
     
-    // Verificar assinatura HMAC
-    if (!signature || !await verifyHmacSignature(payload, signature, clientSecret)) {
-      console.warn("Webhook Click2Pay com assinatura inválida!");
+    // Verificar assinatura C2P-Hash (base64 do seller_id/client_id)
+    const expectedHash = btoa(clientId);
+    if (!c2pHash || c2pHash !== expectedHash) {
+      console.warn("Webhook Click2Pay com hash inválido!");
       return new Response("Unauthorized", { status: 401 });
     }
 
@@ -54,22 +35,24 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const tipoEvento = evento.type || evento.eventType;
+    const tipoEvento = evento.type;
     const status = evento.status;
-    const externalId = evento.external_identifier || evento.merchantTransactionId;
-    const transacaoId = evento.tid || evento.id;
-    const valorPago = evento.payment?.paid_amount || evento.payment?.amount || evento.amount;
+    const externalId = evento.external_identifier;
+    const transacaoId = evento.tid;
+    const metodo = evento.transaction_type;
+    const valorPago = evento.payment?.paid_amount || evento.payment?.amount;
 
     console.log("Processando evento:", {
       tipo: tipoEvento,
       status,
       externalId,
       transacaoId,
+      metodo,
       valorPago
     });
 
     // Mapear eventos da Click2Pay
-    if (tipoEvento === "PAYMENT_RECEIVED" || tipoEvento === "PAYMENT-COMPLETED" || status === "paid") {
+    if (tipoEvento === "PAYMENT_RECEIVED" && status === "paid") {
       // Pagamento confirmado - atualizar pedido
       const { error: updateError } = await supabase
         .from("orders")
@@ -105,10 +88,10 @@ serve(async (req) => {
         }
       }
 
-      console.log(`Pedido ${externalId} marcado como pago.`);
+      console.log(`Pedido ${externalId} marcado como pago via ${metodo}.`);
 
-    } else if (tipoEvento === "PAYMENT_REFUNDED" || tipoEvento === "PAYMENT_FAILED" || status === "cancelled" || status === "failed") {
-      // Pagamento cancelado/estornado/falhado
+    } else if (status === "cancelled" || status === "recused") {
+      // Pagamento cancelado/recusado
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
@@ -122,7 +105,7 @@ serve(async (req) => {
         throw new Error("Falha ao cancelar pedido");
       }
 
-      console.log(`Pedido ${externalId} cancelado/estornado.`);
+      console.log(`Pedido ${externalId} cancelado/recusado.`);
     } else {
       console.log(`Evento não tratado: type=${tipoEvento}, status=${status}.`);
     }
