@@ -39,11 +39,15 @@ serve(async (req) => {
 
     switch (action) {
       case "create-checkout":
+        console.log("=== DEBUG: Iniciando create-checkout ===");
+        console.log("Parâmetros recebidos:", { userId, productIds, quantities, paymentMethod });
+        
         if (!userId || !productIds || !quantities || productIds.length === 0) {
           throw new Error("Parâmetros obrigatórios faltando");
         }
 
         // Buscar dados do usuário
+        console.log("Buscando dados do usuário:", userId);
         const { data: userData, error: userError } = await supabase
           .auth.admin.getUserById(userId);
 
@@ -53,23 +57,41 @@ serve(async (req) => {
         }
 
         const userEmail = userData.user.email;
+        console.log("Email do usuário:", userEmail);
         
         if (!userEmail) {
           throw new Error("Email do usuário não encontrado");
         }
 
         // Buscar itens do carrinho do usuário para obter o total correto
+        console.log("Buscando carrinho do usuário...");
         const { data: cartItems, error: cartError } = await supabase
           .rpc("get_cart", { p_user_id: userId });
 
-        if (cartError || !cartItems || cartItems.length === 0) {
-          throw new Error(`Erro ao buscar carrinho: ${cartError?.message || "Carrinho vazio"}`);
+        console.log("Resultado do carrinho:", { cartItems, cartError });
+
+        if (cartError) {
+          console.error("Erro ao buscar carrinho:", cartError);
+          throw new Error(`Erro ao buscar carrinho: ${cartError.message}`);
+        }
+
+        if (!cartItems || cartItems.length === 0) {
+          console.log("Carrinho vazio ou nulo");
+          throw new Error("Carrinho vazio");
         }
 
         // Calcular total do carrinho
-        const totalAmount = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
+        console.log("Itens do carrinho encontrados:", cartItems.length);
+        const totalAmount = cartItems.reduce((sum, item) => {
+          const itemPrice = parseFloat(item.price);
+          console.log(`Item: ${item.id}, Price: ${item.price}, Parsed: ${itemPrice}`);
+          return sum + itemPrice;
+        }, 0);
+
+        console.log("Total calculado:", totalAmount);
 
         if (totalAmount <= 0) {
+          console.error("Total inválido:", totalAmount);
           throw new Error("Valor total inválido");
         }
 
