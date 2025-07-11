@@ -16,10 +16,10 @@ serve(async (req) => {
   try {
     const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID") || "";
     const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "";
-    const baseUrl = Deno.env.get("CLICK2PAY_BASE_URL") || "https://apisandbox.click2pay.com.br";
-    const sellerId = Deno.env.get("CLICK2PAY_SELLER_ID") || "";
+    const publicKey = Deno.env.get("CLICK2PAY_PUBLIC_KEY") || "";
+    const baseUrl = "https://apisandbox.click2pay.com.br";
 
-    if (!clientId || !clientSecret) {
+    if (!clientId || !clientSecret || !publicKey) {
       throw new Error("Credenciais Click2Pay não configuradas");
     }
 
