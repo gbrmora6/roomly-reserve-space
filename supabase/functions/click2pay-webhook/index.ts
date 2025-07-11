@@ -1,11 +1,30 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
+import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, c2p-hash",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature",
 };
+
+// Função para verificar assinatura HMAC
+async function verifyHmacSignature(payload: string, signature: string, secret: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  const computedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
+  return computedSignature === signature;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,40 +32,50 @@ serve(async (req) => {
   }
 
   try {
-    const sellerId = Deno.env.get("CLICK2PAY_SELLER_ID") || "";
+    const payload = await req.text();
+    const signature = req.headers.get('x-signature');
+    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "";
     
-    // Validação do header de autenticação C2P-Hash
-    const receivedHash = req.headers.get('c2p-hash');
-    const expectedHash = btoa(sellerId);
+    console.log("Webhook Click2Pay recebido");
+    console.log("Payload:", payload);
+    console.log("Signature:", signature);
     
-    if (!receivedHash || receivedHash !== expectedHash) {
-      console.warn("Webhook Click2Pay com hash inválido!");
+    // Verificar assinatura HMAC
+    if (!signature || !await verifyHmacSignature(payload, signature, clientSecret)) {
+      console.warn("Webhook Click2Pay com assinatura inválida!");
       return new Response("Unauthorized", { status: 401 });
     }
 
     // Parse do evento
-    const evento = await req.json();
-    console.log("Webhook Click2Pay recebido:", JSON.stringify(evento));
+    const evento = JSON.parse(payload);
+    console.log("Evento verificado:", JSON.stringify(evento));
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const tipoEvento = evento.type;
+    const tipoEvento = evento.type || evento.eventType;
     const status = evento.status;
-    const externalId = evento.external_identifier;
-    const transacaoId = evento.tid;
-    const metodo = evento.transaction_type;
-    const valorPago = evento.payment?.paid_amount || evento.payment?.amount;
+    const externalId = evento.external_identifier || evento.merchantTransactionId;
+    const transacaoId = evento.tid || evento.id;
+    const valorPago = evento.payment?.paid_amount || evento.payment?.amount || evento.amount;
 
-    if (tipoEvento === "PAYMENT_RECEIVED" && status === "paid") {
+    console.log("Processando evento:", {
+      tipo: tipoEvento,
+      status,
+      externalId,
+      transacaoId,
+      valorPago
+    });
+
+    // Mapear eventos da Click2Pay
+    if (tipoEvento === "PAYMENT_RECEIVED" || tipoEvento === "PAYMENT-COMPLETED" || status === "paid") {
       // Pagamento confirmado - atualizar pedido
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           status: "paid",
-          paid_at: new Date().toISOString(),
-          paid_amount: valorPago
+          updated_at: new Date().toISOString()
         })
         .eq("external_identifier", externalId);
 
@@ -55,16 +84,36 @@ serve(async (req) => {
         throw new Error("Falha ao atualizar status do pedido");
       }
 
-      console.log(`Pedido ${externalId} marcado como pago via ${metodo}.`);
+      // Confirmar carrinho (confirmar reservas de salas e equipamentos)
+      const { data: order } = await supabase
+        .from("orders")
+        .select("user_id")
+        .eq("external_identifier", externalId)
+        .single();
 
-    } else if (tipoEvento === "PAYMENT_REFUNDED" && status === "cancelled") {
-      // Pagamento cancelado/estornado
+      if (order) {
+        const { error: confirmError } = await supabase
+          .rpc("confirm_cart_payment", { 
+            p_user_id: order.user_id, 
+            p_order_id: externalId 
+          });
+
+        if (confirmError) {
+          console.error("Erro ao confirmar carrinho:", confirmError);
+        } else {
+          console.log("Carrinho confirmado para usuário:", order.user_id);
+        }
+      }
+
+      console.log(`Pedido ${externalId} marcado como pago.`);
+
+    } else if (tipoEvento === "PAYMENT_REFUNDED" || tipoEvento === "PAYMENT_FAILED" || status === "cancelled" || status === "failed") {
+      // Pagamento cancelado/estornado/falhado
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           status: "cancelled",
-          cancelled_at: new Date().toISOString(),
-          cancellation_reason: evento.status_reason
+          updated_at: new Date().toISOString()
         })
         .eq("external_identifier", externalId);
 

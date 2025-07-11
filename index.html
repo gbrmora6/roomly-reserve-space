@@ -15,6 +15,26 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Click2Pay Card Library -->
+    <script>
+      (function() {
+        // Configurar biblioteca Click2Pay com a chave pública
+        window.C2P_PUBLIC_KEY = "pk_test_46ac-a07e-4b16";
+        
+        // Simular a função C2PgenerateHash para desenvolvimento
+        window.C2PgenerateHash = async function(cardDetails) {
+          // Em produção, esta seria a biblioteca real da Click2Pay
+          // Por agora, retornamos um hash simulado
+          const mockHash = btoa(JSON.stringify({
+            number: cardDetails.number.slice(-4),
+            name: cardDetails.name,
+            timestamp: Date.now()
+          }));
+          return `c2p_${mockHash}`;
+        };
+      })();
+    </script>
   </head>
 
   <body>

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
@@ -13,6 +13,30 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Declaração de tipos para a biblioteca Click2Pay
+declare global {
+  interface Window {
+    C2PgenerateHash: (cardDetails: {
+      number: string;
+      name: string;
+      expiry: string;
+      cvc: string;
+    }) => Promise<string>;
+  }
+}
+
+interface PaymentData {
+  nomeCompleto: string;
+  cpfCnpj: string;
+  telefone: string;
+  numeroCartao: string;
+  nomeNoCartao: string;
+  validadeCartao: string;
+  cvv: string;
+  parcelas: number;
+  card_hash?: string;
+}
+
 const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -21,7 +45,7 @@ const Checkout = () => {
   
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [loading, setLoading] = useState(false);
-  const [paymentData, setPaymentData] = useState({
+  const [paymentData, setPaymentData] = useState<PaymentData>({
     nomeCompleto: "",
     cpfCnpj: "",
     telefone: "",
@@ -49,17 +73,39 @@ const Checkout = () => {
     setLoading(true);
     
     try {
-      const productIds = cartItems.map(item => item.item_id);
-      const quantities = cartItems.map(item => item.quantity);
+      let processedPaymentData = { ...paymentData };
+
+      // Para cartão de crédito, gerar card_hash usando cardc2p.js
+      if (paymentMethod === "cartao") {
+        // Verificar se a biblioteca cardc2p foi carregada
+        if (!window.C2PgenerateHash) {
+          throw new Error("Biblioteca de cartão não carregada. Recarregue a página.");
+        }
+
+        const cardDetails = {
+          number: paymentData.numeroCartao.replace(/\s/g, ''),
+          name: paymentData.nomeNoCartao,
+          expiry: paymentData.validadeCartao,
+          cvc: paymentData.cvv
+        };
+
+        console.log("Gerando card_hash para cartão...");
+        const cardHash = await window.C2PgenerateHash(cardDetails);
+        
+        if (!cardHash) {
+          throw new Error("Erro ao processar dados do cartão");
+        }
+
+        processedPaymentData.card_hash = cardHash;
+        console.log("Card hash gerado com sucesso");
+      }
 
       const { data, error } = await supabase.functions.invoke('click2pay-integration', {
         body: {
           action: 'create-checkout',
           userId: user.id,
-          productIds,
-          quantities,
           paymentMethod,
-          paymentData
+          paymentData: processedPaymentData
         }
       });
 
