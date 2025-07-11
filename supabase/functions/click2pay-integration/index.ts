@@ -58,19 +58,16 @@ serve(async (req) => {
           throw new Error("Email do usuário não encontrado");
         }
 
-        // Buscar produtos do carrinho
-        const { data: productsData, error: productsError } = await supabase
-          .from("products")
-          .select("id, name, price")
-          .in("id", productIds);
+        // Buscar itens do carrinho do usuário para obter o total correto
+        const { data: cartItems, error: cartError } = await supabase
+          .rpc("get_cart", { p_user_id: userId });
 
-        if (productsError || !productsData) {
-          throw new Error(`Erro ao buscar produtos: ${productsError?.message || "Produtos não encontrados"}`);
+        if (cartError || !cartItems || cartItems.length === 0) {
+          throw new Error(`Erro ao buscar carrinho: ${cartError?.message || "Carrinho vazio"}`);
         }
 
         // Calcular total do carrinho
-        const totalAmount = productsData.reduce((sum, product, index) => 
-          sum + (product.price * quantities[index]), 0);
+        const totalAmount = cartItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
 
         if (totalAmount <= 0) {
           throw new Error("Valor total inválido");
@@ -178,14 +175,25 @@ serve(async (req) => {
           throw new Error(`Erro ao criar pedido: ${orderError?.message || "Erro desconhecido"}`);
         }
 
-        // Criar itens do pedido
-        const orderItems = productIds.map((productId, index) => {
-          const product = productsData.find(p => p.id === productId);
+        // Criar itens do pedido baseado nos itens do carrinho
+        const orderItems = cartItems.map((cartItem) => {
+          let itemName = "";
+          
+          // Determinar o nome do item baseado no tipo
+          if (cartItem.item_type === "room") {
+            itemName = `Reserva de Sala - ${cartItem.metadata?.date || ""}`;
+          } else if (cartItem.item_type === "equipment") {
+            itemName = `Reserva de Equipamento - ${cartItem.metadata?.date || ""}`;
+          } else if (cartItem.item_type === "product") {
+            itemName = `Produto - ID: ${cartItem.item_id}`;
+          }
+
           return {
             order_id: order.id,
-            product_id: productId,
-            quantity: quantities[index],
-            price_per_unit: product?.price || 0,
+            product_id: cartItem.item_id,
+            quantity: cartItem.quantity,
+            price_per_unit: parseFloat(cartItem.price),
+            branch_id: cartItem.branch_id
           };
         });
 
