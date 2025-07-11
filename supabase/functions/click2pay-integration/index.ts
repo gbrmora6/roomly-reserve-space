@@ -148,11 +148,23 @@ serve(async (req) => {
   }
 
   try {
+    console.log("=== REQUISIÇÃO RECEBIDA ===");
+    console.log("Method:", req.method);
+    console.log("Headers:", Object.fromEntries(req.headers.entries()));
+    
+    const body = await req.json();
+    console.log("Body recebido:", JSON.stringify(body, null, 2));
+    
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Variáveis de ambiente do Supabase não configuradas");
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, userId, paymentMethod, paymentData } = await req.json();
+    const { action, userId, paymentMethod, paymentData } = body;
     console.log("=== CLICK2PAY INTEGRATION ===");
     console.log("Action:", action);
     console.log("User ID:", userId);
@@ -338,7 +350,6 @@ serve(async (req) => {
 
       case "approve-boleto-sandbox":
         // Função para aprovar boleto no sandbox para testes
-        const body = await req.json();
         if (!body || !body.tid) {
           throw new Error("TID do boleto é obrigatório");
         }
