@@ -709,8 +709,11 @@ export type Database = {
       orders: {
         Row: {
           branch_id: string
+          click2pay_tid: string | null
           created_at: string | null
+          external_identifier: string | null
           id: string
+          payment_method: string | null
           status: string
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
@@ -720,8 +723,11 @@ export type Database = {
         }
         Insert: {
           branch_id: string
+          click2pay_tid?: string | null
           created_at?: string | null
+          external_identifier?: string | null
           id?: string
+          payment_method?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
@@ -731,8 +737,11 @@ export type Database = {
         }
         Update: {
           branch_id?: string
+          click2pay_tid?: string | null
           created_at?: string | null
+          external_identifier?: string | null
           id?: string
+          payment_method?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
