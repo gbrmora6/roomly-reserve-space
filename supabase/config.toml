@@ -3,3 +3,6 @@ project_id = "fgiidcdsvmqxdkclgety"
 
 [functions.stripe-integration]
 verify_jwt = true
+
+[functions.click2pay-integration]
+verify_jwt = true

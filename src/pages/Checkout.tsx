@@ -100,6 +100,13 @@ const Checkout = () => {
         console.log("Card hash gerado com sucesso");
       }
 
+      console.log("Enviando dados para edge function:", {
+        action: 'create-checkout',
+        userId: user.id,
+        paymentMethod,
+        paymentData: processedPaymentData
+      });
+
       const { data, error } = await supabase.functions.invoke('click2pay-integration', {
         body: {
           action: 'create-checkout',
@@ -109,9 +116,16 @@ const Checkout = () => {
         }
       });
 
+      console.log("Resposta completa da função:", { data, error });
+
       if (error) {
-        console.error("Erro na chamada da função:", error);
-        throw new Error("Erro de conexão com o servidor");
+        console.error("Erro detalhado na chamada da função:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          context: error.context
+        });
+        throw new Error(`Erro de conexão: ${error.message}`);
       }
 
       if (!data || !data.success) {
