@@ -290,7 +290,43 @@ serve(async (req) => {
             }
             transactionResult = await createCardTransaction(accessToken, totalAmount, externalId, payerData, paymentData);
             break;
-          default:
+      case "approve-boleto-sandbox":
+        // Função para aprovar boleto no sandbox para testes
+        if (!req.body || !req.body.tid) {
+          throw new Error("TID do boleto é obrigatório");
+        }
+
+        const { tid } = await req.json();
+        console.log("Aprovando boleto no sandbox:", tid);
+
+        const approveResponse = await fetch(`https://apisandbox.click2pay.com.br/v1/transactions/boleto/${tid}/approve`, {
+          method: "POST",
+          headers: {
+            "accept": "application/json"
+          }
+        });
+
+        const approveData = await approveResponse.json();
+        
+        if (!approveResponse.ok) {
+          console.error("Erro ao aprovar boleto:", approveData);
+          throw new Error("Falha ao aprovar boleto no sandbox");
+        }
+
+        console.log("Boleto aprovado com sucesso:", approveData);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Boleto aprovado no sandbox",
+            data: approveData
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+
+      default:
             throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
         }
 
