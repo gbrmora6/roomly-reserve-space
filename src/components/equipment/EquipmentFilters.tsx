@@ -60,9 +60,9 @@ export const EquipmentFilters: React.FC<FiltersProps> = ({
   const isFilterActive =
     !!filters.date && !!filters.startTime && !!filters.endTime;
 
-  // Generate hours from 7:00 to 22:00 for time selection
-  const hours = Array.from({ length: 16 }, (_, i) => {
-    const hour = i + 7;
+  // Generate hours from 9:00 to 18:00 for equipment time selection
+  const hours = Array.from({ length: 10 }, (_, i) => {
+    const hour = i + 9;
     return `${hour.toString().padStart(2, '0')}:00`;
   });
 
