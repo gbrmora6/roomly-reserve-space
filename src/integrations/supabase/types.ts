@@ -187,6 +187,50 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_sync_log: {
+        Row: {
+          action: string
+          branch_id: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          google_event_id: string | null
+          id: string
+          room_id: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          branch_id: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          google_event_id?: string | null
+          id?: string
+          room_id?: string | null
+          status?: string
+        }
+        Update: {
+          action?: string
+          branch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          google_event_id?: string | null
+          id?: string
+          room_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_sync_log_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           branch_id: string
@@ -1181,6 +1225,7 @@ export type Database = {
           close_time: string | null
           created_at: string | null
           description: string | null
+          google_calendar_id: string | null
           has_ac: boolean | null
           has_chairs: boolean | null
           has_private_bathroom: boolean | null
@@ -1200,6 +1245,7 @@ export type Database = {
           close_time?: string | null
           created_at?: string | null
           description?: string | null
+          google_calendar_id?: string | null
           has_ac?: boolean | null
           has_chairs?: boolean | null
           has_private_bathroom?: boolean | null
@@ -1219,6 +1265,7 @@ export type Database = {
           close_time?: string | null
           created_at?: string | null
           description?: string | null
+          google_calendar_id?: string | null
           has_ac?: boolean | null
           has_chairs?: boolean | null
           has_private_bathroom?: boolean | null
