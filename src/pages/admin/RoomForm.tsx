@@ -262,6 +262,20 @@ const RoomForm: React.FC = () => {
         throw new Error(errorRoom?.message || "Erro desconhecido ao criar/atualizar sala");
       }
 
+      // Gerenciar schedules
+      if (isEditing) {
+        // Ao editar, primeiro remove os schedules antigos
+        const { error: deleteSchedulesError } = await supabase
+          .from("room_schedules")
+          .delete()
+          .eq("room_id", roomId);
+
+        if (deleteSchedulesError) {
+          throw new Error(deleteSchedulesError.message || "Erro ao remover horários antigos");
+        }
+      }
+
+      // Inserir novos schedules (tanto para criação quanto edição)
       if (schedules.length > 0) {
         const schedulesToInsert = schedules.map(schedule => ({
           room_id: roomId,

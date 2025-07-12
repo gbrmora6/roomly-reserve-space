@@ -1535,6 +1535,14 @@ export type Database = {
           user_id: string | null
         }[]
       }
+      get_room_availability: {
+        Args: { p_room_id: string; p_date: string }
+        Returns: {
+          hour: string
+          is_available: boolean
+          blocked_reason: string
+        }[]
+      }
       has_permission: {
         Args: {
           p_user_id: string

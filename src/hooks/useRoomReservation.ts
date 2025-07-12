@@ -33,45 +33,34 @@ export function useRoomReservation(room: Room, onClose: () => void) {
 
       if (profileError) throw profileError;
 
-      // Check for overlapping bookings
-      const { data: existingBookings, error: queryError } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("room_id", room.id)
-        .not("status", "eq", "cancelled")
-        .or(`and(start_time.lt.${endTime.toISOString()},end_time.gt.${startTime.toISOString()})`);
+      console.log("Adicionando reserva ao carrinho via RPC add_to_cart");
 
-      if (queryError) {
-        throw queryError;
-      }
-
-      if (existingBookings && existingBookings.length > 0) {
-        toast({
-          variant: "destructive",
-          title: "Horário indisponível",
-          description: "Horário já reservado! Escolha outro horário."
-        });
-        setLoading(false);
-        return null;
-      }
-
-      // Create the booking
-      const { data, error } = await supabase.from("bookings").insert({
-        user_id: user.id,
-        room_id: room.id,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        status: "pending",
-        branch_id: profile.branch_id,
-      }).select().single();
+      // Usar a função add_to_cart que já faz toda a validação e criação da reserva temporária
+      const { data: cartItem, error } = await supabase.rpc("add_to_cart", {
+        p_user_id: user.id,
+        p_item_type: "room",
+        p_item_id: room.id,
+        p_quantity: 1,
+        p_metadata: {
+          room_name: room.name,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          date: format(startTime, "yyyy-MM-dd"),
+          start_hour: format(startTime, "HH:mm"),
+          end_hour: format(endTime, "HH:mm")
+        }
+      });
 
       if (error) {
+        console.error("Erro no add_to_cart:", error);
         throw error;
       }
 
-      return data;
+      console.log("Reserva adicionada ao carrinho com sucesso:", cartItem);
+      
+      return cartItem;
     } catch (error: any) {
-      console.error("Error creating booking:", error);
+      console.error("Error creating reservation:", error);
       toast({
         variant: "destructive",
         title: "Erro ao reservar",

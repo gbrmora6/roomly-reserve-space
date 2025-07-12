@@ -33,6 +33,16 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       return;
     }
 
+    // Validar horários
+    if (selectedStartTime >= selectedEndTime) {
+      toast({
+        variant: "destructive",
+        title: "Horário inválido",
+        description: "O horário de término deve ser posterior ao de início",
+      });
+      return;
+    }
+
     const startDate = new Date(selectedDate);
     const [startHour, startMinute] = selectedStartTime.split(":");
     startDate.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
@@ -45,8 +55,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
 
     if (booking) {
       toast({
-        title: "Reserva realizada com sucesso!",
-        description: "Você receberá uma confirmação em breve.",
+        title: "Reserva adicionada ao carrinho!",
+        description: "Você tem 15 minutos para finalizar o pagamento.",
       });
       onClose();
     }
