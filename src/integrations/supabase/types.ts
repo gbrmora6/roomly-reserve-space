@@ -1535,6 +1535,19 @@ export type Database = {
           user_id: string | null
         }[]
       }
+      get_equipment_availability: {
+        Args: {
+          p_equipment_id: string
+          p_date: string
+          p_requested_quantity?: number
+        }
+        Returns: {
+          hour: string
+          is_available: boolean
+          available_quantity: number
+          blocked_reason: string
+        }[]
+      }
       get_room_availability: {
         Args: { p_room_id: string; p_date: string }
         Returns: {

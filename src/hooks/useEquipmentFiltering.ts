@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 // Interface para definir os filtros de equipamentos
 interface EquipmentFilters {
@@ -89,45 +90,64 @@ export const useEquipmentFiltering = () => {
         }));
       }
 
-      // Construir datas de início e fim para verificar disponibilidade
-      const startDate = new Date(filters.date);
-      const [startHours, startMinutes] = filters.startTime.split(':');
-      startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-
-      const endDate = new Date(filters.date);
-      const [endHours, endMinutes] = filters.endTime.split(':');
-      endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-
+      // Usar a função get_equipment_availability para verificar disponibilidade de cada equipamento
+      const dateStr = format(filters.date, 'yyyy-MM-dd');
+      const startHour = parseInt(filters.startTime.split(':')[0]);
+      const endHour = parseInt(filters.endTime.split(':')[0]);
+      
       console.log("Verificando disponibilidade para:", {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
+        date: dateStr,
+        startHour,
+        endHour
       });
 
-      // Buscar reservas de equipamentos que conflitam com o horário
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('booking_equipment')
-        .select('equipment_id, quantity')
-        .not('status', 'eq', 'cancelled')
-        .lte('start_time', endDate.toISOString())
-        .gte('end_time', startDate.toISOString());
+      const availableEquipment = [];
+      
+      for (const equipment of allEquipment || []) {
+        // Buscar disponibilidade do equipamento para a data selecionada
+        const { data: availability, error: availabilityError } = await supabase
+          .rpc('get_equipment_availability', {
+            p_equipment_id: equipment.id,
+            p_date: dateStr,
+            p_requested_quantity: 1 // Por enquanto, verificar se há pelo menos 1 unidade disponível
+          });
 
-      if (bookingsError) {
-        console.error("Erro ao buscar reservas de equipamentos:", bookingsError);
-        throw bookingsError;
+        if (availabilityError) {
+          console.error(`Erro ao verificar disponibilidade do equipamento ${equipment.name}:`, availabilityError);
+          continue;
+        }
+
+        // Verificar se todos os horários solicitados estão disponíveis
+        if (availability && availability.length > 0) {
+          const requestedHours = [];
+          for (let hour = startHour; hour < endHour; hour++) {
+            requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
+          }
+
+          const availableSlots = availability.filter(slot => slot.is_available);
+          const availableHours = availableSlots.map(slot => slot.hour);
+
+          // Verificar se todos os horários solicitados estão disponíveis
+          const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
+          
+          if (allHoursAvailable) {
+            // Calcular a menor quantidade disponível em todos os horários solicitados
+            const minAvailable = Math.min(...availableSlots
+              .filter(slot => requestedHours.includes(slot.hour))
+              .map(slot => slot.available_quantity));
+              
+            console.log(`Equipamento ${equipment.name} disponível para o período solicitado (${minAvailable} unidades)`);
+            availableEquipment.push({
+              ...equipment,
+              available: minAvailable
+            });
+          } else {
+            console.log(`Equipamento ${equipment.name} não disponível para todo o período solicitado`);
+          }
+        } else {
+          console.log(`Equipamento ${equipment.name} fechado na data ${dateStr}`);
+        }
       }
-
-      // Calcular quantidades reservadas por equipamento
-      const reservedQuantities: Record<string, number> = {};
-      bookings?.forEach(booking => {
-        reservedQuantities[booking.equipment_id] = 
-          (reservedQuantities[booking.equipment_id] || 0) + booking.quantity;
-      });
-
-      // Filtrar equipamentos com quantidade disponível
-      const availableEquipment = (allEquipment || []).map(equipment => ({
-        ...equipment,
-        available: equipment.quantity - (reservedQuantities[equipment.id] || 0)
-      })).filter(equipment => equipment.available > 0);
 
       console.log("Equipamentos disponíveis:", availableEquipment.length);
       return availableEquipment;
