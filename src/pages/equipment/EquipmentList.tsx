@@ -123,7 +123,7 @@ const EquipmentList: React.FC = () => {
               continue;
             }
 
-            // Verificar se todos os horários solicitados estão disponíveis
+            // Verificar se há pelo menos alguns horários disponíveis no período solicitado
             if (availability && availability.length > 0) {
               const requestedHours = [];
               for (let hour = startHour; hour < endHour; hour++) {
@@ -133,17 +133,17 @@ const EquipmentList: React.FC = () => {
               const availableSlots = availability.filter(slot => slot.is_available);
               const availableHours = availableSlots.map(slot => slot.hour);
 
-              // Verificar se todos os horários solicitados estão disponíveis
-              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
+              // Verificar se há pelo menos um horário disponível no período solicitado
+              const hasAvailableHours = requestedHours.some(hour => availableHours.includes(hour));
               
-              if (allHoursAvailable) {
-                console.log(`Equipamento ${equip.name} disponível para o período solicitado`);
+              if (hasAvailableHours) {
+                console.log(`Equipamento ${equip.name} tem horários disponíveis no período solicitado`);
                 availableEquipment.push({
                   ...equip,
                   available: Math.min(...availableSlots.map(slot => slot.available_quantity))
                 });
               } else {
-                console.log(`Equipamento ${equip.name} não disponível para todo o período solicitado`);
+                console.log(`Equipamento ${equip.name} não tem horários disponíveis no período solicitado`);
               }
             } else {
               console.log(`Equipamento ${equip.name} fechado na data ${dateStr}`);
