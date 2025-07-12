@@ -83,17 +83,16 @@ const ProductStore = () => {
           description="Encontre os melhores produtos para suas necessidades"
         />
 
-        <div className="mb-4">
-          <CityFilter
-            selectedCity={selectedCity}
-            onCityChange={setSelectedCity}
-            placeholder="Selecione uma cidade"
-          />
-        </div>
-
         <FilterBar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          filters={{ city: selectedCity }}
+          onFiltersChange={(newFilters) => {
+            if (newFilters.city !== selectedCity) {
+              setSelectedCity(newFilters.city || "all");
+            }
+          }}
+          showLocationFilter
           placeholder="Buscar produtos..."
         />
 

@@ -9,6 +9,7 @@ import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
 import { CityFilter } from "@/components/shared/CityFilter";
 import { Database } from "@/integrations/supabase/types";
+import { ReserveEquipmentModal } from "@/components/equipment/ReserveEquipmentModal";
 import { 
   Wrench, 
   Clock, 
@@ -32,6 +33,8 @@ interface Equipment {
 const EquipmentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   
   const { 
     filters, 
@@ -80,22 +83,20 @@ const EquipmentList: React.FC = () => {
           description="Encontre e reserve equipamentos para suas necessidades"
         />
 
-        <div className="mb-4">
-          <CityFilter
-            selectedCity={selectedCity}
-            onCityChange={setSelectedCity}
-            placeholder="Selecione uma cidade"
-          />
-        </div>
-
         <FilterBar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          filters={filters}
-          onFiltersChange={setFilters}
+          filters={{ ...filters, city: selectedCity }}
+          onFiltersChange={(newFilters) => {
+            setFilters(newFilters);
+            if (newFilters.city !== selectedCity) {
+              setSelectedCity(newFilters.city || "all");
+            }
+          }}
           onFilter={handleFilter}
           onClear={handleClearFilters}
           showDateTimeFilters
+          showLocationFilter
           placeholder="Buscar equipamentos..."
         />
 
@@ -103,7 +104,13 @@ const EquipmentList: React.FC = () => {
           items={equipmentsForGrid}
           isLoading={isLoading}
           error={error}
-          onItemAction={(id) => console.log("Reservar equipamento:", id)}
+          onItemAction={(id) => {
+            const equipment = filteredEquipments?.find(e => e.id === id);
+            if (equipment) {
+              setSelectedEquipment(equipment);
+              setIsReserveModalOpen(true);
+            }
+          }}
           actionLabel="Reservar Equipamento"
           emptyTitle="Nenhum equipamento encontrado"
           emptyDescription="Ajuste os filtros ou tente novamente mais tarde"
@@ -112,6 +119,14 @@ const EquipmentList: React.FC = () => {
           showFiltersMessage={filters.date && (!filters.startTime || !filters.endTime)}
           filtersMessage="Selecione data e horário para verificar a disponibilidade dos equipamentos"
           resultCount={filteredEquipments?.length}
+        />
+
+        {/* Modal de reserva de equipamento */}
+        <ReserveEquipmentModal
+          isOpen={isReserveModalOpen}
+          onOpenChange={setIsReserveModalOpen}
+          selectedEquipment={selectedEquipment}
+          filters={filters}
         />
       </div>
     </MainLayout>
