@@ -6,7 +6,7 @@ import { useBookings } from "@/hooks/useBookings";
 import { useCompanyProfile } from "@/hooks/useCompanyProfile";
 import { useOrders } from "@/hooks/useOrders";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { BookingTabs } from "./components/BookingTabs";
+import { BookingCardList } from "./components/BookingCardList";
 import { CompanyAddressDialog } from "./components/CompanyAddressDialog";
 import { LoadingBookings } from "@/components/bookings/LoadingBookings";
 import { PaymentCard } from "@/components/orders/PaymentCard";
@@ -15,11 +15,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Calendar, ShoppingCart, MapPin, TrendingUp, Clock } from "lucide-react";
+import { Package, Calendar, ShoppingCart, MapPin, TrendingUp, Clock, Table, HardDrive } from "lucide-react";
 
 const MyBookings = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"reservas" | "pedidos">("pedidos");
+  const [activeTab, setActiveTab] = useState<"products" | "rooms" | "equipment">("products");
   
   const {
     roomBookings,
@@ -134,9 +134,9 @@ const MyBookings = () => {
         
         <Card className="card-3d glass-intense border-border/30">
           <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "reservas" | "pedidos")}>
-              <TabsList className="grid w-full grid-cols-2 glass-intense">
-                <TabsTrigger value="pedidos" className="flex items-center gap-2 data-[state=active]:bg-primary/10">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "products" | "rooms" | "equipment")}>
+              <TabsList className="grid w-full grid-cols-3 glass-intense">
+                <TabsTrigger value="products" className="flex items-center gap-2 data-[state=active]:bg-primary/10">
                   <ShoppingCart className="h-4 w-4" />
                   Pedidos de Produtos
                   {productOrders?.length > 0 && (
@@ -145,18 +145,27 @@ const MyBookings = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="reservas" className="flex items-center gap-2 data-[state=active]:bg-accent/10">
-                  <Calendar className="h-4 w-4" />
-                  Reservas
-                  {((roomBookings?.length || 0) + (equipmentBookings?.length || 0)) > 0 && (
+                <TabsTrigger value="rooms" className="flex items-center gap-2 data-[state=active]:bg-accent/10">
+                  <Table className="h-4 w-4" />
+                  Reservas de Salas
+                  {roomBookings?.length > 0 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      {(roomBookings?.length || 0) + (equipmentBookings?.length || 0)}
+                      {roomBookings.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="equipment" className="flex items-center gap-2 data-[state=active]:bg-secondary/10">
+                  <HardDrive className="h-4 w-4" />
+                  Reservas de Equipamentos
+                  {equipmentBookings?.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {equipmentBookings.length}
                     </Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="pedidos" className="mt-6 space-y-6">
+              <TabsContent value="products" className="mt-6 space-y-6">
                 <PaymentStats orders={productOrders || []} />
                 {productOrders && productOrders.length > 0 ? (
                   <div className="space-y-4">
@@ -187,16 +196,24 @@ const MyBookings = () => {
                 )}
               </TabsContent>
 
-              <TabsContent value="reservas" className="mt-6 space-y-6">
-                <BookingTabs 
-                  activeTab="rooms"
-                  setActiveTab={() => {}}
-                  roomBookings={roomBookings}
-                  equipmentBookings={equipmentBookings}
-                  productOrders={[]}
-                  onCancelBooking={handleCancelWrapper}
-                  onRefreshStatus={handleRefreshStatus}
-                  onRequestRefund={handleRequestRefund}
+              <TabsContent value="rooms" className="mt-6 space-y-6">
+                <BookingCardList
+                  bookings={roomBookings || []}
+                  type="room"
+                  onRefresh={handleRefreshStatus}
+                  onCancel={handleCancelWrapper}
+                  onRefund={handleRequestRefund}
+                  isRefreshing={checkBookingPaymentStatus.isPending}
+                />
+              </TabsContent>
+
+              <TabsContent value="equipment" className="mt-6 space-y-6">
+                <BookingCardList
+                  bookings={equipmentBookings || []}
+                  type="equipment"
+                  onRefresh={handleRefreshStatus}
+                  onCancel={handleCancelWrapper}
+                  onRefund={handleRequestRefund}
                   isRefreshing={checkBookingPaymentStatus.isPending}
                 />
               </TabsContent>
