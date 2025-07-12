@@ -168,6 +168,98 @@ const RoomList: React.FC = () => {
         }
       }
 
+      // Se há filtro de data (sem horário), verificar disponibilidade nos dias de funcionamento
+      if (filters.date) {
+        const dateStr = format(filters.date, 'yyyy-MM-dd');
+        const dayOfWeek = filters.date.getDay(); // 0=domingo, 1=segunda, etc.
+        
+        console.log("Filtrando salas para data:", dateStr, "Dia da semana:", dayOfWeek);
+
+        try {
+          // Buscar filiais baseado no filtro de cidade
+          let branchQuery = supabase.from('branches').select('id');
+          if (filters.city) {
+            branchQuery = branchQuery.eq('city', filters.city);
+          }
+          
+          const { data: branches, error: branchError } = await branchQuery;
+          if (branchError) {
+            console.error("Erro ao buscar filiais:", branchError);
+            throw branchError;
+          }
+          
+          const branchIds = branches.map(branch => branch.id);
+          console.log("IDs das filiais filtradas:", branchIds);
+
+          // Buscar todas as salas ativas das filiais filtradas
+          let roomQuery = supabase
+            .from('rooms')
+            .select(`
+              *,
+              room_photos (
+                id,
+                url
+              ),
+              room_schedules (
+                weekday,
+                start_time,
+                end_time
+              )
+            `)
+            .eq('is_active', true);
+          
+          if (branchIds.length > 0) {
+            roomQuery = roomQuery.in('branch_id', branchIds);
+          }
+
+          const { data: allRooms, error: roomsError } = await roomQuery;
+
+          if (roomsError) {
+            console.error("Erro ao buscar salas:", roomsError);
+            throw roomsError;
+          }
+
+          // Filtrar salas que funcionam no dia da semana selecionado
+          const availableRooms = allRooms.filter(room => {
+            // Verificar se a sala tem room_schedules para este dia
+            if (room.room_schedules && room.room_schedules.length > 0) {
+              const weekdayMap: Record<number, string> = {
+                0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
+                4: 'thursday', 5: 'friday', 6: 'saturday'
+              };
+              const weekdayName = weekdayMap[dayOfWeek];
+              
+              const hasScheduleForDay = room.room_schedules.some(
+                schedule => schedule.weekday === weekdayName
+              );
+              
+              if (hasScheduleForDay) {
+                console.log(`Sala ${room.name} tem horário específico para ${weekdayName}`);
+                return true;
+              }
+            }
+            
+            // Se não tem room_schedules, verificar open_days
+            if (room.open_days && room.open_days.length > 0) {
+              const isOpenOnDay = room.open_days.includes(dayOfWeek);
+              if (isOpenOnDay) {
+                console.log(`Sala ${room.name} funciona no dia ${dayOfWeek} (open_days)`);
+                return true;
+              }
+            }
+            
+            console.log(`Sala ${room.name} não funciona no dia selecionado`);
+            return false;
+          });
+
+          console.log("Salas disponíveis no dia selecionado:", availableRooms.length);
+          return availableRooms as unknown as Room[];
+        } catch (error) {
+          console.error("Erro na consulta de filtro por data:", error);
+          throw error;
+        }
+      }
+
       // Buscar todas as salas ativas (sem filtros específicos)
       let roomQuery = supabase
         .from('rooms')

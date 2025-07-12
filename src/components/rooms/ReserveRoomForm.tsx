@@ -79,7 +79,24 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
           disabled={(date) => {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            return date < today;
+            
+            // Não permitir datas no passado
+            if (date < today) return true;
+            
+            // Verificar se a sala funciona neste dia da semana
+            const dayOfWeek = date.getDay(); // 0=domingo, 1=segunda, etc.
+            
+            // Se a sala tem open_days definido, verificar se este dia está incluído
+            if (room.open_days && room.open_days.length > 0) {
+              const isOpenOnDay = room.open_days.includes(dayOfWeek);
+              if (!isOpenOnDay) {
+                return true; // Desabilitar dia se não estiver em open_days
+              }
+            }
+            
+            // TODO: Adicionar verificação para room_schedules quando necessário
+            // Se chegou até aqui, o dia está disponível
+            return false;
           }}
         />
       </div>

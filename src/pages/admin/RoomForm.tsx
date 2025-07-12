@@ -267,8 +267,8 @@ const RoomForm: React.FC = () => {
             has_chairs: room.has_chairs,
             has_tables: room.has_tables,
             price_per_hour: room.price_per_hour,
-            open_time: room.open_time,
-            close_time: room.close_time,
+            open_time: room.open_time || null,
+            close_time: room.close_time || null,
             open_days: room.open_days,
             branch_id: branchId,
             is_active: true,
@@ -289,8 +289,8 @@ const RoomForm: React.FC = () => {
             has_chairs: room.has_chairs,
             has_tables: room.has_tables,
             price_per_hour: room.price_per_hour,
-            open_time: room.open_time,
-            close_time: room.close_time,
+            open_time: room.open_time || null,
+            close_time: room.close_time || null,
             open_days: room.open_days,
           })
           .eq("id", id);
