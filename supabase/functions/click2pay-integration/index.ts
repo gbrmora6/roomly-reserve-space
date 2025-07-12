@@ -48,6 +48,57 @@ function createBasicAuth(clientId: string, clientSecret: string): string {
   return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
 }
 
+// Função para implementar retry com backoff exponencial
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Se não é erro 503 ou é a última tentativa, não retry
+      if (!error.message.includes('503') || attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Calcular delay com backoff exponencial
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`Tentativa ${attempt + 1} falhou com erro 503, tentando novamente em ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError!;
+}
+
+// Função para verificar status da API PIX
+async function checkPixApiHealth(clientId: string, clientSecret: string): Promise<boolean> {
+  try {
+    console.log("Verificando saúde da API PIX...");
+    const response = await fetch(`${CLICK2PAY_BASE_URL}/v1/ping`, {
+      method: 'GET',
+      headers: {
+        'Authorization': createBasicAuth(clientId, clientSecret),
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(5000) // 5 segundos timeout
+    });
+    
+    const isHealthy = response.ok;
+    console.log(`API PIX ${isHealthy ? 'saudável' : 'indisponível'} (status: ${response.status})`);
+    return isHealthy;
+  } catch (error) {
+    console.log('Verificação de saúde da API PIX falhou:', error);
+    return false;
+  }
+}
+
 // Função para preparar dados do cliente
 function prepareCustomerData(paymentData: any, userEmail: string) {
   return {
@@ -278,12 +329,21 @@ serve(async (req) => {
         break;
 
       case "pix":
+        console.log("15.1. Configurando dados para PIX...");
+        
+        // Verificar saúde da API PIX antes de prosseguir
+        const isPixHealthy = await checkPixApiHealth(clientId, clientSecret);
+        if (!isPixHealthy) {
+          throw new Error("PIX_UNAVAILABLE: Serviço PIX temporariamente indisponível. Tente boleto ou cartão.");
+        }
+        
         endpoint = `${CLICK2PAY_BASE_URL}/v1/transactions/pix`;
         payloadData = {
           ...payloadData,
           expiration: "86400", // 24 horas
           returnQRCode: true
         };
+        console.log("15.2. Payload PIX configurado:", JSON.stringify(payloadData, null, 2));
         break;
 
       case "cartao":
@@ -305,35 +365,49 @@ serve(async (req) => {
     console.log("16. Endpoint:", endpoint);
     console.log("17. Payload:", JSON.stringify(payloadData, null, 2));
 
-    // Chamar API da Click2Pay com autenticação Basic Auth
+    // Chamar API da Click2Pay com retry para erros 503
     const authHeader = createBasicAuth(clientId, clientSecret);
     console.log("18. Chamando Click2Pay API...");
     console.log("18.1. Endpoint:", endpoint);
     console.log("18.2. Auth header:", authHeader.substring(0, 20) + "...");
     
-    const click2payResponse = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader
-      },
-      body: JSON.stringify(payloadData)
-    });
+    const click2payCall = async () => {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authHeader
+        },
+        body: JSON.stringify(payloadData),
+        signal: AbortSignal.timeout(30000) // 30 segundos timeout
+      });
 
-    console.log("19. Status da resposta Click2Pay:", click2payResponse.status);
-    console.log("19.1. Headers da resposta:", Object.fromEntries(click2payResponse.headers.entries()));
-    
-    const click2payResult = await click2payResponse.json();
-    console.log("20. Resposta Click2Pay:", JSON.stringify(click2payResult, null, 2));
+      console.log("19. Status da resposta Click2Pay:", response.status);
+      console.log("19.1. Headers da resposta:", Object.fromEntries(response.headers.entries()));
+      
+      const result = await response.json();
+      console.log("20. Resposta Click2Pay:", JSON.stringify(result, null, 2));
 
-    if (!click2payResponse.ok) {
-      const errorMessage = click2payResult.message || click2payResult.error || click2payResult.errors || 'Erro desconhecido na API';
-      console.error("21. Erro da API Click2Pay:");
-      console.error("21.1. Status:", click2payResponse.status);
-      console.error("21.2. Mensagem:", errorMessage);
-      console.error("21.3. Resposta completa:", JSON.stringify(click2payResult, null, 2));
-      throw new Error(`Click2Pay API error: ${errorMessage}`);
-    }
+      if (!response.ok) {
+        const errorMessage = result.message || result.error || result.errors || result.errorMessage || 'Erro desconhecido na API';
+        console.error("21. Erro da API Click2Pay:");
+        console.error("21.1. Status:", response.status);
+        console.error("21.2. Mensagem:", errorMessage);
+        console.error("21.3. Resposta completa:", JSON.stringify(result, null, 2));
+        
+        // Lançar erro com status para retry logic
+        const error = new Error(`Click2Pay API error: ${errorMessage}`);
+        error.message = `${response.status}: ${errorMessage}`;
+        throw error;
+      }
+
+      return result;
+    };
+
+    // Aplicar retry apenas para PIX (mais propenso a erro 503)
+    const click2payResult = paymentMethod === 'pix' 
+      ? await retryWithBackoff(click2payCall, 3, 2000)
+      : await click2payCall();
 
     // Atualizar ordem com dados da Click2Pay
     console.log("21. Atualizando ordem com dados da Click2Pay...");

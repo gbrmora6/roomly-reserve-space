@@ -193,11 +193,27 @@ const Checkout = () => {
 
     } catch (error) {
       console.error("Erro no checkout:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro no pagamento",
-        description: error.message || "Ocorreu um erro ao processar o pagamento",
-      });
+      
+      // Verificar se é erro específico do PIX
+      if (error.message?.includes('PIX_UNAVAILABLE')) {
+        toast({
+          variant: "destructive",
+          title: "PIX temporariamente indisponível",
+          description: "O serviço PIX está instável. Tente pagamento por boleto ou cartão.",
+        });
+      } else if (error.message?.includes('503')) {
+        toast({
+          variant: "destructive",
+          title: "Serviço temporariamente indisponível",
+          description: "Tente novamente em alguns minutos ou escolha outro método de pagamento.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro no pagamento",
+          description: error.message || "Ocorreu um erro ao processar o pagamento",
+        });
+      }
     } finally {
       setLoading(false);
     }
