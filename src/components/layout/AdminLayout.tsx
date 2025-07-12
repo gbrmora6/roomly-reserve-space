@@ -110,29 +110,30 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   return (
     <SidebarProvider>
-      <div className="flex w-full min-h-screen">
-        <Sidebar>
-          <div className="bg-gradient-to-b from-[#232c43] to-[#1a2233] flex flex-col h-full rounded-r-3xl shadow-2xl min-w-[18rem] w-full">
+      <div className="flex w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <Sidebar className="bg-gradient-to-b from-[#232c43] to-[#1a2233] shadow-2xl">
+          <div className="flex flex-col h-full">
             <AdminSidebarHeader />
-            <SidebarContent className="flex-1 overflow-hidden">
+            <SidebarContent className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               <AdminSidebarMenu />
             </SidebarContent>
             <AdminSidebarFooter />
           </div>
         </Sidebar>
 
-        <SidebarInset>
+        <SidebarInset className="flex-1">
           <div className="flex flex-col h-full">
-            <header className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger />
-                <h1 className="text-xl font-bold">Painel Administrativo</h1>
+            <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="hover:bg-slate-100 transition-colors" />
+                <div className="h-6 w-px bg-slate-300" />
+                <h1 className="text-xl font-semibold text-slate-800">Painel Administrativo</h1>
               </div>
             </header>
 
-            <div className="flex-1 p-6">
+            <main className="flex-1 p-6 overflow-auto">
               {children || <Outlet />}
-            </div>
+            </main>
           </div>
         </SidebarInset>
       </div>
