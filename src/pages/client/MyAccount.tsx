@@ -3,7 +3,11 @@ import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { User, Settings, Shield, CreditCard } from "lucide-react";
 
 const MyAccount = () => {
   const { user } = useAuth();
@@ -11,42 +15,80 @@ const MyAccount = () => {
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-roomly-700">Minha Conta</h1>
-            <p className="text-roomly-600 mt-2">
-              Gerencie suas informações pessoais e preferências
-            </p>
-          </div>
-          
-          <Card className="overflow-hidden bg-white shadow-lg border-roomly-200">
-            <div className="p-1.5 bg-gradient-to-r from-roomly-400 to-roomly-600"></div>
-            <div className="p-6 sm:p-8">
-              {user && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="h-20 w-20 rounded-full bg-roomly-100 flex items-center justify-center border-2 border-roomly-300 text-roomly-700 text-2xl font-bold">
-                      {user.user_metadata?.first_name?.[0] || user.email?.[0]}
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-semibold text-roomly-800">
-                        {user.user_metadata?.first_name} {user.user_metadata?.last_name}
-                      </h2>
-                      <p className="text-roomly-500">{user.email}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-medium mb-6 text-roomly-800 border-b border-roomly-200 pb-2">
-                    Informações Pessoais
+        <PageHeader 
+          title="Minha Conta"
+          description="Gerencie suas informações pessoais e preferências"
+        />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {/* Profile Summary Card */}
+          <Card className="lg:col-span-1 card-3d glass-intense border-border/30">
+            <CardHeader className="text-center pb-4">
+              <div className="flex flex-col items-center space-y-4">
+                <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-medium hover:shadow-glow transition-all duration-300">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xl font-bold">
+                    {user?.user_metadata?.first_name?.[0] || user?.email?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
                   </h2>
-                  <ProfileForm />
+                  <p className="text-muted-foreground text-sm">{user?.email}</p>
+                  <Badge variant="secondary" className="backdrop-blur-sm">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Conta Verificada
+                  </Badge>
                 </div>
               </div>
-            </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <div className="glass-intense rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Status da Conta</p>
+                    <p className="text-xs text-muted-foreground">Ativa desde {new Date().getFullYear()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <CreditCard className="h-4 w-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Plano Atual</p>
+                    <p className="text-xs text-muted-foreground">Cliente Padrão</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Profile Form */}
+          <Card className="lg:col-span-2 card-3d glass-intense border-border/30">
+            <CardHeader className="border-b border-border/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Settings className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold">Informações Pessoais</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Atualize seus dados pessoais e informações de contato
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-8">
+              <ProfileForm />
+            </CardContent>
           </Card>
         </div>
       </div>
