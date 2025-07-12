@@ -242,6 +242,8 @@ serve(async (req) => {
 
     const { action, roomId, bookingId } = await req.json();
     
+    console.log(`Processing action: ${action}`, { roomId, bookingId });
+    
     // Get Google credentials
     const credentialsJson = Deno.env.get('GOOGLE_CALENDAR_CREDENTIALS');
     if (!credentialsJson) {
@@ -255,6 +257,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'create_calendar': {
+        console.log(`Creating calendar for room: ${roomId}`);
+        
         // Get room and branch info
         const { data: room } = await supabaseClient
           .from('rooms')
@@ -330,13 +334,99 @@ serve(async (req) => {
       }
 
       case 'update_event': {
-        // Similar logic for update
+        // Get booking and room info
+        const { data: booking } = await supabaseClient
+          .from('bookings')
+          .select('*, rooms(name, google_calendar_id, branch_id)')
+          .eq('id', bookingId)
+          .single();
+
+        if (!booking || !booking.rooms?.google_calendar_id) {
+          throw new Error('Booking or calendar not found');
+        }
+
+        // Get existing event ID from logs
+        const { data: syncLog } = await supabaseClient
+          .from('calendar_sync_log')
+          .select('google_event_id')
+          .eq('room_id', booking.room_id)
+          .eq('action', 'create_event')
+          .eq('status', 'completed')
+          .not('google_event_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!syncLog?.google_event_id) {
+          throw new Error('Event ID not found in sync logs');
+        }
+
+        await calendarManager.updateEvent(
+          booking.rooms.google_calendar_id,
+          syncLog.google_event_id,
+          booking,
+          booking.rooms.name
+        );
+
+        // Log the action
+        await supabaseClient.from('calendar_sync_log').insert({
+          room_id: booking.room_id,
+          action: 'update_event',
+          status: 'completed',
+          google_event_id: syncLog.google_event_id,
+          branch_id: booking.rooms.branch_id,
+          completed_at: new Date().toISOString(),
+        });
+
         result = { message: 'Event updated successfully' };
         break;
       }
 
       case 'delete_event': {
-        // Similar logic for delete
+        // Get booking info
+        const { data: booking } = await supabaseClient
+          .from('bookings')
+          .select('*, rooms(google_calendar_id, branch_id)')
+          .eq('id', bookingId)
+          .single();
+
+        if (!booking || !booking.rooms?.google_calendar_id) {
+          throw new Error('Booking or calendar not found');
+        }
+
+        // Get existing event ID from logs
+        const { data: syncLog } = await supabaseClient
+          .from('calendar_sync_log')
+          .select('google_event_id')
+          .eq('room_id', booking.room_id)
+          .eq('action', 'create_event')
+          .eq('status', 'completed')
+          .not('google_event_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!syncLog?.google_event_id) {
+          // Event might not exist, log as completed anyway
+          result = { message: 'Event not found, considered deleted' };
+          break;
+        }
+
+        await calendarManager.deleteEvent(
+          booking.rooms.google_calendar_id,
+          syncLog.google_event_id
+        );
+
+        // Log the action
+        await supabaseClient.from('calendar_sync_log').insert({
+          room_id: booking.room_id,
+          action: 'delete_event',
+          status: 'completed',
+          google_event_id: syncLog.google_event_id,
+          branch_id: booking.rooms.branch_id,
+          completed_at: new Date().toISOString(),
+        });
+
         result = { message: 'Event deleted successfully' };
         break;
       }
@@ -351,6 +441,28 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Google Calendar Manager Error:', error);
+    
+    // Log error to database if possible
+    try {
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const body = await req.json();
+      const { action, roomId, bookingId } = body;
+      
+      await supabaseClient.from('calendar_sync_log').insert({
+        room_id: roomId,
+        action: action || 'unknown',
+        status: 'failed',
+        error_message: error.message,
+        branch_id: body.branchId,
+        completed_at: new Date().toISOString(),
+      });
+    } catch (logError) {
+      console.error('Failed to log error to database:', logError);
+    }
     
     return new Response(JSON.stringify({ 
       error: error.message 
