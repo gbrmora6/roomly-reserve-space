@@ -4,19 +4,29 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RoomFilters } from "@/components/rooms/RoomFilters";
-import { RoomsGrid } from "@/components/rooms/RoomsGrid";
 import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Room } from "@/types/room";
 import { useAuth } from "@/contexts/AuthContext";
-import { roomService } from "@/services/roomService";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { FilterBar } from "@/components/shared/FilterBar";
+import { ListingGrid } from "@/components/shared/ListingGrid";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  Wifi, 
+  Monitor, 
+  Coffee, 
+  Car, 
+  Clock,
+  Users,
+  Search
+} from "lucide-react";
 
 const RoomList: React.FC = () => {
   const { user } = useAuth();
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   
   // Estado dos filtros incluindo cidade
   const [filters, setFilters] = useState({
@@ -194,10 +204,13 @@ const RoomList: React.FC = () => {
   });
 
   // Handler para reservar sala
-  const handleReserve = (room: Room) => {
+  const handleReserve = (id: string) => {
     if (user) {
-      setSelectedRoom(room);
-      setIsReserveModalOpen(true);
+      const room = rooms?.find(r => r.id === id);
+      if (room) {
+        setSelectedRoom(room);
+        setIsReserveModalOpen(true);
+      }
     }
   };
 
@@ -223,40 +236,68 @@ const RoomList: React.FC = () => {
     return `${companyAddress.street}, ${companyAddress.number} - ${companyAddress.neighborhood}, ${companyAddress.city}`;
   };
 
+  // Filtrar salas por termo de busca
+  const filteredRooms = rooms?.filter(room =>
+    room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (room.description && room.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Converter salas para o formato do ItemCard
+  const roomsForGrid = filteredRooms?.map(room => ({
+    id: room.id,
+    title: room.name,
+    description: room.description,
+    price: room.price_per_hour,
+    priceLabel: "por hora",
+    image: room.room_photos?.[0]?.url,
+    status: 'available' as const,
+    location: formatAddress(),
+    features: [
+      { icon: Wifi, label: "Wi-Fi", available: room.has_wifi || false },
+      { icon: Monitor, label: "TV", available: room.has_tv || false },
+      { icon: Coffee, label: "A/C", available: room.has_ac || false },
+      { icon: Car, label: "Banheiro", available: room.has_private_bathroom || false },
+    ],
+    stats: [
+      { icon: Clock, label: "Abertura", value: room.open_time || "N/A" },
+      { icon: Clock, label: "Fechamento", value: room.close_time || "N/A" },
+    ],
+  })) || [];
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center md:text-left bg-gradient-to-r from-roomly-600 to-roomly-800 text-transparent bg-clip-text">
-          Salas Disponíveis
-        </h1>
-
-        {/* Componente de filtros */}
-        <RoomFilters 
-          filters={filters} 
-          setFilters={setFilters} 
-          onFilter={handleFilter}
-          onClear={handleClearFilters}
+        <PageHeader
+          title="Salas Disponíveis"
+          description="Encontre e reserve a sala perfeita para suas necessidades"
         />
 
-        {/* Estados de carregamento e erro */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500 mb-2">Erro ao carregar salas</p>
-          </div>
-        ) : (
-          // Grid de salas
-          <RoomsGrid
-            rooms={rooms}
-            onReserve={handleReserve}
-            isLoggedIn={!!user}
-            address={formatAddress()}
-            showFilterMessage={!filters.date && !filters.startTime && !filters.endTime}
-          />
-        )}
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onFilter={handleFilter}
+          onClear={handleClearFilters}
+          showDateTimeFilters
+          showLocationFilter
+          placeholder="Buscar salas..."
+        />
+
+        <ListingGrid
+          items={roomsForGrid}
+          isLoading={isLoading}
+          error={error}
+          onItemAction={handleReserve}
+          actionLabel="Reservar Sala"
+          emptyTitle="Nenhuma sala encontrada"
+          emptyDescription="Ajuste os filtros ou tente novamente mais tarde"
+          emptyIcon={Search}
+          variant="room"
+          showFiltersMessage={!filters.date && !filters.startTime && !filters.endTime}
+          filtersMessage="Selecione uma data e horário para verificar a disponibilidade das salas"
+          resultCount={filteredRooms?.length}
+        />
 
         {/* Modal de reserva */}
         <Dialog open={isReserveModalOpen} onOpenChange={setIsReserveModalOpen}>

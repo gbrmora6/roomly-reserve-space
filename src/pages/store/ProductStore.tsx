@@ -3,24 +3,26 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Search } from "lucide-react";
+import { ShoppingBag, Search, Package, Star } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { FilterBar } from "@/components/shared/FilterBar";
+import { ListingGrid } from "@/components/shared/ListingGrid";
 
 const ProductStore = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["store-products"],
+  const { data: products, isLoading, error } = useQuery({
+    queryKey: ["store-products", sortBy, sortOrder],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("is_active", true)
-        .order("name");
+        .order(sortBy, { ascending: sortOrder === "asc" });
 
       if (error) throw error;
       return data || [];
@@ -32,69 +34,67 @@ const ProductStore = () => {
     (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Converter produtos para o formato do ItemCard
+  const productsForGrid = filteredProducts?.map(product => ({
+    id: product.id,
+    title: product.name,
+    description: product.description,
+    price: product.price,
+    priceLabel: "unidade",
+    image: undefined, // Products don't have photos in this structure
+    status: product.quantity > 0 ? 'available' as const : 'unavailable' as const,
+    features: [
+      { icon: Package, label: "Em estoque", available: product.quantity > 0 },
+    ],
+    stats: [
+      { icon: Package, label: "Estoque", value: product.quantity },
+      ...(product.model ? [{ icon: Star, label: "Modelo", value: product.model }] : []),
+    ],
+  })) || [];
+
+  const handleItemAction = (id: string) => {
+    // Navigate to product detail page
+    window.location.href = `/store/product/${id}`;
+  };
+
+  const handleSortChange = (newSortBy: string, newOrder: "asc" | "desc") => {
+    setSortBy(newSortBy);
+    setSortOrder(newOrder);
+  };
+
   return (
     <MainLayout>
       <div className="container py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Loja de Produtos</h1>
-            <p className="text-muted-foreground mt-1">
-              Encontre os melhores produtos para suas necessidades
-            </p>
-          </div>
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar produtos..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
+        <PageHeader
+          title="Loja de Produtos"
+          description="Encontre os melhores produtos para suas necessidades"
+        />
 
-        {isLoading ? (
-          <div className="flex justify-center my-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredProducts && filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden flex flex-col h-full">
-                <div className="bg-muted h-48 flex items-center justify-center">
-                  <ShoppingBag className="h-16 w-16 text-muted-foreground/50" />
-                </div>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="pb-2 flex-grow">
-                  <p className="text-muted-foreground text-sm line-clamp-3">
-                    {product.description || "Sem descrição disponível"}
-                  </p>
-                  {product.model && (
-                    <p className="text-sm mt-2">
-                      <span className="font-medium">Modelo:</span> {product.model}
-                    </p>
-                  )}
-                </CardContent>
-                <CardFooter className="flex items-center justify-between pt-2 border-t">
-                  <p className="font-bold text-lg">{formatCurrency(product.price)}</p>
-                  <Button asChild>
-                    <Link to={`/store/product/${product.id}`}>Ver Detalhes</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 border rounded-md bg-muted/20">
-            <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
-            <h3 className="text-lg font-medium">Nenhum produto encontrado</h3>
-            <p className="text-muted-foreground">
-              {searchTerm ? "Tente uma busca diferente" : "Estamos adicionando novos produtos em breve"}
-            </p>
-          </div>
-        )}
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          placeholder="Buscar produtos..."
+        />
+
+        <ListingGrid
+          items={productsForGrid}
+          isLoading={isLoading}
+          error={error}
+          onItemAction={handleItemAction}
+          actionLabel="Ver Detalhes"
+          emptyTitle="Nenhum produto encontrado"
+          emptyDescription={
+            searchTerm 
+              ? "Tente uma busca diferente" 
+              : "Estamos adicionando novos produtos em breve"
+          }
+          emptyIcon={ShoppingBag}
+          variant="product"
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
+          resultCount={filteredProducts?.length}
+        />
       </div>
     </MainLayout>
   );

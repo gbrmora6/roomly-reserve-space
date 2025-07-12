@@ -1,15 +1,19 @@
 
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { EquipmentFilters } from "@/components/equipment/EquipmentFilters";
-import { EquipmentsGrid } from "@/components/equipment/EquipmentsGrid";
-import { ReserveEquipmentModal } from "@/components/equipment/ReserveEquipmentModal";
 import { useEquipmentFiltering } from "@/hooks/useEquipmentFiltering";
 import { useCompanyAddress } from "@/hooks/useCompanyAddress";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { FilterBar } from "@/components/shared/FilterBar";
+import { ListingGrid } from "@/components/shared/ListingGrid";
 import { Database } from "@/integrations/supabase/types";
+import { 
+  Wrench, 
+  Clock, 
+  Package,
+  Search
+} from "lucide-react";
 
 // Use the correct enum type for open_days
 interface Equipment {
@@ -25,6 +29,8 @@ interface Equipment {
 }
 
 const EquipmentList: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  
   const { 
     filters, 
     setFilters, 
@@ -37,35 +43,66 @@ const EquipmentList: React.FC = () => {
   
   const { formatAddress } = useCompanyAddress();
 
+  // Filtrar equipamentos por termo de busca
+  const filteredEquipments = equipments?.filter(equipment =>
+    equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (equipment.description && equipment.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Converter equipamentos para o formato do ItemCard
+  const equipmentsForGrid = filteredEquipments?.map(equipment => ({
+    id: equipment.id,
+    title: equipment.name,
+    description: equipment.description,
+    price: equipment.price_per_hour,
+    priceLabel: "por hora",
+    image: undefined, // Equipments don't have photos in this structure
+    status: equipment.available > 0 ? 'available' as const : 'unavailable' as const,
+    location: formatAddress(),
+    features: [
+      { icon: Package, label: "Disponível", available: equipment.available > 0 },
+    ],
+    stats: [
+      { icon: Package, label: "Quantidade", value: equipment.quantity },
+      { icon: Package, label: "Disponível", value: equipment.available },
+      { icon: Clock, label: "Abertura", value: equipment.open_time || "N/A" },
+      { icon: Clock, label: "Fechamento", value: equipment.close_time || "N/A" },
+    ],
+  })) || [];
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center md:text-left bg-gradient-to-r from-roomly-600 to-roomly-800 text-transparent bg-clip-text">
-          Equipamentos Disponíveis
-        </h1>
-
-        <EquipmentFilters 
-          filters={filters} 
-          setFilters={setFilters} 
-          onFilter={handleFilter}
-          onClear={handleClearFilters}
+        <PageHeader
+          title="Equipamentos Disponíveis"
+          description="Encontre e reserve equipamentos para suas necessidades"
         />
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-500 mb-2">Erro ao carregar equipamentos</p>
-          </div>
-        ) : (
-          <EquipmentsGrid
-            equipments={equipments}
-            address={formatAddress()}
-            showFilterMessage={filters.date && (!filters.startTime || !filters.endTime)}
-          />
-        )}
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onFilter={handleFilter}
+          onClear={handleClearFilters}
+          showDateTimeFilters
+          placeholder="Buscar equipamentos..."
+        />
+
+        <ListingGrid
+          items={equipmentsForGrid}
+          isLoading={isLoading}
+          error={error}
+          onItemAction={(id) => console.log("Reservar equipamento:", id)}
+          actionLabel="Reservar Equipamento"
+          emptyTitle="Nenhum equipamento encontrado"
+          emptyDescription="Ajuste os filtros ou tente novamente mais tarde"
+          emptyIcon={Wrench}
+          variant="equipment"
+          showFiltersMessage={filters.date && (!filters.startTime || !filters.endTime)}
+          filtersMessage="Selecione data e horário para verificar a disponibilidade dos equipamentos"
+          resultCount={filteredEquipments?.length}
+        />
       </div>
     </MainLayout>
   );
