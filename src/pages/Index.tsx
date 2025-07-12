@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, CheckCircle, Clock, HelpCircle, User, Sparkles, Shield, Star, Users, Award, Target } from "lucide-react";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
-import { supabase } from "@/integrations/supabase/client";
+import { Calendar, CheckCircle, Clock, User, Sparkles, Shield, Star, Award, Target } from "lucide-react";
 import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
 
@@ -12,7 +10,6 @@ const Index: React.FC = () => {
   const navigate = useNavigate();
   const [heroImageUrl, setHeroImageUrl] = useState<string>("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
 
-  // Fetch hero image from Supabase storage
   useEffect(() => {
     setHeroImageUrl("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
   }, []);
@@ -23,161 +20,74 @@ const Index: React.FC = () => {
       
       <StatsSection />
 
-      {/* Interactive Services Section */}
-      <section className="py-20 bg-white relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-purple-500 to-primary"></div>
-        
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nossos Serviços</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Descubra todas as soluções que oferecemos para profissionais da psicologia
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger className="bg-white hover:bg-gray-50 text-lg px-6 py-3 shadow-lg border border-gray-200 rounded-xl">
-                    Explore Nossos Serviços
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="grid w-[600px] gap-4 p-6 md:w-[700px] md:grid-cols-2 lg:w-[800px]">
-                      {[
-                        {
-                          title: "Salas Especializadas",
-                          desc: "Ambientes preparados com isolamento acústico e mobiliário adequado para atendimento psicológico",
-                          icon: <User className="w-6 h-6 text-primary" />
-                        },
-                        {
-                          title: "Materiais para Testes",
-                          desc: "Acesso a biblioteca completa de testes psicológicos e materiais de avaliação",
-                          icon: <CheckCircle className="w-6 h-6 text-green-500" />
-                        },
-                        {
-                          title: "Equipamentos Completos",
-                          desc: "Recursos tecnológicos e equipamentos especializados para suas sessões",
-                          icon: <Target className="w-6 h-6 text-blue-500" />
-                        },
-                        {
-                          title: "Agendamento Flexível",
-                          desc: "Sistema inteligente de reservas por hora, meio período ou dia inteiro",
-                          icon: <Calendar className="w-6 h-6 text-purple-500" />
-                        }
-                      ].map((service, index) => (
-                        <NavigationMenuLink 
-                          key={service.title} 
-                          className="group block select-none space-y-3 rounded-xl p-4 leading-none no-underline outline-none transition-all duration-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 hover:shadow-lg border border-gray-100 hover:border-primary/20"
-                        >
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-white transition-colors duration-300">
-                              {service.icon}
-                            </div>
-                            <div className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors duration-300">
-                              {service.title}
-                            </div>
-                          </div>
-                          <p className="text-sm leading-relaxed text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                            {service.desc}
-                          </p>
-                        </NavigationMenuLink>
-                      ))}
-                    </div>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
-        </div>
-      </section>
-
-      {/* Modern Features Section */}
-      <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
+      {/* Modern Services Section */}
+      <section className="py-20 bg-gradient-to-br from-background to-muted/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         
         <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center mb-20">
+          <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg mb-6">
               <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-gray-700">Diferenciais Únicos</span>
+              <span className="text-sm font-medium text-muted-foreground">Nossos Serviços</span>
             </div>
-            <h2 className="text-5xl font-bold text-gray-900 mb-6">
-              Por que escolher a <span className="text-primary">PsicoFlex</span>?
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Soluções Completas para <span className="text-primary">Psicólogos</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Oferecemos tudo o que você precisa para realizar seus atendimentos psicológicos 
-              com excelência e comodidade
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Oferecemos tudo o que você precisa para realizar seus atendimentos com excelência
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 title: "Salas Especializadas",
-                description: "Ambientes preparados para atendimento psicológico, com isolamento acústico perfeito e mobiliário ergonômico de qualidade premium.",
-                icon: <User className="h-8 w-8" />,
+                description: "Ambientes com isolamento acústico e mobiliário adequado",
+                icon: <User className="w-8 h-8" />,
                 color: "from-blue-500 to-blue-600",
                 bgColor: "from-blue-50 to-blue-100"
               },
               {
-                title: "Horários Flexíveis",
-                description: "Reserve suas salas por hora, meio período ou dia inteiro. Sistema de agendamento inteligente que se adapta à sua rotina.",
-                icon: <Clock className="h-8 w-8" />,
+                title: "Materiais para Testes",
+                description: "Biblioteca completa de testes psicológicos e materiais",
+                icon: <CheckCircle className="w-8 h-8" />,
                 color: "from-green-500 to-green-600",
                 bgColor: "from-green-50 to-green-100"
               },
               {
                 title: "Equipamentos Premium",
-                description: "Infraestrutura completa com equipamentos de última geração e recursos tecnológicos para suas sessões terapêuticas.",
-                icon: <Award className="h-8 w-8" />,
+                description: "Recursos tecnológicos de última geração",
+                icon: <Target className="w-8 h-8" />,
                 color: "from-purple-500 to-purple-600",
                 bgColor: "from-purple-50 to-purple-100"
               },
               {
-                title: "Suporte 24/7",
-                description: "Equipe especializada disponível round the clock para garantir que tudo funcione perfeitamente em seus atendimentos.",
-                icon: <Shield className="h-8 w-8" />,
-                color: "from-red-500 to-red-600",
-                bgColor: "from-red-50 to-red-100"
-              },
-              {
-                title: "Localização Premium",
-                description: "Filiais em pontos estratégicos da cidade, com fácil acesso e estacionamento amplo para você e seus pacientes.",
-                icon: <Star className="h-8 w-8" />,
-                color: "from-yellow-500 to-yellow-600",
-                bgColor: "from-yellow-50 to-yellow-100"
-              },
-              {
-                title: "Preços Justos",
-                description: "Tarifas transparentes e competitivas, com planos especiais para profissionais que utilizam nossos espaços regularmente.",
-                icon: <CheckCircle className="h-8 w-8" />,
-                color: "from-indigo-500 to-indigo-600",
-                bgColor: "from-indigo-50 to-indigo-100"
-              },
-            ].map((feature, index) => (
+                title: "Agendamento Flexível",
+                description: "Sistema inteligente de reservas por hora",
+                icon: <Calendar className="w-8 h-8" />,
+                color: "from-orange-500 to-orange-600",
+                bgColor: "from-orange-50 to-orange-100"
+              }
+            ].map((service, index) => (
               <div
                 key={index}
-                className="group relative transform transition-all duration-700 hover:scale-105 hover:-translate-y-2"
+                className="group relative animate-float"
+                style={{ animationDelay: `${index * 0.2}s` }}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-700 opacity-60 group-hover:opacity-80`}></div>
+                <div className={`absolute inset-0 bg-gradient-to-br ${service.bgColor} rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-700 opacity-60 group-hover:opacity-80`}></div>
                 
-                <div className="relative bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/60 group-hover:border-white/80">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} text-white mb-6 shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-                    {feature.icon}
+                <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/60 group-hover:border-white/80 h-full">
+                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${service.color} text-white mb-4 shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110`}>
+                    {service.icon}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-primary transition-colors duration-300">
-                    {feature.title}
+                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    {service.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
-                    {feature.description}
+                  <p className="text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors duration-300">
+                    {service.description}
                   </p>
                   
-                  {/* Decorative gradient line */}
-                  <div className={`mt-6 h-1 w-12 bg-gradient-to-r ${feature.color} rounded-full transition-all duration-500 group-hover:w-16`}></div>
+                  <div className={`mt-4 h-1 w-8 bg-gradient-to-r ${service.color} rounded-full transition-all duration-500 group-hover:w-12`}></div>
                 </div>
               </div>
             ))}
@@ -185,13 +95,13 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Steps Section - New section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Como funciona</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-600">
-              Simplificamos o processo para você focar no que realmente importa: seus pacientes.
+      {/* Modern Steps Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Como Funciona</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Processo simples e rápido para você focar no que realmente importa
             </p>
           </div>
 
@@ -200,38 +110,42 @@ const Index: React.FC = () => {
               {
                 step: "01",
                 title: "Cadastre-se",
-                description: "Crie sua conta gratuita em poucos minutos.",
-                icon: <User className="h-6 w-6 text-white" />
+                description: "Crie sua conta gratuita em poucos minutos",
+                icon: <User className="h-6 w-6" />
               },
               {
-                step: "02",
+                step: "02", 
                 title: "Escolha uma sala",
-                description: "Encontre o espaço ideal para seu atendimento.",
-                icon: <HelpCircle className="h-6 w-6 text-white" />
+                description: "Encontre o espaço ideal para seu atendimento",
+                icon: <Target className="h-6 w-6" />
               },
               {
                 step: "03",
                 title: "Reserve",
-                description: "Selecione data, horário e confirme sua reserva.",
-                icon: <Calendar className="h-6 w-6 text-white" />
+                description: "Selecione data, horário e confirme sua reserva",
+                icon: <Calendar className="h-6 w-6" />
               },
               {
                 step: "04",
                 title: "Atenda",
-                description: "Chegue 15 minutos antes e aproveite nosso espaço.",
-                icon: <CheckCircle className="h-6 w-6 text-white" />
+                description: "Chegue e aproveite nosso espaço preparado",
+                icon: <CheckCircle className="h-6 w-6" />
               }
             ].map((step, index) => (
-              <div key={index} className="relative">
+              <div key={index} className="relative group">
                 {index < 3 && (
-                  <div className="absolute top-10 left-full w-full h-0.5 bg-roomly-200 -z-10 hidden md:block" />
+                  <div className="absolute top-10 left-full w-full h-0.5 bg-gradient-to-r from-primary to-transparent -z-10 hidden md:block" />
                 )}
                 <div className="flex flex-col items-center text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-roomly-500 to-roomly-600 mb-4">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                     <span className="text-xl font-bold text-white">{step.step}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{step.title}</h3>
-                  <p className="text-gray-600">{step.description}</p>
+                  <h3 className="text-xl font-semibold text-foreground mb-3 group-hover:text-primary transition-colors duration-300">
+                    {step.title}
+                  </h3>
+                  <p className="text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                    {step.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -239,41 +153,44 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* CTA Section - Updated with better styling */}
-      <section className="py-16 bg-gradient-to-r from-roomly-600 to-roomly-700 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold">Pronto para começar?</h2>
-          <p className="mx-auto mt-4 max-w-2xl">
-            Cadastre-se agora e tenha acesso a espaços preparados para sua prática profissional.
+      {/* Modern CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        
+        <div className="container mx-auto px-6 text-center relative z-10">
+          <h2 className="text-4xl font-bold mb-4">Pronto para Começar?</h2>
+          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-10">
+            Cadastre-se agora e tenha acesso a espaços preparados para sua prática profissional
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Button
               size="lg"
               variant="secondary"
-              className="bg-white text-roomly-600 hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 min-w-[200px]"
+              className="bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 min-w-[200px] shadow-lg"
               onClick={() => navigate("/register")}
             >
-              Criar uma conta
+              Criar uma Conta
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="border-white text-white hover:bg-roomly-500 transition-all duration-300 transform hover:scale-105 min-w-[200px]"
+              className="border-white text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 min-w-[200px]"
               onClick={() => navigate("/rooms")}
             >
-              Ver salas
+              Ver Salas
             </Button>
           </div>
         </div>
       </section>
       
-      {/* Testimonials - New section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold text-gray-900">O que dizem nossos clientes</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-600">
-              Profissionais que confiam em nossos espaços para seus atendimentos.
+      {/* Modern Testimonials */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">O Que Dizem Nossos Clientes</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Profissionais que confiam em nossos espaços para seus atendimentos
             </p>
           </div>
           
@@ -282,33 +199,36 @@ const Index: React.FC = () => {
               {
                 name: "Ana Silva",
                 role: "Psicóloga Clínica",
-                testimonial: "As salas são excelentes, com ótimo isolamento acústico e móveis confortáveis. Perfeito para meus atendimentos.",
+                testimonial: "As salas são excelentes, com ótimo isolamento acústico e móveis confortáveis. Perfeito para meus atendimentos."
               },
               {
-                name: "Carlos Mendes",
+                name: "Carlos Mendes", 
                 role: "Neuropsicólogo",
-                testimonial: "Os equipamentos disponíveis facilitam muito meu trabalho. Recomendo para todos os profissionais da área.",
+                testimonial: "Os equipamentos disponíveis facilitam muito meu trabalho. Recomendo para todos os profissionais da área."
               },
               {
                 name: "Maria Oliveira",
-                role: "Psicanalista",
-                testimonial: "A flexibilidade de horários é o que mais me atrai. Posso agendar apenas o tempo que preciso, sem desperdícios.",
+                role: "Psicanalista", 
+                testimonial: "A flexibilidade de horários é o que mais me atrai. Posso agendar apenas o tempo que preciso, sem desperdícios."
               }
             ].map((testimonial, index) => (
               <div
                 key={index}
-                className="rounded-xl bg-white p-8 shadow-sm transition-all hover:shadow-md border border-gray-100"
+                className="group rounded-2xl bg-white/70 backdrop-blur-sm p-8 shadow-lg hover:shadow-xl transition-all duration-500 border border-white/60 hover:border-white/80 animate-float"
+                style={{ animationDelay: `${index * 0.3}s` }}
               >
                 <div className="flex flex-col h-full">
                   <div className="mb-4">
-                    <svg className="h-6 w-6 text-roomly-500" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-8 w-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                     </svg>
                   </div>
-                  <p className="flex-grow text-gray-600 italic mb-6">{testimonial.testimonial}</p>
+                  <p className="flex-grow text-muted-foreground italic mb-6 text-lg leading-relaxed">
+                    "{testimonial.testimonial}"
+                  </p>
                   <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <h4 className="font-semibold text-foreground text-lg">{testimonial.name}</h4>
+                    <p className="text-primary font-medium">{testimonial.role}</p>
                   </div>
                 </div>
               </div>
