@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Room } from "@/types/room";
 import { toast } from "@/hooks/use-toast";
+import { createBrazilDate } from "@/utils/timezone";
 
 export function useRoomReservation(room: Room, onClose: () => void) {
   const [loading, setLoading] = useState(false);
@@ -43,8 +44,8 @@ export function useRoomReservation(room: Room, onClose: () => void) {
         p_quantity: 1,
         p_metadata: {
           room_name: room.name,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
+          start_time: format(startTime, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
+          end_time: format(endTime, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"),
           date: format(startTime, "yyyy-MM-dd"),
           start_hour: format(startTime, "HH:mm"),
           end_hour: format(endTime, "HH:mm")

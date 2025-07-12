@@ -485,7 +485,7 @@ const RoomForm: React.FC = () => {
                   id="open_time"
                   name="open_time"
                   type="time"
-                  value={room.open_time || "08:00"}
+                  value={room.open_time?.substring(0, 5) || "08:00"}
                   onChange={handleChange}
                   required
                 />
@@ -497,7 +497,7 @@ const RoomForm: React.FC = () => {
                   id="close_time"
                   name="close_time"
                   type="time"
-                  value={room.close_time || "18:00"}
+                  value={room.close_time?.substring(0, 5) || "18:00"}
                   onChange={handleChange}
                   required
                 />
