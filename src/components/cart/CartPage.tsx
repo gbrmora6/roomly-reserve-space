@@ -240,74 +240,83 @@ const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Carrinho de Compras</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+      <div className="container mx-auto px-6">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Carrinho de Compras</h1>
+          <div className="w-24 h-1 bg-gradient-to-r from-primary to-primary/60 rounded-full mx-auto"></div>
+        </div>
 
-      {itemsWithDetails && itemsWithDetails.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Lista de itens */}
-          <div className="lg:col-span-2">
-            {itemsWithDetails.map(renderCartItem)}
-          </div>
+        {itemsWithDetails && itemsWithDetails.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Lista de itens */}
+            <div className="lg:col-span-2 space-y-6">
+              {itemsWithDetails.map(renderCartItem)}
+            </div>
 
-          {/* Resumo do pedido */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Itens ({cartItems.length}):</span>
-                    <span>{formatCurrency(cartTotal)}</span>
+            {/* Resumo do pedido */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
+                <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-6">
+                  <h3 className="text-xl font-bold">Resumo do Pedido</h3>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-gray-600">
+                      <span>Itens ({cartItems.length}):</span>
+                      <span className="font-medium">{formatCurrency(cartTotal)}</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex justify-between font-bold text-xl text-gray-900">
+                      <span>Total:</span>
+                      <span className="text-primary">{formatCurrency(cartTotal)}</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={handleCheckout}
+                    className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 py-4"
+                    size="lg"
+                    disabled={cartItems.length === 0}
+                  >
+                    Finalizar Compra ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
+                  </Button>
+
+                  <div className="text-xs text-gray-500 text-center space-y-1 mt-4">
+                    <p>🔒 Salas e equipamentos reservados por 15 minutos</p>
+                    <p>📦 Produtos físicos sem limite de tempo</p>
                   </div>
                 </div>
-
-                <Separator />
-
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total:</span>
-                  <span>{formatCurrency(cartTotal)}</span>
-                </div>
-
-                <Button 
-                  onClick={handleCheckout}
-                  className="w-full"
-                  size="lg"
-                  disabled={cartItems.length === 0}
-                >
-                  Finalizar Compra ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
-                </Button>
-
-                <div className="text-xs text-muted-foreground text-center space-y-1">
-                  <p>* Salas e equipamentos são reservados temporariamente por 15 minutos</p>
-                  <p>* Produtos físicos não possuem tempo limite</p>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center py-20">
-          <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-semibold mb-2">Seu carrinho está vazio</h2>
-          <p className="text-muted-foreground mb-6">
-            Adicione salas, equipamentos ou produtos para começar
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={() => navigate("/rooms")} size="lg">
-              Ver Salas
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/equipment")} size="lg">
-              Ver Equipamentos
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/store")} size="lg">
-              Ver Produtos
-            </Button>
+        ) : (
+          <div className="text-center py-20">
+            <div className="mb-8">
+              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mb-4">
+                <ShoppingCart className="h-12 w-12 text-gray-400" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Carrinho Vazio</h2>
+            <p className="text-xl text-gray-600 mb-8 max-w-md mx-auto">
+              Que tal adicionar alguns itens ao seu carrinho?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => navigate("/rooms")} size="lg" className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transform hover:scale-105 transition-all duration-300">
+                Ver Salas
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/equipment")} size="lg" className="border-2 hover:bg-gray-50 transform hover:scale-105 transition-all duration-300">
+                Ver Equipamentos
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/store")} size="lg" className="border-2 hover:bg-gray-50 transform hover:scale-105 transition-all duration-300">
+                Ver Produtos
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

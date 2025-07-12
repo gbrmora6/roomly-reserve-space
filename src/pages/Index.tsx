@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, CheckCircle, Clock, HelpCircle, User } from "lucide-react";
+import { ArrowRight, Calendar, CheckCircle, Clock, HelpCircle, User, Sparkles, Shield, Star, Users, Award, Target } from "lucide-react";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
 import { supabase } from "@/integrations/supabase/client";
+import HeroSection from "@/components/home/HeroSection";
+import StatsSection from "@/components/home/StatsSection";
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
@@ -12,99 +14,74 @@ const Index: React.FC = () => {
 
   // Fetch hero image from Supabase storage
   useEffect(() => {
-    // Image URL is now hardcoded to the specific image
     setHeroImageUrl("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
   }, []);
 
   return (
     <MainLayout>
-      {/* Hero Section - Updated with gradient and better styling */}
-      <section className="relative bg-gradient-to-r from-blue-50 to-indigo-50 py-20 md:py-28">
-        <div className="absolute inset-0 bg-cover opacity-5" style={{ backgroundImage: `url('${heroImageUrl}')` }}></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid items-center gap-12 md:grid-cols-2">
-            <div className="text-center md:text-left">
-              <span className="inline-block mb-4 rounded-full bg-blue-100 px-4 py-1.5 text-sm font-medium text-roomly-600">
-                Atendimento Psicológico Simplificado
-              </span>
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
-                <span className="block">Psico</span>
-                <span className="block mt-1 text-roomly-600">Flex</span>
-              </h1>
-              <p className="mt-6 text-lg text-gray-600 max-w-md mx-auto md:mx-0">
-                Espaços completos para suas atividades relacionadas à psicologia com ambientes preparados e equipamentos profissionais.
-              </p>
-              <div className="mt-10 flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0 md:justify-start">
-                <Button 
-                  size="lg" 
-                  className="bg-roomly-600 hover:bg-roomly-700 transition-all duration-300 transform hover:scale-105"
-                  onClick={() => navigate("/register")}
-                >
-                  Comece agora
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-roomly-500 border-2 text-roomly-700 hover:bg-roomly-50 transition-all duration-300 transform hover:scale-105"
-                  onClick={() => navigate("/rooms")}
-                >
-                  Ver salas disponíveis
-                </Button>
-              </div>
-            </div>
+      <HeroSection heroImageUrl={heroImageUrl} />
+      
+      <StatsSection />
 
-            <div className="flex justify-center">
-              <div className="rounded-lg overflow-hidden shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                <img
-                  src={heroImageUrl}
-                  alt="Reserva de salas para psicólogos"
-                  className="h-auto w-full object-cover"
-                  width={600}
-                  height={400}
-                />
-              </div>
-            </div>
+      {/* Interactive Services Section */}
+      <section className="py-20 bg-white relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-purple-500 to-primary"></div>
+        
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Nossos Serviços</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Descubra todas as soluções que oferecemos para profissionais da psicologia
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* Navigation Menu Section - New interactive element */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
           <div className="flex justify-center">
             <NavigationMenu>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="bg-white hover:bg-gray-50">
-                    Serviços
+                  <NavigationMenuTrigger className="bg-white hover:bg-gray-50 text-lg px-6 py-3 shadow-lg border border-gray-200 rounded-xl">
+                    Explore Nossos Serviços
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    <div className="grid w-[600px] gap-4 p-6 md:w-[700px] md:grid-cols-2 lg:w-[800px]">
                       {[
                         {
                           title: "Salas Especializadas",
-                          desc: "Ambientes preparados para atendimento psicológico"
+                          desc: "Ambientes preparados com isolamento acústico e mobiliário adequado para atendimento psicológico",
+                          icon: <User className="w-6 h-6 text-primary" />
                         },
                         {
                           title: "Materiais para Testes",
-                          desc: "Acesso a materiais e testes psicológicos necessários"
+                          desc: "Acesso a biblioteca completa de testes psicológicos e materiais de avaliação",
+                          icon: <CheckCircle className="w-6 h-6 text-green-500" />
                         },
                         {
                           title: "Equipamentos Completos",
-                          desc: "Recursos para suas sessões terapêuticas"
+                          desc: "Recursos tecnológicos e equipamentos especializados para suas sessões",
+                          icon: <Target className="w-6 h-6 text-blue-500" />
                         },
                         {
                           title: "Agendamento Flexível",
-                          desc: "Reserve apenas o tempo que precisa utilizar"
+                          desc: "Sistema inteligente de reservas por hora, meio período ou dia inteiro",
+                          icon: <Calendar className="w-6 h-6 text-purple-500" />
                         }
-                      ].map((item) => (
+                      ].map((service, index) => (
                         <NavigationMenuLink 
-                          key={item.title} 
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          key={service.title} 
+                          className="group block select-none space-y-3 rounded-xl p-4 leading-none no-underline outline-none transition-all duration-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 hover:shadow-lg border border-gray-100 hover:border-primary/20"
                         >
-                          <div className="text-sm font-medium leading-none">{item.title}</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">{item.desc}</p>
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-gray-100 group-hover:bg-white transition-colors duration-300">
+                              {service.icon}
+                            </div>
+                            <div className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors duration-300">
+                              {service.title}
+                            </div>
+                          </div>
+                          <p className="text-sm leading-relaxed text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                            {service.desc}
+                          </p>
                         </NavigationMenuLink>
                       ))}
                     </div>
@@ -116,43 +93,92 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Section - Updated with icons and better styling */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Por que escolher a Psico Flex?</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-gray-600">
-              Oferecemos tudo o que você precisa para realizar seus atendimentos psicológicos com excelência.
+      {/* Modern Features Section */}
+      <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg mb-6">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-gray-700">Diferenciais Únicos</span>
+            </div>
+            <h2 className="text-5xl font-bold text-gray-900 mb-6">
+              Por que escolher a <span className="text-primary">PsicoFlex</span>?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Oferecemos tudo o que você precisa para realizar seus atendimentos psicológicos 
+              com excelência e comodidade
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 title: "Salas Especializadas",
-                description: "Ambientes preparados para atendimento psicológico, com isolamento acústico e mobiliário adequado.",
-                icon: <User className="h-10 w-10 text-roomly-600" />
+                description: "Ambientes preparados para atendimento psicológico, com isolamento acústico perfeito e mobiliário ergonômico de qualidade premium.",
+                icon: <User className="h-8 w-8" />,
+                color: "from-blue-500 to-blue-600",
+                bgColor: "from-blue-50 to-blue-100"
               },
               {
-                title: "Atendimento Flexível",
-                description: "Reserve suas salas por hora, meio período ou dia inteiro, de acordo com sua necessidade.",
-                icon: <Clock className="h-10 w-10 text-roomly-600" />
+                title: "Horários Flexíveis",
+                description: "Reserve suas salas por hora, meio período ou dia inteiro. Sistema de agendamento inteligente que se adapta à sua rotina.",
+                icon: <Clock className="h-8 w-8" />,
+                color: "from-green-500 to-green-600",
+                bgColor: "from-green-50 to-green-100"
               },
               {
-                title: "Equipamentos Completos",
-                description: "Infraestrutura completa com equipamentos e recursos para suas sessões terapêuticas.",
-                icon: <CheckCircle className="h-10 w-10 text-roomly-600" />
+                title: "Equipamentos Premium",
+                description: "Infraestrutura completa com equipamentos de última geração e recursos tecnológicos para suas sessões terapêuticas.",
+                icon: <Award className="h-8 w-8" />,
+                color: "from-purple-500 to-purple-600",
+                bgColor: "from-purple-50 to-purple-100"
+              },
+              {
+                title: "Suporte 24/7",
+                description: "Equipe especializada disponível round the clock para garantir que tudo funcione perfeitamente em seus atendimentos.",
+                icon: <Shield className="h-8 w-8" />,
+                color: "from-red-500 to-red-600",
+                bgColor: "from-red-50 to-red-100"
+              },
+              {
+                title: "Localização Premium",
+                description: "Filiais em pontos estratégicos da cidade, com fácil acesso e estacionamento amplo para você e seus pacientes.",
+                icon: <Star className="h-8 w-8" />,
+                color: "from-yellow-500 to-yellow-600",
+                bgColor: "from-yellow-50 to-yellow-100"
+              },
+              {
+                title: "Preços Justos",
+                description: "Tarifas transparentes e competitivas, com planos especiais para profissionais que utilizam nossos espaços regularmente.",
+                icon: <CheckCircle className="h-8 w-8" />,
+                color: "from-indigo-500 to-indigo-600",
+                bgColor: "from-indigo-50 to-indigo-100"
               },
             ].map((feature, index) => (
               <div
                 key={index}
-                className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm transition-all hover:shadow-md hover:border-roomly-200 hover:-translate-y-1"
+                className="group relative transform transition-all duration-700 hover:scale-105 hover:-translate-y-2"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-roomly-50">
-                  {feature.icon}
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgColor} rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-700 opacity-60 group-hover:opacity-80`}></div>
+                
+                <div className="relative bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/60 group-hover:border-white/80">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} text-white mb-6 shadow-lg group-hover:shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-primary transition-colors duration-300">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
+                    {feature.description}
+                  </p>
+                  
+                  {/* Decorative gradient line */}
+                  <div className={`mt-6 h-1 w-12 bg-gradient-to-r ${feature.color} rounded-full transition-all duration-500 group-hover:w-16`}></div>
                 </div>
-                <h3 className="mb-3 text-xl font-semibold text-gray-900">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
               </div>
             ))}
           </div>
