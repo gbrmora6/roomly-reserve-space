@@ -71,23 +71,15 @@ const RoomList: React.FC = () => {
     queryFn: async () => {
       console.log("Buscando salas com filtros:", filters);
 
-      // Se tem filtros de data e horário, buscar salas disponíveis
+      // Se tem filtros de data e horário, buscar salas disponíveis usando get_room_availability
       if (filters.date && filters.startTime && filters.endTime) {
-        const startDate = new Date(filters.date);
-        const [startHours, startMinutes] = filters.startTime.split(':');
-        startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-
-        const endDate = new Date(filters.date);
-        const [endHours, endMinutes] = filters.endTime.split(':');
-        endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
-
-        // Número do dia da semana (0-6, onde 0 é domingo)
-        const weekdayNumber = filters.date.getDay();
+        const dateStr = format(filters.date, 'yyyy-MM-dd');
+        const startHour = parseInt(filters.startTime.split(':')[0]);
+        const endHour = parseInt(filters.endTime.split(':')[0]);
         
-        console.log("Filtrando salas para data:", filters.date);
-        console.log("Horário de início:", startDate.toISOString());
-        console.log("Horário de término:", endDate.toISOString());
-        console.log("Número do dia da semana:", weekdayNumber);
+        console.log("Filtrando salas para data:", dateStr);
+        console.log("Horário de início:", filters.startTime);
+        console.log("Horário de término:", filters.endTime);
 
         try {
           // Buscar filiais baseado no filtro de cidade
@@ -128,36 +120,47 @@ const RoomList: React.FC = () => {
             throw roomsError;
           }
 
-          // Filtrar salas abertas no dia da semana selecionado
-          const openRooms = allRooms.filter(room => {
-            // Se a sala não tem dias definidos, assume que está aberta todos os dias
-            if (!room.open_days || room.open_days.length === 0) return true;
-            
-            // Verificar se a sala está aberta neste dia
-            return room.open_days.includes(weekdayNumber);
-          });
+          // Verificar disponibilidade de cada sala usando a função get_room_availability
+          const availableRooms = [];
+          
+          for (const room of allRooms) {
+            // Buscar disponibilidade da sala para a data selecionada
+            const { data: availability, error: availabilityError } = await supabase
+              .rpc('get_room_availability', {
+                p_room_id: room.id,
+                p_date: dateStr
+              });
 
-          // Buscar reservas que conflitam com o horário selecionado
-          const { data: bookings, error: bookingsError } = await supabase
-            .from('bookings')
-            .select('room_id')
-            .not('status', 'eq', 'cancelled')
-            .lte('start_time', endDate.toISOString())
-            .gte('end_time', startDate.toISOString());
+            if (availabilityError) {
+              console.error(`Erro ao verificar disponibilidade da sala ${room.name}:`, availabilityError);
+              continue;
+            }
 
-          if (bookingsError) {
-            console.error("Erro ao buscar reservas:", bookingsError);
-            throw bookingsError;
+            // Verificar se todos os horários solicitados estão disponíveis
+            if (availability && availability.length > 0) {
+              const requestedHours = [];
+              for (let hour = startHour; hour < endHour; hour++) {
+                requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
+              }
+
+              const availableSlots = availability.filter(slot => slot.is_available);
+              const availableHours = availableSlots.map(slot => slot.hour);
+
+              // Verificar se todos os horários solicitados estão disponíveis
+              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
+              
+              if (allHoursAvailable) {
+                console.log(`Sala ${room.name} disponível para o período solicitado`);
+                availableRooms.push(room);
+              } else {
+                console.log(`Sala ${room.name} não disponível para todo o período solicitado`);
+              }
+            } else {
+              console.log(`Sala ${room.name} fechada na data ${dateStr}`);
+            }
           }
 
-          console.log("Reservas encontradas:", bookings);
-          const bookedRoomIds = bookings.map(booking => booking.room_id);
-          console.log("IDs das salas reservadas:", bookedRoomIds);
-
-          // Filtrar salas não reservadas
-          const availableRooms = openRooms.filter(room => !bookedRoomIds.includes(room.id));
           console.log("Salas disponíveis:", availableRooms.length);
-
           return availableRooms as unknown as Room[];
         } catch (error) {
           console.error("Erro na consulta de filtro de salas:", error);
