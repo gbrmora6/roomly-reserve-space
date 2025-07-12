@@ -16,6 +16,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PaymentStatusManager } from "@/components/admin/PaymentStatusManager";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
+import { PaymentCard } from "@/components/orders/PaymentCard";
+import { useOrders } from "@/hooks/useOrders";
 
 const STATUS_MAP = {
   all: "Todas",
@@ -90,11 +95,14 @@ export default function ProductSales() {
           status,
           total_amount,
           branch_id,
+          payment_method,
+          payment_data,
           order_items(
             quantity,
             price_per_unit,
             product:products(name)
-          )
+          ),
+          payment_details(*)
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -125,6 +133,8 @@ export default function ProductSales() {
     enabled: !!branchId,
     refetchInterval: 30000, // 30 segundos
   });
+
+  const { checkPaymentStatus, requestRefund } = useOrders(undefined);
 
   // Notificação de novo pedido
   React.useEffect(() => {
@@ -329,83 +339,7 @@ export default function ProductSales() {
       </Card>
 
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total de Vendas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{isLoading ? <Skeleton className="h-8 w-16" /> : resumo.total}</div>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>Total de pedidos realizados nesta filial</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-700">{isLoading ? <Skeleton className="h-8 w-24" /> : `R$ ${resumo.faturado.toFixed(2)}`}</div>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>Somatório dos valores pagos</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Pagas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{isLoading ? <Skeleton className="h-8 w-12" /> : resumo.pagas}</div>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>Pedidos já pagos e confirmados</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Pendentes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-yellow-600">{isLoading ? <Skeleton className="h-8 w-12" /> : resumo.pendentes}</div>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>Pedidos aguardando pagamento</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Canceladas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-red-600">{isLoading ? <Skeleton className="h-8 w-12" /> : resumo.canceladas}</div>
-                </CardContent>
-              </Card>
-            </TooltipTrigger>
-            <TooltipContent>Pedidos cancelados por falta de pagamento</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <AdminStatsCards stats={resumo} isLoading={isLoading} type="orders" />
 
       {/* Campo de busca e paginação */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">

@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookingsTable } from "@/components/bookings/BookingsTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Eye, Package } from "lucide-react";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Package } from "lucide-react";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { PaymentStatusManager } from "@/components/admin/PaymentStatusManager";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -54,8 +58,14 @@ interface Booking {
 
 const AdminEquipmentBookings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BookingStatus | "all">("all");
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const perPage = 10;
+  
   const { refreshUserClaims } = useAuth();
-  const { branchId } = useBranchFilter();
+  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
   
   // Execute refresh claims on component mount
   useEffect(() => {
@@ -151,7 +161,51 @@ const AdminEquipmentBookings: React.FC = () => {
         throw error;
       }
     },
+    enabled: !!branchId,
+    refetchInterval: 30000,
   });
+
+  // Cálculos de resumo
+  const stats = useMemo(() => {
+    if (!bookings) return { total: 0, pagas: 0, pendentes: 0, canceladas: 0 };
+    
+    let total = bookings.length;
+    let pagas = 0;
+    let pendentes = 0;
+    let canceladas = 0;
+
+    bookings.forEach(booking => {
+      if (booking.status === "confirmed" || booking.status === "pago") {
+        pagas++;
+      } else if (booking.status === "pending" || booking.status === "falta pagar") {
+        pendentes++;
+      } else if (booking.status === "cancelled" || booking.status === "cancelled_unpaid" || booking.status === "cancelado por falta de pagamento") {
+        canceladas++;
+      }
+    });
+
+    return { total, pagas, pendentes, canceladas };
+  }, [bookings]);
+
+  // Filtro de busca
+  const filteredBookings = useMemo(() => {
+    if (!bookings) return [];
+    if (!search.trim()) return bookings;
+    const s = search.trim().toLowerCase();
+    return bookings.filter(booking => {
+      const user = booking.user;
+      const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
+      const equipmentName = booking.booking_equipment?.[0]?.equipment?.name?.toLowerCase() || "";
+      return name.includes(s) || equipmentName.includes(s);
+    });
+  }, [bookings, search]);
+
+  // Paginação
+  const totalPages = Math.ceil(filteredBookings.length / perPage) || 1;
+  const paginatedBookings = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredBookings.slice(start, start + perPage);
+  }, [filteredBookings, page]);
   
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
@@ -255,62 +309,211 @@ const AdminEquipmentBookings: React.FC = () => {
   })) : [];
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
+      {isSuperAdmin && branches && (
+        <div className="mb-4 max-w-xs">
+          <Select value={branchId || undefined} onValueChange={setBranchId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filial" />
+            </SelectTrigger>
+            <SelectContent>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Título e ação */}
       <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
-            <Package className="h-7 w-7 text-purple-700" /> Reservas de Equipamentos
+            <Package className="h-7 w-7 text-orange-700" /> Reservas de Equipamentos
           </CardTitle>
-          <CardDescription className="text-gray-500">Gerencie todas as reservas de equipamentos</CardDescription>
+          <CardDescription className="text-gray-500">Gerencie todas as reservas de equipamentos com sistema de pagamento integrado</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Reservas de Equipamentos</h1>
-              <p className="text-muted-foreground mt-2">
-                Gerencie todas as reservas de equipamentos
-              </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
+            <div className="flex items-center gap-3">
+              <Package className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold leading-tight">Reservas de Equipamentos</h1>
+                <p className="text-muted-foreground mt-1 text-base">Acompanhe e gerencie todas as reservas de equipamentos com controle de pagamentos.</p>
+              </div>
             </div>
-            
-            <Button variant="outline" onClick={downloadReport}>
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={downloadReport} className="h-12 text-base font-semibold">
+              <Download className="mr-2 h-5 w-5" />
               Baixar Relatório
             </Button>
           </div>
-          
-          <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
-            <TabsList>
-              <TabsTrigger value="all">Todas</TabsTrigger>
-              <TabsTrigger value="pending">Pendentes</TabsTrigger>
-              <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
-              <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={activeTab} className="mt-6">
-              {isLoading ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : error ? (
-                <div className="rounded-lg bg-destructive/10 p-6 text-center">
-                  <p className="text-destructive font-medium">Erro ao carregar reservas</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
-                  </p>
-                </div>
-              ) : !safeBookings || safeBookings.length === 0 ? (
-                <div className="text-center py-10 border rounded-lg">
-                  <p className="text-muted-foreground">Nenhuma reserva de equipamento encontrada</p>
-                </div>
-              ) : (
-                <BookingsTable bookings={safeBookings} onUpdateStatus={handleUpdateStatus} />
-              )}
-            </TabsContent>
-          </Tabs>
         </CardContent>
       </Card>
+
+      {/* Cards de resumo */}
+      <AdminStatsCards stats={stats} isLoading={isLoading} type="equipment" />
+
+      {/* Campo de busca */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <Input
+          placeholder="Buscar por cliente ou equipamento..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        <div className="flex items-center gap-2 mt-2 md:mt-0">
+          <span className="text-sm text-muted-foreground">{filteredBookings.length} reservas</span>
+          <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(1)}>&laquo;</Button>
+          <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>&lsaquo;</Button>
+          <span className="text-sm">Página {page} de {totalPages}</span>
+          <Button variant="ghost" size="icon" disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>&rsaquo;</Button>
+          <Button variant="ghost" size="icon" disabled={page === totalPages} onClick={() => setPage(totalPages)}>&raquo;</Button>
+        </div>
+      </div>
+
+      {/* Tabs e tabela */}
+      <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
+        <TabsList>
+          <TabsTrigger value="all">Todas</TabsTrigger>
+          <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
+          <TabsTrigger value="pending">Pendentes</TabsTrigger>
+          <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+        </TabsList>
+        <TabsContent value={activeTab} className="mt-6">
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : error ? (
+            <div className="rounded-lg bg-destructive/10 p-6 text-center">
+              <p className="text-destructive font-medium">Erro ao carregar reservas</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
+              </p>
+            </div>
+          ) : !bookings || bookings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
+              <Package className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhuma reserva de equipamento encontrada</h3>
+              <p className="text-muted-foreground text-center max-w-md">
+                Quando houver reservas de equipamentos, elas aparecerão aqui para você gerenciar.
+              </p>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Equipamento</TableHead>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Quantidade</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedBookings.map((booking) => (
+                        <TableRow key={booking.id}>
+                          <TableCell className="py-3 px-4">
+                            <div className="font-medium">
+                              {booking.user 
+                                ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
+                                : booking.user_id}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 px-4">
+                            {booking.booking_equipment?.[0]?.equipment?.name || "-"}
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-sm">
+                            <div>
+                              <div>{format(new Date(booking.start_time), "dd/MM/yyyy")}</div>
+                              <div className="text-muted-foreground">
+                                {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-sm">
+                            {booking.booking_equipment?.[0]?.quantity || 0}x
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-sm font-medium">
+                            R$ {booking.total_price?.toFixed(2) || "0.00"}
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-sm">
+                            <StatusBadge status={booking.status} />
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-sm">
+                            <div className="flex gap-2 flex-col lg:flex-row">
+                              <Button size="sm" variant="outline" onClick={() => { setSelectedBooking(booking); setShowDetails(true); }}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                Ver
+                              </Button>
+                              {/* Para equipamentos, precisaríamos conectar com orders também */}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Modal de detalhes */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Reserva de Equipamento</DialogTitle>
+            <DialogDescription>Informações completas sobre a reserva selecionada</DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Informações do Cliente</h3>
+                  <p><strong>Nome:</strong> {selectedBooking.user ? `${selectedBooking.user.first_name || ""} ${selectedBooking.user.last_name || ""}`.trim() : selectedBooking.user_id}</p>
+                  <p><strong>Data da Reserva:</strong> {format(new Date(selectedBooking.created_at), "dd/MM/yyyy HH:mm")}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Detalhes da Reserva</h3>
+                  <StatusBadge status={selectedBooking.status} />
+                  <p className="mt-2"><strong>Valor Total:</strong> R$ {selectedBooking.total_price?.toFixed(2) || "0.00"}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Horário</h3>
+                <p><strong>Data:</strong> {format(new Date(selectedBooking.start_time), "dd/MM/yyyy")}</p>
+                <p><strong>Início:</strong> {format(new Date(selectedBooking.start_time), "HH:mm")}</p>
+                <p><strong>Fim:</strong> {format(new Date(selectedBooking.end_time), "HH:mm")}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Equipamentos</h3>
+                {selectedBooking.booking_equipment && selectedBooking.booking_equipment.length > 0 ? (
+                  <div>
+                    {selectedBooking.booking_equipment.map((item, index) => (
+                      <div key={index} className="border p-3 rounded">
+                        <p><strong>Equipamento:</strong> {item.equipment.name}</p>
+                        <p><strong>Quantidade:</strong> {item.quantity}x</p>
+                        <p><strong>Preço por hora:</strong> R$ {item.equipment.price_per_hour.toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
