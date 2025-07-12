@@ -526,42 +526,33 @@ export type Database = {
       equipment: {
         Row: {
           branch_id: string
-          close_time: string | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
           name: string
-          open_days: Database["public"]["Enums"]["weekday"][] | null
-          open_time: string | null
           price_per_hour: number
           quantity: number
           updated_at: string | null
         }
         Insert: {
           branch_id: string
-          close_time?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name: string
-          open_days?: Database["public"]["Enums"]["weekday"][] | null
-          open_time?: string | null
           price_per_hour: number
           quantity?: number
           updated_at?: string | null
         }
         Update: {
           branch_id?: string
-          close_time?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
-          open_days?: Database["public"]["Enums"]["weekday"][] | null
-          open_time?: string | null
           price_per_hour?: number
           quantity?: number
           updated_at?: string | null
@@ -1222,7 +1213,6 @@ export type Database = {
       rooms: {
         Row: {
           branch_id: string
-          close_time: string | null
           created_at: string | null
           description: string | null
           google_calendar_id: string | null
@@ -1235,14 +1225,11 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
-          open_days: number[] | null
-          open_time: string | null
           price_per_hour: number
           updated_at: string | null
         }
         Insert: {
           branch_id: string
-          close_time?: string | null
           created_at?: string | null
           description?: string | null
           google_calendar_id?: string | null
@@ -1255,14 +1242,11 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
-          open_days?: number[] | null
-          open_time?: string | null
           price_per_hour: number
           updated_at?: string | null
         }
         Update: {
           branch_id?: string
-          close_time?: string | null
           created_at?: string | null
           description?: string | null
           google_calendar_id?: string | null
@@ -1275,8 +1259,6 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
-          open_days?: number[] | null
-          open_time?: string | null
           price_per_hour?: number
           updated_at?: string | null
         }

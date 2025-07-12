@@ -247,14 +247,8 @@ const RoomList: React.FC = () => {
               }
             }
             
-            // Se não tem room_schedules, verificar open_days
-            if (room.open_days && room.open_days.length > 0) {
-              const isOpenOnDay = room.open_days.includes(dayOfWeek);
-              if (isOpenOnDay) {
-                console.log(`Sala ${room.name} funciona no dia ${dayOfWeek} (open_days)`);
-                return true;
-              }
-            }
+            // Se não tem room_schedules específico para o dia, a sala não funciona
+            console.log(`Equipamento não tem horário configurado para este dia`);
             
             console.log(`Sala ${room.name} não funciona no dia selecionado`);
             return false;
@@ -362,8 +356,7 @@ const RoomList: React.FC = () => {
       { icon: Car, label: "Banheiro", available: room.has_private_bathroom || false },
     ],
     stats: [
-      { icon: Clock, label: "Abertura", value: room.open_time || "N/A" },
-      { icon: Clock, label: "Fechamento", value: room.close_time || "N/A" },
+      { icon: Clock, label: "Horários", value: "Ver detalhes" },
     ],
   })) || [];
 

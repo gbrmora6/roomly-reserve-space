@@ -80,14 +80,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return;
         }
 
-        // Filter equipment based on open days
-        const openEquipment = allEquipment.filter(equipment => {
-          // If equipment has no open_days, assume it's available all days
-          if (!equipment.open_days || equipment.open_days.length === 0) return true;
-          
-          // Check if the equipment is available on this weekday
-          return equipment.open_days.includes(weekdayEnum);
-        });
+        // For now, assume all equipment is open (schedules will be checked via database function)
+        const openEquipment = allEquipment;
 
         // Get equipment bookings for the selected date usando bounds locais
         const dayBounds = createDayBounds(selectedDate);

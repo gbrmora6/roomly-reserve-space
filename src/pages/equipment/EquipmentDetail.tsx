@@ -157,15 +157,12 @@ const EquipmentDetail = () => {
                   </p>
                 </div>
 
-                {/* Horário de Funcionamento */}
-                {equipment.open_time && equipment.close_time && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Horário de Funcionamento</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {equipment.open_time} às {equipment.close_time}
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Horário de Funcionamento</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Varia por dia da semana - consulte na reserva
+                  </p>
+                </div>
               </CardContent>
             </Card>
 

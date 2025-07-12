@@ -208,15 +208,12 @@ const RoomDetail = () => {
                   </div>
                 </div>
 
-                {/* Horário de Funcionamento */}
-                {room.open_time && room.close_time && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold">Horário de Funcionamento</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {room.open_time} às {room.close_time}
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Horário de Funcionamento</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Varia por dia da semana - consulte na reserva
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>

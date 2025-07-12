@@ -237,20 +237,8 @@ const EquipmentList: React.FC = () => {
               }
             }
             
-            // Se não tem equipment_schedules, verificar open_days
-            if (equip.open_days && equip.open_days.length > 0) {
-              const weekdayMap: Record<number, string> = {
-                0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
-                4: 'thursday', 5: 'friday', 6: 'saturday'
-              };
-              const weekdayName = weekdayMap[dayOfWeek] as Database["public"]["Enums"]["weekday"];
-              
-              const isOpenOnDay = equip.open_days.includes(weekdayName);
-              if (isOpenOnDay) {
-                console.log(`Equipamento ${equip.name} funciona no dia ${dayOfWeek} (open_days)`);
-                return true;
-              }
-            }
+            // Se não tem equipment_schedules específico para o dia, o equipamento não funciona
+            console.log(`Equipamento ${equip.name} não tem horário configurado para este dia`);
             
             console.log(`Equipamento ${equip.name} não funciona no dia selecionado`);
             return false;
@@ -338,8 +326,7 @@ const EquipmentList: React.FC = () => {
       { icon: Package, label: "Disponível", available: equipment.available > 0 },
     ],
     stats: [
-      { icon: Clock, label: "Abertura", value: equipment.open_time || "N/A" },
-      { icon: Clock, label: "Fechamento", value: equipment.close_time || "N/A" },
+      { icon: Clock, label: "Horários", value: "Ver detalhes" },
     ],
   })) || [];
 
