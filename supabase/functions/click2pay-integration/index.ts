@@ -263,6 +263,7 @@ serve(async (req) => {
 
     switch (paymentMethod) {
       case "boleto":
+        console.log("15.1. Configurando dados para boleto...");
         endpoint = `${CLICK2PAY_BASE_URL}/v1/transactions/boleto`;
         payloadData = {
           ...payloadData,
@@ -270,6 +271,7 @@ serve(async (req) => {
           fine: { mode: 'FIXED' },
           interest: { mode: 'DAILY_AMOUNT' }
         };
+        console.log("15.2. Payload boleto configurado:", JSON.stringify(payloadData, null, 2));
         break;
 
       case "pix":
@@ -303,6 +305,8 @@ serve(async (req) => {
     // Chamar API da Click2Pay com autenticação Basic Auth
     const authHeader = createBasicAuth(clientId, clientSecret);
     console.log("18. Chamando Click2Pay API...");
+    console.log("18.1. Endpoint:", endpoint);
+    console.log("18.2. Auth header:", authHeader.substring(0, 20) + "...");
     
     const click2payResponse = await fetch(endpoint, {
       method: 'POST',
@@ -314,13 +318,17 @@ serve(async (req) => {
     });
 
     console.log("19. Status da resposta Click2Pay:", click2payResponse.status);
+    console.log("19.1. Headers da resposta:", Object.fromEntries(click2payResponse.headers.entries()));
     
     const click2payResult = await click2payResponse.json();
     console.log("20. Resposta Click2Pay:", JSON.stringify(click2payResult, null, 2));
 
     if (!click2payResponse.ok) {
-      const errorMessage = click2payResult.message || click2payResult.error || 'Erro desconhecido na API';
-      console.error("Erro da API Click2Pay:", errorMessage);
+      const errorMessage = click2payResult.message || click2payResult.error || click2payResult.errors || 'Erro desconhecido na API';
+      console.error("21. Erro da API Click2Pay:");
+      console.error("21.1. Status:", click2payResponse.status);
+      console.error("21.2. Mensagem:", errorMessage);
+      console.error("21.3. Resposta completa:", JSON.stringify(click2payResult, null, 2));
       throw new Error(`Click2Pay API error: ${errorMessage}`);
     }
 
