@@ -95,68 +95,51 @@ export function useEquipmentDateAndTime({
       }
 
       try {
-        // Extract hours from equipment's open/close times or use defaults
-        const openTime = equipment.open_time ? equipment.open_time.split(":")[0] : "08";
-        const closeTime = equipment.close_time ? equipment.close_time.split(":")[0] : "18";
-
-        // Generate all possible hours
-        const hours: string[] = [];
-        for (let hour = parseInt(openTime); hour < parseInt(closeTime); hour++) {
-          hours.push(`${hour.toString().padStart(2, "0")}:00`);
-        }
-
-        // Get bookings for this equipment on the selected date usando bounds locais
-        const dayBounds = createDayBounds(selectedDate);
-
-        const { data: bookings, error } = await supabase
-          .from('booking_equipment')
-          .select('start_time, end_time, quantity, status')
-          .eq('equipment_id', equipment.id)
-          .not('status', 'eq', 'cancelled')
-          .gte('start_time', dayBounds.start)
-          .lte('start_time', dayBounds.end);
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        
+        console.log("Buscando disponibilidade para equipamento:", equipment.id, "data:", dateStr);
+        
+        // Usar a função do banco que considera schedules e carrinho - igual ao de salas
+        const { data: availabilityData, error } = await supabase
+          .rpc("get_equipment_availability", {
+            p_equipment_id: equipment.id,
+            p_date: dateStr,
+            p_requested_quantity: 1
+          });
 
         if (error) {
-          console.error("Error fetching equipment bookings:", error);
-          throw error;
+          console.error("Error fetching equipment availability:", error);
+          return;
         }
 
-        console.log("Equipment bookings for day:", bookings);
+        console.log("Dados de disponibilidade recebidos:", availabilityData);
 
-        // Calculate blocked hours based on bookings and equipment quantity
+        if (!availabilityData || availabilityData.length === 0) {
+          console.log(`Equipamento ${equipment.name} fechado na data ${dateStr}`);
+          setAvailableHours([]);
+          setBlockedHours([]);
+          return;
+        }
+
+        // Separar horários disponíveis e bloqueados
+        const available: string[] = [];
         const blocked: string[] = [];
-        const hourlyBookings: Record<string, number> = {};
+        
+        availabilityData.forEach((slot: any) => {
+          if (slot.is_available) {
+            available.push(slot.hour);
+          } else {
+            blocked.push(slot.hour);
+          }
+        });
+        
+        console.log("Horários disponíveis:", available);
+        console.log("Horários bloqueados:", blocked);
 
-        if (bookings && bookings.length > 0) {
-          bookings.forEach(booking => {
-            // Convert to date objects
-            const start = new Date(booking.start_time);
-            const end = new Date(booking.end_time);
-            
-            // Get hours between start and end time
-            const startHourLocal = start.getHours();
-            const endHourLocal = end.getHours();
-            
-            // Add booked quantity to each hour
-            for (let h = startHourLocal; h < endHourLocal; h++) {
-              const hourKey = `${h.toString().padStart(2, "0")}:00`;
-              hourlyBookings[hourKey] = (hourlyBookings[hourKey] || 0) + booking.quantity;
-              
-              // If all units of this equipment are booked for this hour, block it
-              if (hourlyBookings[hourKey] >= equipment.quantity) {
-                blocked.push(hourKey);
-              }
-            }
-          });
-        }
-
-        console.log("Hourly bookings:", hourlyBookings);
-        console.log("Blocked hours:", blocked);
-        setAvailableHours(hours);
+        setAvailableHours(available);
         setBlockedHours(blocked);
-
       } catch (error) {
-        console.error("Error calculating available hours:", error);
+        console.error("Error in fetchAvailableHours:", error);
         setAvailableHours([]);
         setBlockedHours([]);
       }
