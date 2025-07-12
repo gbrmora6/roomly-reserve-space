@@ -43,7 +43,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Edit, RefreshCw, ShoppingBag } from "lucide-react";
+import { Plus, Trash2, Edit, ShoppingBag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -135,11 +135,6 @@ const AdminProducts = () => {
           .select()
           .single();
         if (error) throw error;
-        if (data.stripe_product_id) {
-          await updateProductInStripe(data);
-        } else {
-          await createProductInStripe(data);
-        }
         return data;
       } else {
         // Create new product
@@ -149,7 +144,6 @@ const AdminProducts = () => {
           .select()
           .single();
         if (error) throw error;
-        await createProductInStripe(data);
         return data;
       }
     },
@@ -158,7 +152,7 @@ const AdminProducts = () => {
         title: editingProductId ? "Produto atualizado" : "Produto criado",
         description: editingProductId 
           ? "O produto foi atualizado com sucesso." 
-          : "O produto foi criado com sucesso e sincronizado com Stripe.",
+          : "O produto foi criado com sucesso.",
       });
       setOpenDialog(false);
       resetForm();
@@ -173,51 +167,6 @@ const AdminProducts = () => {
     },
   });
 
-  // Create product in Stripe
-  const createProductInStripe = async (productData: any) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-integration", {
-        body: {
-          action: "create-product",
-          productData,
-        },
-      });
-
-      if (error) throw error;
-      console.log("Product created in Stripe:", data);
-      return data;
-    } catch (error) {
-      console.error("Error creating product in Stripe:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao integrar com Stripe",
-        description: "O produto foi salvo, mas ocorreu um erro ao sincronizar com o Stripe.",
-      });
-    }
-  };
-
-  // Update product in Stripe
-  const updateProductInStripe = async (productData: any) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("stripe-integration", {
-        body: {
-          action: "update-product",
-          productData,
-        },
-      });
-
-      if (error) throw error;
-      console.log("Product updated in Stripe:", data);
-      return data;
-    } catch (error) {
-      console.error("Error updating product in Stripe:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao atualizar no Stripe",
-        description: "O produto foi atualizado localmente, mas ocorreu um erro ao sincronizar com o Stripe.",
-      });
-    }
-  };
 
   // Delete product
   const deleteProductMutation = useMutation({
@@ -246,33 +195,6 @@ const AdminProducts = () => {
     },
   });
 
-  // Sync all products with Stripe
-  const syncProductsMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("stripe-integration", {
-        body: {
-          action: "sync-products",
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Produtos sincronizados",
-        description: "Os produtos foram sincronizados com o Stripe com sucesso.",
-      });
-      refetchProducts();
-    },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: `Ocorreu um erro ao sincronizar produtos: ${error.message}`,
-      });
-    },
-  });
 
   const resetForm = () => {
     form.reset({
@@ -347,23 +269,13 @@ const AdminProducts = () => {
                 Gerencie os produtos disponíveis para venda
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => syncProductsMutation.mutate()}
-                disabled={syncProductsMutation.isPending}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Sincronizar com Stripe
-              </Button>
-              <Button onClick={() => {
-                resetForm();
-                setOpenDialog(true);
-              }}>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Produto
-              </Button>
-            </div>
+            <Button onClick={() => {
+              resetForm();
+              setOpenDialog(true);
+            }}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Produto
+            </Button>
           </div>
 
           <Card>
@@ -388,7 +300,6 @@ const AdminProducts = () => {
                         <TableHead>Preço</TableHead>
                         <TableHead>Equipamento Relacionado</TableHead>
                         <TableHead>Quantidade</TableHead>
-                        <TableHead>Status Stripe</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -407,17 +318,6 @@ const AdminProducts = () => {
                               )}
                             </TableCell>
                             <TableCell>{product.quantity || 0}</TableCell>
-                            <TableCell>
-                              {product.stripe_product_id ? (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  Sincronizado
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  Não sincronizado
-                                </span>
-                              )}
-                            </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button
@@ -440,7 +340,7 @@ const AdminProducts = () => {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                             Nenhum produto encontrado
                           </TableCell>
                         </TableRow>
