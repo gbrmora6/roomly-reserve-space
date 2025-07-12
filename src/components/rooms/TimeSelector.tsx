@@ -33,7 +33,36 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
     
     if (isEndTime && startHour) {
       // This is equivalent to the end time selector with a selected start time
-      const availableEndTimes = hours.filter(time => time > startHour);
+      const startIndex = hours.indexOf(startHour);
+      const availableEndTimes: string[] = [];
+      
+      // Add consecutive available hours as possible end times
+      for (let i = startIndex + 1; i < hours.length; i++) {
+        const currentHour = hours[i];
+        const prevHour = hours[i - 1];
+        
+        // Check if current hour is consecutive to previous hour
+        const currentHourNum = parseInt(currentHour.split(':')[0]);
+        const prevHourNum = parseInt(prevHour.split(':')[0]);
+        
+        if (currentHourNum === prevHourNum + 1 && !blockedHours?.includes(currentHour)) {
+          availableEndTimes.push(currentHour);
+        } else if (blockedHours?.includes(currentHour)) {
+          // Stop if we hit a blocked hour
+          break;
+        } else if (currentHourNum !== prevHourNum + 1) {
+          // Stop if hours are not consecutive
+          break;
+        }
+      }
+      
+      // Always allow at least the next hour if available
+      if (availableEndTimes.length === 0) {
+        const nextHourIndex = startIndex + 1;
+        if (nextHourIndex < hours.length && !blockedHours?.includes(hours[nextHourIndex])) {
+          availableEndTimes.push(hours[nextHourIndex]);
+        }
+      }
       
       return (
         <div className="space-y-2">
@@ -59,6 +88,9 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
               );
             })}
           </div>
+          {availableEndTimes.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum horário consecutivo disponível</p>
+          )}
         </div>
       );
     }
@@ -156,6 +188,9 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
             );
           })}
         </div>
+        {availableEndTimes.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhum horário consecutivo disponível</p>
+        )}
       </div>
     );
   }
