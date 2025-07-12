@@ -53,7 +53,7 @@ function prepareCustomerData(paymentData: any, userEmail: string) {
   return {
     payerInfo: {
       address: {
-        place: paymentData.endereco || "",
+        place: paymentData.rua || "",
         number: paymentData.numero || "",
         complement: paymentData.complemento || "",
         neighborhood: paymentData.bairro || "",

@@ -30,6 +30,15 @@ interface PaymentData {
   cpfCnpj: string;
   telefone: string;
   email: string;
+  // Dados de endereço
+  rua: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  // Dados do cartão
   numeroCartao: string;
   nomeNoCartao: string;
   validadeCartao: string;
@@ -51,6 +60,14 @@ const Checkout = () => {
     cpfCnpj: "",
     telefone: "",
     email: "",
+    // Dados de endereço
+    rua: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+    cep: "",
     // Dados do cartão
     numeroCartao: "",
     nomeNoCartao: "",
@@ -259,6 +276,85 @@ const Checkout = () => {
                     placeholder="seu@email.com"
                     required
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Endereço */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Endereço</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="cep">CEP</Label>
+                  <Input
+                    id="cep"
+                    value={paymentData.cep}
+                    onChange={(e) => handlePaymentDataChange("cep", e.target.value)}
+                    placeholder="00000-000"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rua">Rua/Logradouro</Label>
+                  <Input
+                    id="rua"
+                    value={paymentData.rua}
+                    onChange={(e) => handlePaymentDataChange("rua", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="numero">Número</Label>
+                    <Input
+                      id="numero"
+                      value={paymentData.numero}
+                      onChange={(e) => handlePaymentDataChange("numero", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="complemento">Complemento</Label>
+                    <Input
+                      id="complemento"
+                      value={paymentData.complemento}
+                      onChange={(e) => handlePaymentDataChange("complemento", e.target.value)}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="bairro">Bairro</Label>
+                  <Input
+                    id="bairro"
+                    value={paymentData.bairro}
+                    onChange={(e) => handlePaymentDataChange("bairro", e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cidade">Cidade</Label>
+                    <Input
+                      id="cidade"
+                      value={paymentData.cidade}
+                      onChange={(e) => handlePaymentDataChange("cidade", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="estado">Estado</Label>
+                    <Input
+                      id="estado"
+                      value={paymentData.estado}
+                      onChange={(e) => handlePaymentDataChange("estado", e.target.value)}
+                      placeholder="SP"
+                      maxLength={2}
+                      required
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
