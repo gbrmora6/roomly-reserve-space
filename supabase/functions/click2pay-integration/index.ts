@@ -156,13 +156,15 @@ serve(async (req) => {
 
     // Buscar profile do usuário para obter branch_id
     console.log("8.1. Buscando profile do usuário...");
+    console.log("8.1.1. UserID para busca:", userId);
+    
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('branch_id')
+      .select('branch_id, first_name, last_name')
       .eq('id', userId)
       .maybeSingle();
 
-    console.log("8.1.1. Resultado da query profile:", { profile, profileError });
+    console.log("8.1.2. Resultado da query profile:", { profile, profileError });
 
     if (profileError) {
       console.error("Erro ao buscar profile:", profileError);
@@ -170,14 +172,17 @@ serve(async (req) => {
     }
 
     if (!profile) {
+      console.error("Profile não encontrado para o usuário:", userId);
       throw new Error("Profile do usuário não encontrado");
     }
 
     if (!profile.branch_id) {
+      console.error("Branch ID não encontrado no profile:", profile);
       throw new Error("Usuário não possui branch_id válido");
     }
 
     console.log("8.2. Branch ID encontrado:", profile.branch_id);
+    console.log("8.3. Dados completos do profile:", profile);
 
     // Buscar carrinho do usuário
     console.log("9. Buscando carrinho do usuário...");
@@ -205,7 +210,7 @@ serve(async (req) => {
       user_id: userId,
       branch_id: profile.branch_id,
       total_amount: totalAmount,
-      status: 'pending',
+      status: 'in_process',
       payment_method: paymentMethod
     };
     console.log("12.1. Dados da ordem:", orderData);
@@ -325,7 +330,7 @@ serve(async (req) => {
       .from('orders')
       .update({
         click2pay_tid: click2payResult.tid || click2payResult.id,
-        status: click2payResult.status || 'pending',
+        status: click2payResult.status || 'in_process',
         external_identifier: click2payResult.external_identifier || order.id
       })
       .eq('id', order.id);
