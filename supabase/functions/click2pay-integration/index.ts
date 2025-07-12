@@ -1,17 +1,13 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
-import sdk from "https://esm.sh/api@6.1.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Configurar SDK Click2Pay
-sdk.configure({
-  baseURL: "https://apisandbox.click2pay.com.br",
-  timeout: 30000,
-});
+// URLs da API Click2Pay
+const CLICK2PAY_BASE_URL = "https://apisandbox.click2pay.com.br";
 
 // Função para validar CPF
 function isValidCPF(cpf: string): boolean {
@@ -45,6 +41,11 @@ function validatePaymentData(paymentData: any, paymentMethod: string): string[] 
   }
   
   return errors;
+}
+
+// Função para criar autenticação Basic Auth
+function createBasicAuth(clientId: string, clientSecret: string): string {
+  return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
 }
 
 // Função para preparar dados do cliente
@@ -110,9 +111,6 @@ serve(async (req) => {
     if (!clientId || !clientSecret) {
       throw new Error("Credenciais da Click2Pay não configuradas");
     }
-
-    // Configurar autenticação do SDK
-    sdk.auth(clientId, clientSecret);
 
     // Criar cliente Supabase
     console.log("4. Criando cliente Supabase...");
@@ -237,80 +235,92 @@ serve(async (req) => {
     // Dados do cliente
     const customer = prepareCustomerData(paymentData);
     
-    // Dados base para todas as transações
-    const basePayload = {
+    // Determinar endpoint e dados específicos por método
+    let endpoint = "";
+    let payloadData: any = {
       amount: Math.round(totalAmount * 100), // Click2Pay espera centavos
       description: `Pedido #${order.id}`,
       external_identifier: order.id,
       customer
     };
 
-    let click2payResult: any;
+    switch (paymentMethod) {
+      case "boleto":
+        endpoint = `${CLICK2PAY_BASE_URL}/v1/transactions/boleto`;
+        payloadData = {
+          ...payloadData,
+          payment_limit_days: 3,
+          fine: {
+            mode: "FIXED",
+            value: 200 // R$ 2,00
+          },
+          interest: {
+            mode: "DAILY_AMOUNT",
+            value: 100 // R$ 1,00 por dia
+          }
+        };
+        break;
 
-    try {
-      switch (paymentMethod) {
-        case "boleto":
-          console.log("16. Criando boleto via SDK...");
-          click2payResult = await sdk.criarBoletos({
-            ...basePayload,
-            payment_limit_days: 3,
-            fine: {
-              mode: "FIXED",
-              value: 200 // R$ 2,00
-            },
-            interest: {
-              mode: "DAILY_AMOUNT",
-              value: 100 // R$ 1,00 por dia
-            }
-          });
-          break;
+      case "pix":
+        endpoint = `${CLICK2PAY_BASE_URL}/v1/transactions/pix`;
+        payloadData = {
+          ...payloadData,
+          expiration: "86400", // 24 horas
+          returnQRCode: true
+        };
+        break;
 
-        case "pix":
-          console.log("16. Criando PIX via SDK...");
-          click2payResult = await sdk.pixAdicionarTransaO({
-            ...basePayload,
-            expiration: "86400", // 24 horas
-            returnQRCode: true
-          });
-          break;
+      case "cartao":
+        endpoint = `${CLICK2PAY_BASE_URL}/v1/transactions/creditcard`;
+        payloadData = {
+          ...payloadData,
+          card_hash: paymentData.card_hash,
+          installments: paymentData.parcelas || 1,
+          capture: true,
+          saveCard: false,
+          recurrent: false
+        };
+        break;
 
-        case "cartao":
-          console.log("16. Criando transação de cartão via SDK...");
-          click2payResult = await sdk.criarCreditcard({
-            ...basePayload,
-            card_hash: paymentData.card_hash,
-            installments: paymentData.parcelas || 1,
-            capture: true,
-            saveCard: false,
-            recurrent: false
-          });
-          break;
-
-        default:
-          throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
-      }
-    } catch (sdkError) {
-      console.error("Erro no SDK Click2Pay:", sdkError);
-      throw new Error(`Erro na API Click2Pay: ${sdkError.message || 'Erro desconhecido'}`);
+      default:
+        throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
     }
 
-    console.log("17. Resposta Click2Pay via SDK:", JSON.stringify(click2payResult, null, 2));
+    console.log("16. Endpoint:", endpoint);
+    console.log("17. Payload:", JSON.stringify(payloadData, null, 2));
 
-    // Verificar se a resposta do SDK é válida
-    if (!click2payResult || !click2payResult.data) {
-      throw new Error("Resposta inválida da API Click2Pay");
+    // Chamar API da Click2Pay com autenticação Basic Auth
+    const authHeader = createBasicAuth(clientId, clientSecret);
+    console.log("18. Chamando Click2Pay API...");
+    
+    const click2payResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader
+      },
+      body: JSON.stringify(payloadData)
+    });
+
+    console.log("19. Status da resposta Click2Pay:", click2payResponse.status);
+    
+    const click2payResult = await click2payResponse.json();
+    console.log("20. Resposta Click2Pay:", JSON.stringify(click2payResult, null, 2));
+
+    if (!click2payResponse.ok) {
+      const errorMessage = click2payResult.message || click2payResult.error || 'Erro desconhecido na API';
+      console.error("Erro da API Click2Pay:", errorMessage);
+      throw new Error(`Click2Pay API error: ${errorMessage}`);
     }
-
-    const responseData = click2payResult.data;
 
     // Atualizar ordem com dados da Click2Pay
-    console.log("18. Atualizando ordem com dados da Click2Pay...");
+    console.log("21. Atualizando ordem com dados da Click2Pay...");
     const { error: updateError } = await supabase
       .from('orders')
       .update({
-        click2pay_tid: responseData.tid || responseData.id,
-        status: responseData.status || 'pending',
-        external_identifier: responseData.external_identifier || order.id
+        click2pay_tid: click2payResult.tid || click2payResult.id,
+        status: click2payResult.status || 'pending',
+        external_identifier: click2payResult.external_identifier || order.id
       })
       .eq('id', order.id);
 
@@ -320,8 +330,8 @@ serve(async (req) => {
     }
 
     // Confirmar pagamento se já estiver pago (PIX instantâneo, por exemplo)
-    if (responseData.status === 'paid') {
-      console.log("19. Confirmando pagamento do carrinho...");
+    if (click2payResult.status === 'paid') {
+      console.log("22. Confirmando pagamento do carrinho...");
       const { error: confirmError } = await supabase
         .rpc('confirm_cart_payment', { 
           p_user_id: userId, 
@@ -333,39 +343,39 @@ serve(async (req) => {
       }
     }
 
-    console.log("20. Processamento concluído com sucesso");
+    console.log("23. Processamento concluído com sucesso");
 
     // Preparar resposta baseada no método de pagamento
     let response: any = {
       success: true,
       orderId: order.id,
-      status: responseData.status,
+      status: click2payResult.status,
       paymentMethod,
-      tid: responseData.tid || responseData.id
+      tid: click2payResult.tid || click2payResult.id
     };
 
     // Adicionar dados específicos do método de pagamento
     switch (paymentMethod) {
       case "boleto":
         response.boleto = {
-          url: responseData.boleto_url,
-          barcode: responseData.barcode,
-          due_date: responseData.due_date
+          url: click2payResult.boleto_url,
+          barcode: click2payResult.barcode,
+          due_date: click2payResult.due_date
         };
         break;
 
       case "pix":
         response.pix = {
-          qr_code: responseData.qr_code,
-          qr_code_url: responseData.qr_code_url,
-          expires_at: responseData.expires_at
+          qr_code: click2payResult.qr_code,
+          qr_code_url: click2payResult.qr_code_url,
+          expires_at: click2payResult.expires_at
         };
         break;
 
       case "cartao":
         response.card = {
-          authorization_code: responseData.authorization_code,
-          captured: responseData.captured
+          authorization_code: click2payResult.authorization_code,
+          captured: click2payResult.captured
         };
         break;
     }
