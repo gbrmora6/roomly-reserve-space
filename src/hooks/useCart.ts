@@ -33,6 +33,16 @@ export const useCart = () => {
       
       console.log("Buscando carrinho para usuário:", user.id);
       
+      // Primeiro, executar limpeza de itens expirados de forma robusta
+      try {
+        console.log("Executando limpeza de itens expirados...");
+        await supabase.rpc("clean_expired_cart_items");
+        console.log("Limpeza automática concluída com sucesso");
+      } catch (error) {
+        console.log("Nota: Erro na limpeza automática (continuando):", error);
+        // Continue mesmo se a limpeza falhar para não bloquear o carrinho
+      }
+      
       // Chama a function do Supabase para buscar o carrinho
       const { data, error } = await supabase.rpc("get_cart", {
         p_user_id: user.id
@@ -45,23 +55,19 @@ export const useCart = () => {
       
       console.log("Dados do carrinho recebidos:", data);
       
-      // Filtrar itens não expirados
+      // Filtrar itens não expirados como medida adicional de segurança
+      const now = new Date();
       const validItems = (data as CartItem[]).filter(item => {
         if (!item.expires_at) return true;
-        return new Date(item.expires_at) > new Date();
+        const expiresAt = new Date(item.expires_at);
+        const isValid = expiresAt > now;
+        if (!isValid) {
+          console.log("Item expirado encontrado no frontend:", item.id, "expirou em:", expiresAt);
+        }
+        return isValid;
       });
       
-      // Se encontrou itens expirados, fazer limpeza automática
-      if (validItems.length < (data as CartItem[]).length) {
-        console.log("Itens expirados detectados, executando limpeza automática");
-        try {
-          await supabase.rpc("clean_expired_cart_items");
-          console.log("Limpeza automática concluída");
-        } catch (error) {
-          console.error("Erro na limpeza automática:", error);
-        }
-      }
-      
+      console.log(`Retornando ${validItems.length} itens válidos de ${(data as CartItem[]).length} totais`);
       return validItems;
     },
     enabled: !!user,
