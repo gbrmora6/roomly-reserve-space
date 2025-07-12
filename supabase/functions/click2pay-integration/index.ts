@@ -160,14 +160,20 @@ serve(async (req) => {
       .from('profiles')
       .select('branch_id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+
+    console.log("8.1.1. Resultado da query profile:", { profile, profileError });
 
     if (profileError) {
       console.error("Erro ao buscar profile:", profileError);
       throw new Error(`Erro ao buscar profile do usuário: ${profileError.message}`);
     }
 
-    if (!profile?.branch_id) {
+    if (!profile) {
+      throw new Error("Profile do usuário não encontrado");
+    }
+
+    if (!profile.branch_id) {
       throw new Error("Usuário não possui branch_id válido");
     }
 
@@ -195,15 +201,18 @@ serve(async (req) => {
 
     // Criar ordem no banco
     console.log("12. Criando ordem no banco...");
+    const orderData = {
+      user_id: userId,
+      branch_id: profile.branch_id,
+      total_amount: totalAmount,
+      status: 'pending',
+      payment_method: paymentMethod
+    };
+    console.log("12.1. Dados da ordem:", orderData);
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        user_id: userId,
-        branch_id: profile.branch_id,
-        total_amount: totalAmount,
-        status: 'pending',
-        payment_method: paymentMethod
-      })
+      .insert(orderData)
       .select()
       .single();
 
