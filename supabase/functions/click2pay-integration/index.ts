@@ -71,18 +71,18 @@ function prepareCustomerData(paymentData: any) {
 }
 
 serve(async (req) => {
-  console.log("=== CLICK2PAY INTEGRATION INICIADO ===");
-  
-  if (req.method === "OPTIONS") {
-    console.log("Requisição OPTIONS - retornando CORS");
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
-    console.log("1. Processando requisição...");
+    console.log("=== CLICK2PAY INTEGRATION INICIADO ===");
     console.log("Method:", req.method);
     console.log("URL:", req.url);
+    
+    if (req.method === "OPTIONS") {
+      console.log("Requisição OPTIONS - retornando CORS");
+      return new Response(null, { headers: corsHeaders });
+    }
 
+    console.log("1. Processando requisição...");
+    
     // Ler body
     let body;
     try {
