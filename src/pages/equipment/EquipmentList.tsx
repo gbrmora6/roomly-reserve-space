@@ -107,7 +107,12 @@ const EquipmentList: React.FC = () => {
           onItemAction={(id) => {
             const equipment = filteredEquipments?.find(e => e.id === id);
             if (equipment) {
-              setSelectedEquipment(equipment);
+              // Converter o tipo para o formato correto
+              const equipmentForModal: Equipment = {
+                ...equipment,
+                open_days: equipment.open_days as Database["public"]["Enums"]["weekday"][]
+              };
+              setSelectedEquipment(equipmentForModal);
               setIsReserveModalOpen(true);
             }
           }}
