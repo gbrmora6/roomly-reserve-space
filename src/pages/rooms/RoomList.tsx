@@ -136,7 +136,7 @@ const RoomList: React.FC = () => {
               continue;
             }
 
-            // Verificar se há pelo menos alguns horários disponíveis no período solicitado
+            // Verificar se todo o período solicitado está disponível de forma contínua
             if (availability && availability.length > 0) {
               const requestedHours = [];
               for (let hour = startHour; hour < endHour; hour++) {
@@ -146,14 +146,22 @@ const RoomList: React.FC = () => {
               const availableSlots = availability.filter(slot => slot.is_available);
               const availableHours = availableSlots.map(slot => slot.hour);
 
-              // Verificar se há pelo menos um horário disponível no período solicitado
-              const hasAvailableHours = requestedHours.some(hour => availableHours.includes(hour));
+              // Verificar se TODOS os horários solicitados estão disponíveis
+              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
               
-              if (hasAvailableHours) {
-                console.log(`Sala ${room.name} tem horários disponíveis no período solicitado`);
+              // Verificar se o período solicitado está dentro do horário de funcionamento
+              const allAvailabilityHours = availability.map(slot => slot.hour);
+              const allRequestedHoursInOperatingTime = requestedHours.every(hour => allAvailabilityHours.includes(hour));
+              
+              if (allHoursAvailable && allRequestedHoursInOperatingTime) {
+                console.log(`Sala ${room.name} disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
                 availableRooms.push(room);
               } else {
-                console.log(`Sala ${room.name} não tem horários disponíveis no período solicitado`);
+                if (!allRequestedHoursInOperatingTime) {
+                  console.log(`Sala ${room.name} não funciona em todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
+                } else {
+                  console.log(`Sala ${room.name} não disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
+                }
               }
             } else {
               console.log(`Sala ${room.name} fechada na data ${dateStr}`);
