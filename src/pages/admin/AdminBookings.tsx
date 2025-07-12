@@ -251,20 +251,16 @@ const AdminBookings = () => {
       )}
 
       {/* Título e ação */}
-      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+      <Card className="shadow-lg rounded-2xl border-0 bg-white">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
-            <BookOpen className="h-7 w-7 text-purple-700" /> Reservas de Salas
-          </CardTitle>
-          <CardDescription className="text-gray-500">Gerencie todas as reservas de salas com sistema de pagamento integrado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <BookOpen className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-3xl font-bold leading-tight">Reservas de Salas</h1>
-                <p className="text-muted-foreground mt-1 text-base">Acompanhe e gerencie todas as reservas de salas com controle de pagamentos.</p>
+                <CardTitle className="text-3xl font-bold leading-tight">Reservas de Salas</CardTitle>
+                <CardDescription className="text-muted-foreground mt-1 text-base">
+                  Acompanhe e gerencie todas as reservas de salas com controle de pagamentos.
+                </CardDescription>
               </div>
             </div>
             <Button variant="outline" onClick={downloadReport} className="h-12 text-base font-semibold">
@@ -272,7 +268,7 @@ const AdminBookings = () => {
               Baixar Relatório
             </Button>
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
       {/* Cards de resumo */}

@@ -302,20 +302,16 @@ export default function ProductSales() {
         </div>
       )}
       {/* Título e ação */}
-      <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+      <Card className="shadow-lg rounded-2xl border-0 bg-white">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
-            <ShoppingBag className="h-7 w-7 text-blue-700" /> Vendas de Produtos
-          </CardTitle>
-          <CardDescription className="text-gray-500">Veja todos os pedidos e vendas de produtos realizados na plataforma</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
               <ShoppingBag className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-3xl font-bold leading-tight">Vendas de Produtos</h1>
-                <p className="text-muted-foreground mt-1 text-base">Acompanhe todos os pedidos e vendas de produtos realizados na plataforma.</p>
+                <CardTitle className="text-3xl font-bold leading-tight">Vendas de Produtos</CardTitle>
+                <CardDescription className="text-muted-foreground mt-1 text-base">
+                  Acompanhe todos os pedidos e vendas de produtos realizados na plataforma.
+                </CardDescription>
               </div>
             </div>
             {isSuperAdmin ? (
@@ -324,18 +320,20 @@ export default function ProductSales() {
                 Baixar Relatório
               </Button>
             ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" className="h-12 text-base font-semibold" disabled>
-                    <Download className="mr-2 h-5 w-5" />
-                    Baixar Relatório
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
-              </Tooltip>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" className="h-12 text-base font-semibold" disabled>
+                      <Download className="mr-2 h-5 w-5" />
+                      Baixar Relatório
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Somente superadmin pode exportar relatórios</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
       {/* Cards de resumo */}
