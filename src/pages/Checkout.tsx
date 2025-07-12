@@ -5,13 +5,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import CheckoutProgress from "@/components/checkout/CheckoutProgress";
+import CreditCardPreview from "@/components/checkout/CreditCardPreview";
+import OrderSummary from "@/components/checkout/OrderSummary";
+import PaymentMethodCards from "@/components/checkout/PaymentMethodCards";
+import FormattedInput from "@/components/checkout/FormattedInput";
+import CepLookup from "@/components/checkout/CepLookup";
 
 // Declaração de tipos para a biblioteca Click2Pay
 declare global {
@@ -56,6 +60,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [loading, setLoading] = useState(false);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const [paymentData, setPaymentData] = useState<PaymentData>({
     nomeCompleto: "",
     cpfCnpj: "",
@@ -134,6 +139,18 @@ const Checkout = () => {
 
   const handlePaymentDataChange = (field: string, value: string | number) => {
     setPaymentData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddressFromCep = (address: {
+    rua: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+  }) => {
+    setPaymentData(prev => ({
+      ...prev,
+      ...address
+    }));
   };
 
   const handleCheckout = async () => {
@@ -269,268 +286,282 @@ const Checkout = () => {
 
   return (
     <MainLayout>
-      <div className="container py-10">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Finalizar Compra</h1>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/30">
+        <div className="container py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold tracking-tight mb-2">Finalizar Compra</h1>
+              <p className="text-muted-foreground">Complete seus dados para finalizar o pedido</p>
+            </div>
 
-          <div className="space-y-6">
-            {/* Resumo do pedido */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex justify-between">
-                      <span>{item.quantity}x Produto</span>
-                      <span>{formatCurrency(item.price * item.quantity)}</span>
+            <CheckoutProgress currentStep={currentStep} />
+
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Formulário Principal */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Dados Pessoais */}
+                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center justify-between text-xl">
+                      <span className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+                        <span>Dados Pessoais</span>
+                      </span>
+                      {profileLoaded && (
+                        <span className="text-sm font-normal text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                          ✓ Carregado do perfil
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid md:grid-cols-2 gap-4">
+                    <FormattedInput
+                      id="nomeCompleto"
+                      label="Nome Completo"
+                      value={paymentData.nomeCompleto}
+                      onChange={(value) => handlePaymentDataChange("nomeCompleto", value)}
+                      type="text"
+                      required
+                      className="md:col-span-2"
+                    />
+                    <FormattedInput
+                      id="cpfCnpj"
+                      label="CPF/CNPJ"
+                      value={paymentData.cpfCnpj}
+                      onChange={(value) => handlePaymentDataChange("cpfCnpj", value)}
+                      type="cpf"
+                      placeholder="000.000.000-00"
+                      required
+                    />
+                    <FormattedInput
+                      id="telefone"
+                      label="Telefone"
+                      value={paymentData.telefone}
+                      onChange={(value) => handlePaymentDataChange("telefone", value)}
+                      type="phone"
+                      placeholder="(11) 99999-9999"
+                      required
+                    />
+                    <FormattedInput
+                      id="email"
+                      label="Email"
+                      value={paymentData.email}
+                      onChange={(value) => handlePaymentDataChange("email", value)}
+                      type="email"
+                      placeholder="seu@email.com"
+                      required
+                      className="md:col-span-2"
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Endereço */}
+                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center justify-between text-xl">
+                      <span className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                        <span>Endereço de Entrega</span>
+                      </span>
+                      {profileLoaded && (
+                        <span className="text-sm font-normal text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                          ✓ Carregado do perfil
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-4">
+                      <FormattedInput
+                        id="cep"
+                        label="CEP"
+                        value={paymentData.cep}
+                        onChange={(value) => handlePaymentDataChange("cep", value)}
+                        type="cep"
+                        placeholder="00000-000"
+                        required
+                        className="flex-1"
+                      />
+                      <div className="flex items-end">
+                        <CepLookup cep={paymentData.cep} onAddressFound={handleAddressFromCep} />
+                      </div>
                     </div>
-                  ))}
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between font-bold">
-                      <span>Total</span>
-                      <span>{formatCurrency(cartTotal)}</span>
+                    
+                    <FormattedInput
+                      id="rua"
+                      label="Rua/Logradouro"
+                      value={paymentData.rua}
+                      onChange={(value) => handlePaymentDataChange("rua", value)}
+                      type="text"
+                      required
+                    />
+                    
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <FormattedInput
+                        id="numero"
+                        label="Número"
+                        value={paymentData.numero}
+                        onChange={(value) => handlePaymentDataChange("numero", value)}
+                        type="text"
+                        required
+                      />
+                      <FormattedInput
+                        id="complemento"
+                        label="Complemento"
+                        value={paymentData.complemento}
+                        onChange={(value) => handlePaymentDataChange("complemento", value)}
+                        type="text"
+                        placeholder="Opcional"
+                        className="md:col-span-2"
+                      />
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dados pessoais */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Dados Pessoais
-                  {profileLoaded && (
-                    <span className="text-sm font-normal text-green-600 bg-green-50 px-2 py-1 rounded">
-                      ✓ Carregado do perfil
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="nomeCompleto">Nome Completo</Label>
-                  <Input
-                    id="nomeCompleto"
-                    value={paymentData.nomeCompleto}
-                    onChange={(e) => handlePaymentDataChange("nomeCompleto", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cpfCnpj">CPF/CNPJ</Label>
-                  <Input
-                    id="cpfCnpj"
-                    value={paymentData.cpfCnpj}
-                    onChange={(e) => handlePaymentDataChange("cpfCnpj", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    value={paymentData.telefone}
-                    onChange={(e) => handlePaymentDataChange("telefone", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={paymentData.email}
-                    onChange={(e) => handlePaymentDataChange("email", e.target.value)}
-                    placeholder="seu@email.com"
-                    required
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Endereço */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Endereço
-                  {profileLoaded && (
-                    <span className="text-sm font-normal text-green-600 bg-green-50 px-2 py-1 rounded">
-                      ✓ Carregado do perfil
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="cep">CEP</Label>
-                  <Input
-                    id="cep"
-                    value={paymentData.cep}
-                    onChange={(e) => handlePaymentDataChange("cep", e.target.value)}
-                    placeholder="00000-000"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="rua">Rua/Logradouro</Label>
-                  <Input
-                    id="rua"
-                    value={paymentData.rua}
-                    onChange={(e) => handlePaymentDataChange("rua", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="numero">Número</Label>
-                    <Input
-                      id="numero"
-                      value={paymentData.numero}
-                      onChange={(e) => handlePaymentDataChange("numero", e.target.value)}
+                    
+                    <FormattedInput
+                      id="bairro"
+                      label="Bairro"
+                      value={paymentData.bairro}
+                      onChange={(value) => handlePaymentDataChange("bairro", value)}
+                      type="text"
                       required
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="complemento">Complemento</Label>
-                    <Input
-                      id="complemento"
-                      value={paymentData.complemento}
-                      onChange={(e) => handlePaymentDataChange("complemento", e.target.value)}
-                      placeholder="Opcional"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="bairro">Bairro</Label>
-                  <Input
-                    id="bairro"
-                    value={paymentData.bairro}
-                    onChange={(e) => handlePaymentDataChange("bairro", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="cidade">Cidade</Label>
-                    <Input
-                      id="cidade"
-                      value={paymentData.cidade}
-                      onChange={(e) => handlePaymentDataChange("cidade", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input
-                      id="estado"
-                      value={paymentData.estado}
-                      onChange={(e) => handlePaymentDataChange("estado", e.target.value)}
-                      placeholder="SP"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Método de pagamento */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Método de Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix">Pix (Pagamento instantâneo)</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="boleto" id="boleto" />
-                    <Label htmlFor="boleto">Boleto Bancário</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cartao" id="cartao" />
-                    <Label htmlFor="cartao">Cartão de Crédito</Label>
-                  </div>
-                </RadioGroup>
-
-                {/* Campos específicos para cartão */}
-                {paymentMethod === "cartao" && (
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <Label htmlFor="numeroCartao">Número do Cartão</Label>
-                      <Input
-                        id="numeroCartao"
-                        value={paymentData.numeroCartao}
-                        onChange={(e) => handlePaymentDataChange("numeroCartao", e.target.value)}
-                        placeholder="1234 5678 9012 3456"
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormattedInput
+                        id="cidade"
+                        label="Cidade"
+                        value={paymentData.cidade}
+                        onChange={(value) => handlePaymentDataChange("cidade", value)}
+                        type="text"
+                        required
+                      />
+                      <FormattedInput
+                        id="estado"
+                        label="Estado"
+                        value={paymentData.estado}
+                        onChange={(value) => handlePaymentDataChange("estado", value)}
+                        type="text"
+                        placeholder="SP"
                         required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="nomeNoCartao">Nome no Cartão</Label>
-                      <Input
-                        id="nomeNoCartao"
-                        value={paymentData.nomeNoCartao}
-                        onChange={(e) => handlePaymentDataChange("nomeNoCartao", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="validadeCartao">Validade</Label>
-                        <Input
-                          id="validadeCartao"
-                          value={paymentData.validadeCartao}
-                          onChange={(e) => handlePaymentDataChange("validadeCartao", e.target.value)}
-                          placeholder="MM/AAAA"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          value={paymentData.cvv}
-                          onChange={(e) => handlePaymentDataChange("cvv", e.target.value)}
-                          placeholder="123"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="parcelas">Parcelas</Label>
-                      <select
-                        id="parcelas"
-                        value={paymentData.parcelas}
-                        onChange={(e) => handlePaymentDataChange("parcelas", parseInt(e.target.value))}
-                        className="w-full p-2 border rounded"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
-                          <option key={i} value={i}>
-                            {i}x de {formatCurrency(cartTotal / i)}
-                            {i === 1 ? " à vista" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            <Button 
-              onClick={handleCheckout}
-              disabled={loading}
-              className="w-full"
-              size="lg"
-            >
-              {loading ? "Processando..." : `Finalizar Pagamento - ${formatCurrency(cartTotal)}`}
-            </Button>
+                {/* Método de Pagamento */}
+                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center space-x-3 text-xl">
+                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
+                      <span>Método de Pagamento</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PaymentMethodCards 
+                      selectedMethod={paymentMethod} 
+                      onMethodChange={setPaymentMethod} 
+                    />
+
+                    {/* Campos específicos para cartão */}
+                    {paymentMethod === "cartao" && (
+                      <div className="mt-6 space-y-6">
+                        <div className="grid lg:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <FormattedInput
+                              id="numeroCartao"
+                              label="Número do Cartão"
+                              value={paymentData.numeroCartao}
+                              onChange={(value) => handlePaymentDataChange("numeroCartao", value)}
+                              type="card"
+                              placeholder="1234 5678 9012 3456"
+                              required
+                            />
+                            <FormattedInput
+                              id="nomeNoCartao"
+                              label="Nome no Cartão"
+                              value={paymentData.nomeNoCartao}
+                              onChange={(value) => handlePaymentDataChange("nomeNoCartao", value)}
+                              type="text"
+                              placeholder="Como está impresso no cartão"
+                              required
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormattedInput
+                                id="validadeCartao"
+                                label="Validade"
+                                value={paymentData.validadeCartao}
+                                onChange={(value) => handlePaymentDataChange("validadeCartao", value)}
+                                type="expiry"
+                                placeholder="MM/AAAA"
+                                required
+                              />
+                              <FormattedInput
+                                id="cvv"
+                                label="CVV"
+                                value={paymentData.cvv}
+                                onChange={(value) => handlePaymentDataChange("cvv", value)}
+                                type="cvv"
+                                placeholder="123"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-foreground block mb-2">
+                                Parcelas <span className="text-destructive">*</span>
+                              </label>
+                              <Select 
+                                value={paymentData.parcelas.toString()} 
+                                onValueChange={(value) => handlePaymentDataChange("parcelas", parseInt(value))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione as parcelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
+                                    <SelectItem key={i} value={i.toString()}>
+                                      {i}x de {formatCurrency(cartTotal / i)}
+                                      {i === 1 ? " à vista" : " sem juros"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="flex justify-center">
+                            <CreditCardPreview
+                              cardNumber={paymentData.numeroCartao}
+                              cardName={paymentData.nomeNoCartao}
+                              cardExpiry={paymentData.validadeCartao}
+                              cvv={paymentData.cvv}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Button 
+                  onClick={handleCheckout}
+                  disabled={loading}
+                  className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                  size="lg"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Processando pagamento...</span>
+                    </div>
+                  ) : (
+                    `Finalizar Pagamento - ${formatCurrency(cartTotal)}`
+                  )}
+                </Button>
+              </div>
+
+              {/* Resumo do Pedido */}
+              <div className="lg:col-span-1">
+                <OrderSummary cartItems={cartItems} cartTotal={cartTotal} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
