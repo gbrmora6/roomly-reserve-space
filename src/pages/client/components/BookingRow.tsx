@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { format } from "date-fns";
 import { InvoiceDownload } from "@/components/client/InvoiceDownload";
+import { parseStoredDateTime } from "@/utils/timezone";
 
 interface Booking {
   id: string;
@@ -49,8 +50,9 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
   };
 
   const formatDateTime = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    // Usar parseStoredDateTime para interpretar como horário local
+    const start = parseStoredDateTime(startTime);
+    const end = parseStoredDateTime(endTime);
     const date = format(start, "dd/MM/yyyy");
     const timeRange = `${format(start, "HH:mm")} - ${format(end, "HH:mm")}`;
     return { date, timeRange };
@@ -79,7 +81,7 @@ export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
         {booking.start_time && booking.end_time
           ? formatDateTime(booking.start_time, booking.end_time).date
           : booking.created_at
-          ? format(new Date(booking.created_at), "dd/MM/yyyy")
+          ? format(parseStoredDateTime(booking.created_at), "dd/MM/yyyy")
           : "-"
         }
       </TableCell>

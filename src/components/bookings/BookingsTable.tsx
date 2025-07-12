@@ -6,6 +6,7 @@ import { BookingStatusBadge } from "./BookingStatusBadge";
 import { BookingActions } from "./BookingActions";
 import { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { parseStoredDateTime } from "@/utils/timezone";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -70,10 +71,10 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
                   {booking.user ? `${booking.user.first_name || ''} ${booking.user.last_name || ''}` : '-'}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(parseStoredDateTime(booking.start_time), "dd/MM/yyyy", { locale: ptBR })}
                 </TableCell>
                 <TableCell>
-                  {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
+                  {format(parseStoredDateTime(booking.start_time), "HH:mm")} - {format(parseStoredDateTime(booking.end_time), "HH:mm")}
                 </TableCell>
                 <TableCell>
                   {booking.booking_equipment && booking.booking_equipment.length > 0 ? (
@@ -115,4 +116,4 @@ export const BookingsTable = ({ bookings, onUpdateStatus }: BookingsTableProps) 
       </Table>
     </div>
   );
-};
+}

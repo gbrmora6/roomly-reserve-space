@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEquipmentAvailability } from "./useEquipmentAvailability";
+import { formatDateTimeForDatabase } from "@/utils/timezone";
 
 export function useEquipmentSelection(
   startTime: Date | null, 
@@ -48,8 +49,8 @@ export function useEquipmentSelection(
         booking_id: bookingId,
         user_id: user.id,
         quantity,
-        start_time: startTime!.toISOString(),
-        end_time: endTime!.toISOString(),
+        start_time: formatDateTimeForDatabase(startTime!),
+        end_time: formatDateTimeForDatabase(endTime!),
         status: 'pending' as const,
         branch_id: profile.branch_id
       }));

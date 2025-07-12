@@ -1,8 +1,8 @@
-
 import { useState, useRef, useEffect } from "react";
 import { addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { createDayBounds } from "@/utils/timezone";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];
 
@@ -105,20 +105,16 @@ export function useEquipmentDateAndTime({
           hours.push(`${hour.toString().padStart(2, "0")}:00`);
         }
 
-        // Get bookings for this equipment on the selected date
-        const dayStart = new Date(selectedDate);
-        dayStart.setHours(0, 0, 0, 0);
-        
-        const dayEnd = new Date(selectedDate);
-        dayEnd.setHours(23, 59, 59, 999);
+        // Get bookings for this equipment on the selected date usando bounds locais
+        const dayBounds = createDayBounds(selectedDate);
 
         const { data: bookings, error } = await supabase
           .from('booking_equipment')
           .select('start_time, end_time, quantity, status')
           .eq('equipment_id', equipment.id)
           .not('status', 'eq', 'cancelled')
-          .gte('start_time', dayStart.toISOString())
-          .lte('start_time', dayEnd.toISOString());
+          .gte('start_time', dayBounds.start)
+          .lte('start_time', dayBounds.end);
 
         if (error) {
           console.error("Error fetching equipment bookings:", error);

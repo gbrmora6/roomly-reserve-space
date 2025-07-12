@@ -5,6 +5,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { parseStoredDateTime } from "@/utils/timezone";
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -66,7 +67,7 @@ const PaymentSuccess: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return parseStoredDateTime(dateString).toLocaleDateString('pt-BR');
   };
 
   if (loading) {

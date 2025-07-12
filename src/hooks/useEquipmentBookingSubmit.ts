@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatDateTimeForDatabase, createLocalDateTime } from "@/utils/timezone";
 
 interface UseEquipmentBookingSubmitProps {
   equipmentId: string;
@@ -47,15 +48,9 @@ export function useEquipmentBookingSubmit({
 
       if (profileError) throw profileError;
 
-      // Create date objects for start and end times
-      const startDate = new Date(selectedDate);
-      const endDate = new Date(selectedDate);
-      
-      const [startHours, startMinutes] = startHour.split(":");
-      const [endHours, endMinutes] = endHour.split(":");
-      
-      startDate.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-      endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      // Create date objects for start and end times usando função local
+      const startDate = createLocalDateTime(selectedDate, startHour);
+      const endDate = createLocalDateTime(selectedDate, endHour);
 
       // Create equipment booking with booking_id set to null explicitly
       const { error: equipmentError } = await supabase
@@ -64,8 +59,8 @@ export function useEquipmentBookingSubmit({
           equipment_id: equipmentId,
           quantity: quantity,
           user_id: user.id,
-          start_time: startDate.toISOString(),
-          end_time: endDate.toISOString(),
+          start_time: formatDateTimeForDatabase(startDate),
+          end_time: formatDateTimeForDatabase(endDate),
           status: "pending",
           booking_id: null,
           branch_id: profile.branch_id

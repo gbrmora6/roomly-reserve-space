@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { createDayBounds } from "@/utils/timezone";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];
 
@@ -56,8 +57,8 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         const weekdayEnum = getWeekdayFromNumber(weekdayNumber);
         
         console.log("Filtering equipment for date:", selectedDate);
-        console.log("Start time:", startTime.toISOString());
-        console.log("End time:", endTime.toISOString());
+        console.log("Start time:", startTime);
+        console.log("End time:", endTime);
         console.log("Weekday enum:", weekdayEnum);
 
         // Get all equipment
@@ -88,17 +89,15 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           return equipment.open_days.includes(weekdayEnum);
         });
 
-        // Get equipment bookings for the selected date
-        const startOfDay = new Date(selectedDate);
-        const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        // Get equipment bookings for the selected date usando bounds locais
+        const dayBounds = createDayBounds(selectedDate);
 
         const { data: bookings, error: bookingsError } = await supabase
           .from('booking_equipment')
           .select('equipment_id, quantity, start_time, end_time, status')
           .not('status', 'eq', 'cancelled')
-          .gte('start_time', startOfDay.toISOString())
-          .lte('start_time', endOfDay.toISOString());
+          .gte('start_time', dayBounds.start)
+          .lte('start_time', dayBounds.end);
 
         if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);

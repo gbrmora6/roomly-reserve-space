@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 import { Database } from "@/integrations/supabase/types";
+import { parseStoredDateTime } from "@/utils/timezone";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -56,8 +57,9 @@ export const BookingExport = ({ bookings }: BookingExportProps) => {
     try {
       // Prepare data for export
       const exportData = bookings.map(booking => {
-        const startDate = new Date(booking.start_time);
-        const endDate = new Date(booking.end_time);
+        // Usar parseStoredDateTime para interpretar como horário local
+        const startDate = parseStoredDateTime(booking.start_time);
+        const endDate = parseStoredDateTime(booking.end_time);
         
         const equipmentText = booking.booking_equipment && booking.booking_equipment.length > 0
           ? booking.booking_equipment.map(item => 

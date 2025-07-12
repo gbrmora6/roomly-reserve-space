@@ -15,6 +15,7 @@ import { Database } from "@/integrations/supabase/types";
 import { ClientDetailsModal } from "@/components/bookings/ClientDetailsModal";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
+import { parseStoredDateTime } from "@/utils/timezone";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -32,8 +33,9 @@ const BookingDetails = () => {
     );
   }
 
-  const startDate = new Date(booking.start_time);
-  const endDate = new Date(booking.end_time);
+  // Usar parseStoredDateTime para interpretar como horário local
+  const startDate = parseStoredDateTime(booking.start_time);
+  const endDate = parseStoredDateTime(booking.end_time);
 
   return (
     <MainLayout>
