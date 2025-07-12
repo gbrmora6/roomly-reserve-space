@@ -39,38 +39,48 @@ export function useEquipmentBookingSubmit({
     setIsSubmitting(true);
 
     try {
-      // Buscar o branch_id do usuário
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("branch_id")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Create date objects for start and end times usando função local
+      // Create date objects for start and end times using local timezone
       const startDate = createLocalDateTime(selectedDate, startHour);
       const endDate = createLocalDateTime(selectedDate, endHour);
 
-      // Create equipment booking with booking_id set to null explicitly
-      const { error: equipmentError } = await supabase
-        .from("booking_equipment")
-        .insert({
-          equipment_id: equipmentId,
-          quantity: quantity,
-          user_id: user.id,
-          start_time: formatDateTimeForDatabase(startDate),
-          end_time: formatDateTimeForDatabase(endDate),
-          status: "pending",
-          booking_id: null,
-          branch_id: profile.branch_id
-        });
+      // Get equipment details for price calculation
+      const { data: equipment, error: equipmentError } = await supabase
+        .from("equipment")
+        .select("name, price_per_hour")
+        .eq("id", equipmentId)
+        .single();
 
       if (equipmentError) throw equipmentError;
 
-      toast.success("Reserva realizada com sucesso!");
+      console.log("Adicionando equipamento ao carrinho via RPC add_to_cart");
+
+      // Use add_to_cart function that handles all validation and creates temporary reservation
+      const { data: cartItem, error } = await supabase.rpc("add_to_cart", {
+        p_user_id: user.id,
+        p_item_type: "equipment",
+        p_item_id: equipmentId,
+        p_quantity: quantity,
+        p_metadata: {
+          equipment_name: equipment.name,
+          start_time: formatDateTimeForDatabase(startDate),
+          end_time: formatDateTimeForDatabase(endDate),
+          date: selectedDate.toISOString().split('T')[0], // Use ISO date format for metadata
+          start_hour: startHour,
+          end_hour: endHour
+        }
+      });
+
+      if (error) {
+        console.error("Erro no add_to_cart:", error);
+        throw error;
+      }
+
+      console.log("Equipamento adicionado ao carrinho com sucesso:", cartItem);
+      
+      toast.success("Equipamento adicionado ao carrinho!");
       onSuccess();
     } catch (error: any) {
+      console.error("Error adding equipment to cart:", error);
       toast.error(`Erro ao fazer reserva: ${error.message}`);
     } finally {
       setIsSubmitting(false);

@@ -26,7 +26,7 @@ interface Equipment {
 
 interface ReserveEquipmentFormProps {
   equipment: Equipment;
-  onClose: () => void;
+  onClose: () => void;  
   filters?: {
     date: Date | null;
     startTime: string | null;
@@ -53,20 +53,6 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
       isDateDisabled 
     }
   } = useEquipmentBooking({ equipment, initialFilters: filters, onClose });
-  
-  // Create dummy dates for equipment availability hook
-  const startTimeDate = selectedDate && startHour ? new Date(selectedDate) : null;
-  const endTimeDate = selectedDate && endHour ? new Date(selectedDate) : null;
-  
-  if (startTimeDate && startHour) {
-    const [hours, minutes] = startHour.split(":").map(Number);
-    startTimeDate.setHours(hours, minutes, 0, 0);
-  }
-  
-  if (endTimeDate && endHour) {
-    const [hours, minutes] = endHour.split(":").map(Number);
-    endTimeDate.setHours(hours, minutes, 0, 0);
-  }
   
   // Auto scroll to start hour selection after date is selected
   useEffect(() => {
@@ -139,17 +125,32 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                 />
               )}
               
-              {endHour && startTimeDate && endTimeDate && (
-                <EquipmentBookingSummary 
-                  equipment={equipment}
-                  quantity={quantity}
-                  startTime={startTimeDate}
-                  endTime={endTimeDate}
-                  totalPrice={bookingTotal}
-                  onConfirm={handleSubmit}
-                  loading={isSubmitting}
-                  onCancel={onClose}
-                />
+              {endHour && selectedDate && (
+                <div className="bg-card rounded-lg p-4 shadow-sm">
+                  <h3 className="text-lg font-medium mb-3">Resumo da Reserva</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Equipamento:</span>
+                      <span className="font-medium">{equipment.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Data:</span>
+                      <span className="font-medium">{selectedDate.toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Horário:</span>
+                      <span className="font-medium">{startHour} às {endHour}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Quantidade:</span>
+                      <span className="font-medium">{quantity}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                      <span>Total:</span>
+                      <span>R$ {bookingTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -169,7 +170,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
             disabled={!selectedDate || !startHour || !endHour || isSubmitting}
             className="w-32"
           >
-            {isSubmitting ? "Reservando..." : "Confirmar"}
+            {isSubmitting ? "Adicionando..." : "Adicionar ao Carrinho"}
           </Button>
         )}
       </DialogFooter>

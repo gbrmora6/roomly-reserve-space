@@ -7,6 +7,7 @@ import { useCompanyAddress } from "@/hooks/useCompanyAddress";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
+import { CityFilter } from "@/components/shared/CityFilter";
 import { Database } from "@/integrations/supabase/types";
 import { 
   Wrench, 
@@ -30,6 +31,7 @@ interface Equipment {
 
 const EquipmentList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCity, setSelectedCity] = useState("all");
   
   const { 
     filters, 
@@ -39,7 +41,7 @@ const EquipmentList: React.FC = () => {
     error, 
     handleFilter,
     handleClearFilters 
-  } = useEquipmentFiltering();
+  } = useEquipmentFiltering(selectedCity);
   
   const { formatAddress } = useCompanyAddress();
 
@@ -77,6 +79,14 @@ const EquipmentList: React.FC = () => {
           title="Equipamentos Disponíveis"
           description="Encontre e reserve equipamentos para suas necessidades"
         />
+
+        <div className="mb-4">
+          <CityFilter
+            selectedCity={selectedCity}
+            onCityChange={setSelectedCity}
+            placeholder="Selecione uma cidade"
+          />
+        </div>
 
         <FilterBar
           searchTerm={searchTerm}

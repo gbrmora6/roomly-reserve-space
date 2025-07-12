@@ -116,6 +116,10 @@ export const useCart = () => {
     mutationFn: async (itemId: string) => {
       console.log("Removendo item do carrinho:", itemId);
       
+      // Buscar detalhes do item antes de remover para debug
+      const item = cartItems.find(item => item.id === itemId);
+      console.log("Detalhes do item a ser removido:", item);
+      
       // Chama a function do Supabase para remover do carrinho
       const { data, error } = await supabase.rpc("remove_from_cart", {
         p_id: itemId
@@ -123,8 +127,16 @@ export const useCart = () => {
 
       if (error) {
         console.error("Erro ao remover do carrinho:", error);
+        console.error("Detalhes do erro:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
+      
+      console.log("Resultado da remoção:", data);
       return data;
     },
     onSuccess: () => {

@@ -9,20 +9,33 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
+import { CityFilter } from "@/components/shared/CityFilter";
+import { useBranchByCity } from "@/hooks/useBranchByCity";
 
 const ProductStore = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [selectedCity, setSelectedCity] = useState("all");
+
+  const { data: branchId } = useBranchByCity(selectedCity);
 
   const { data: products, isLoading, error } = useQuery({
-    queryKey: ["store-products", sortBy, sortOrder],
+    queryKey: ["store-products", sortBy, sortOrder, selectedCity, branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("products")
         .select("*")
         .eq("is_active", true)
         .order(sortBy, { ascending: sortOrder === "asc" });
+
+      // Aplicar filtro de cidade se selecionado
+      if (selectedCity && selectedCity !== "all" && branchId) {
+        console.log("Aplicando filtro de branch para produtos:", branchId);
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -69,6 +82,14 @@ const ProductStore = () => {
           title="Loja de Produtos"
           description="Encontre os melhores produtos para suas necessidades"
         />
+
+        <div className="mb-4">
+          <CityFilter
+            selectedCity={selectedCity}
+            onCityChange={setSelectedCity}
+            placeholder="Selecione uma cidade"
+          />
+        </div>
 
         <FilterBar
           searchTerm={searchTerm}

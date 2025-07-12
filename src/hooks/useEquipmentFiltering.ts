@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useBranchByCity } from "./useBranchByCity";
 
 // Interface para definir os filtros de equipamentos
 interface EquipmentFilters {
@@ -30,18 +31,20 @@ interface EquipmentWithAvailability {
 }
 
 // Hook para filtrar equipamentos por filial baseado na cidade
-export const useEquipmentFiltering = () => {
+export const useEquipmentFiltering = (selectedCity: string = "all") => {
   const [filters, setFilters] = useState<EquipmentFilters>({
     date: null,
     startTime: null,
     endTime: null,
-    city: null,
+    city: selectedCity,
   });
 
+  const { data: branchId } = useBranchByCity(selectedCity);
+
   const query = useQuery({
-    queryKey: ["equipment-filtered", filters],
+    queryKey: ["equipment-filtered", filters, selectedCity, branchId],
     queryFn: async (): Promise<EquipmentWithAvailability[]> => {
-      console.log("Filtrando equipamentos com:", filters);
+      console.log("Filtrando equipamentos com:", { ...filters, selectedCity, branchId });
 
       // Query base para equipamentos ativos
       let equipmentQuery = supabase
@@ -50,29 +53,9 @@ export const useEquipmentFiltering = () => {
         .eq('is_active', true);
 
       // Aplicar filtro de cidade se selecionado
-      if (filters.city) {
-        console.log("Aplicando filtro de cidade:", filters.city);
-        
-        // Buscar IDs das filiais da cidade selecionada
-        const { data: branches, error: branchError } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('city', filters.city);
-        
-        if (branchError) {
-          console.error("Erro ao buscar filiais:", branchError);
-          throw branchError;
-        }
-        
-        const branchIds = branches.map(branch => branch.id);
-        console.log("IDs das filiais da cidade:", branchIds);
-        
-        if (branchIds.length > 0) {
-          equipmentQuery = equipmentQuery.in('branch_id', branchIds);
-        } else {
-          // Se não há filiais na cidade, retornar array vazio
-          return [];
-        }
+      if (selectedCity && selectedCity !== "all" && branchId) {
+        console.log("Aplicando filtro de branch:", branchId);
+        equipmentQuery = equipmentQuery.eq('branch_id', branchId);
       }
 
       const { data: allEquipment, error: equipmentError } = await equipmentQuery;
@@ -82,9 +65,13 @@ export const useEquipmentFiltering = () => {
         throw equipmentError;
       }
 
-      // Se não há filtros de data/horário, retornar todos os equipamentos
+      // Se não há equipamentos ou filtros de data/horário, retornar com quantidade total disponível
+      if (!allEquipment || allEquipment.length === 0) {
+        return [];
+      }
+
       if (!filters.date || !filters.startTime || !filters.endTime) {
-        return (allEquipment || []).map(equipment => ({
+        return allEquipment.map(equipment => ({
           ...equipment,
           available: equipment.quantity
         }));
@@ -103,7 +90,7 @@ export const useEquipmentFiltering = () => {
 
       const availableEquipment = [];
       
-      for (const equipment of allEquipment || []) {
+      for (const equipment of allEquipment) {
         // Buscar disponibilidade do equipamento para a data selecionada
         const { data: availability, error: availabilityError } = await supabase
           .rpc('get_equipment_availability', {
@@ -164,7 +151,7 @@ export const useEquipmentFiltering = () => {
       date: null,
       startTime: null,
       endTime: null,
-      city: null,
+      city: selectedCity,
     });
   };
 
