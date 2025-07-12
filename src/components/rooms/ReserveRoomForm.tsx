@@ -16,6 +16,12 @@ interface ReserveRoomFormProps {
   onClose: () => void;
 }
 
+// Função helper para converter horário HH:MM em minutos
+const convertTimeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
 const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
@@ -33,8 +39,11 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
       return;
     }
 
-    // Validar horários
-    if (selectedStartTime >= selectedEndTime) {
+    // Validar horários - converter para minutos para comparação correta
+    const startTimeMinutes = convertTimeToMinutes(selectedStartTime);
+    const endTimeMinutes = convertTimeToMinutes(selectedEndTime);
+    
+    if (startTimeMinutes >= endTimeMinutes) {
       toast({
         variant: "destructive",
         title: "Horário inválido",
