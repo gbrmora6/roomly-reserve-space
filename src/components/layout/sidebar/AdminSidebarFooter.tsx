@@ -18,14 +18,14 @@ export const AdminSidebarFooter: React.FC = () => {
   };
 
   return (
-    <SidebarFooter className="flex flex-col gap-2 py-3 px-4">
-      <Button variant="outline" asChild className="w-full">
+    <SidebarFooter className="flex flex-col gap-2 py-3 px-4 border-t border-slate-600">
+      <Button variant="outline" asChild className="w-full bg-slate-700 text-slate-200 border-slate-600 hover:bg-slate-600">
         <Link to="/">
           <Home className="mr-2 h-4 w-4" />
           Site Principal
         </Link>
       </Button>
-      <Button variant="destructive" className="w-full" onClick={handleSignOut}>
+      <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={handleSignOut}>
         <LogOut className="mr-2 h-4 w-4" />
         Sair
       </Button>

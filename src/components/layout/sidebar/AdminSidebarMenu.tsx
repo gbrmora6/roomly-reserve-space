@@ -51,10 +51,10 @@ export const AdminSidebarMenu: React.FC = () => {
       <SidebarMenuButton asChild>
         <Link 
           to={to} 
-          className={`flex items-center gap-3 text-white/90 text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-3 text-slate-200 text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${
             isActive(to) 
-              ? "bg-white/15 text-white font-semibold shadow-sm border-l-2 border-white/30" 
-              : "hover:bg-white/10 hover:text-white"
+              ? "bg-slate-700 text-slate-100 font-semibold shadow-sm border-l-2 border-blue-400" 
+              : "hover:bg-slate-700/50 hover:text-slate-100"
           } ${className}`}
         >
           <Icon className="h-4 w-4 flex-shrink-0" />
@@ -80,7 +80,7 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Gestão */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-white/60 text-xs font-medium px-4 py-2 mt-2">
+        <SidebarGroupLabel className="text-slate-400 text-xs font-medium px-4 py-2 mt-2">
           Gestão
         </SidebarGroupLabel>
         <SidebarMenu className="px-2">
@@ -104,7 +104,7 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Reservas e Vendas */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-white/60 text-xs font-medium px-4 py-2 mt-2">
+        <SidebarGroupLabel className="text-slate-400 text-xs font-medium px-4 py-2 mt-2">
           Reservas & Vendas
         </SidebarGroupLabel>
         <SidebarMenu className="px-2">
@@ -125,7 +125,7 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Usuários */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-white/60 text-xs font-medium px-4 py-2 mt-2">
+        <SidebarGroupLabel className="text-slate-400 text-xs font-medium px-4 py-2 mt-2">
           Usuários
         </SidebarGroupLabel>
         <SidebarMenu className="px-2">
@@ -140,7 +140,7 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Relatórios */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-white/60 text-xs font-medium px-4 py-2 mt-2">
+        <SidebarGroupLabel className="text-slate-400 text-xs font-medium px-4 py-2 mt-2">
           Relatórios
         </SidebarGroupLabel>
         <SidebarMenu className="px-2">
@@ -155,7 +155,7 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Sistema */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-white/60 text-xs font-medium px-4 py-2 mt-2">
+        <SidebarGroupLabel className="text-slate-400 text-xs font-medium px-4 py-2 mt-2">
           Sistema
         </SidebarGroupLabel>
         <SidebarMenu className="px-2 pb-4">

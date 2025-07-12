@@ -111,7 +111,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <SidebarProvider>
       <div className="flex w-full min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <Sidebar className="bg-gradient-to-b from-[#232c43] to-[#1a2233] shadow-2xl">
+        <Sidebar className="bg-gradient-to-b from-slate-800 to-slate-900 shadow-2xl border-r border-slate-700">
           <div className="flex flex-col h-full">
             <AdminSidebarHeader />
             <SidebarContent className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
