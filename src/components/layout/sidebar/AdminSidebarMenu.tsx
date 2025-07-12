@@ -21,6 +21,10 @@ import {
   Calendar,
   UserPlus,
   Tag,
+  TrendingUp,
+  Bell,
+  Archive,
+  CalendarDays,
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -153,6 +157,53 @@ export const AdminSidebarMenu: React.FC = () => {
             <Link to="/admin/logs" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/logs") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
               <FileText className="h-4 w-4" />
               <span>Logs de Admin</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        {isSuperAdmin && (
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="/admin/branches" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/branches") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+                <Building className="h-4 w-4" />
+                <span>Filiais</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/financial-reports" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/financial-reports") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <TrendingUp className="h-4 w-4" />
+              <span>Relatórios Financeiros</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/notifications" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/notifications") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Bell className="h-4 w-4" />
+              <span>Notificações</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/inventory" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/inventory") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <Archive className="h-4 w-4" />
+              <span>Inventário</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link to="/admin/calendar" className={`flex items-center gap-3 text-white text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${isActive("/admin/calendar") ? "bg-white/10 font-bold shadow" : "hover:bg-white/10 hover:text-white"}`}>
+              <CalendarDays className="h-4 w-4" />
+              <span>Calendário</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
