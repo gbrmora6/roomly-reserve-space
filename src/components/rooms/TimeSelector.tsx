@@ -70,9 +70,7 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
         <div className="grid grid-cols-3 gap-2">
           {hours.map((hour, index) => {
             const isBlocked = blockedHours?.includes(hour);
-            // Don't allow selecting the last hour as a start time
-            const isLastHour = index === hours.length - 1;
-            const isDisabled = isBlocked || isLastHour;
+            const isDisabled = isBlocked;
             
             return (
               <Button
@@ -100,7 +98,37 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
   
   // If we have selected a start time, show available end times
   if (selectedStartTime) {
-    const availableEndTimes = availableHours.filter(time => time > selectedStartTime);
+    // Find consecutive available hours starting from the selected start time
+    const startIndex = availableHours.indexOf(selectedStartTime);
+    const availableEndTimes: string[] = [];
+    
+    // Add consecutive available hours as possible end times
+    for (let i = startIndex + 1; i < availableHours.length; i++) {
+      const currentHour = availableHours[i];
+      const prevHour = availableHours[i - 1];
+      
+      // Check if current hour is consecutive to previous hour
+      const currentHourNum = parseInt(currentHour.split(':')[0]);
+      const prevHourNum = parseInt(prevHour.split(':')[0]);
+      
+      if (currentHourNum === prevHourNum + 1 && !blockedHours.includes(currentHour)) {
+        availableEndTimes.push(currentHour);
+      } else if (blockedHours.includes(currentHour)) {
+        // Stop if we hit a blocked hour
+        break;
+      } else if (currentHourNum !== prevHourNum + 1) {
+        // Stop if hours are not consecutive
+        break;
+      }
+    }
+    
+    // Always allow at least the next hour if available
+    if (availableEndTimes.length === 0) {
+      const nextHourIndex = startIndex + 1;
+      if (nextHourIndex < availableHours.length && !blockedHours.includes(availableHours[nextHourIndex])) {
+        availableEndTimes.push(availableHours[nextHourIndex]);
+      }
+    }
     
     return (
       <div className="space-y-2">
@@ -139,9 +167,7 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
       <div className="grid grid-cols-3 gap-2">
         {availableHours.map((hour, index) => {
           const isBlocked = blockedHours.includes(hour);
-          // Don't allow selecting the last hour as a start time
-          const isLastHour = index === availableHours.length - 1;
-          const isDisabled = isBlocked || isLastHour;
+          const isDisabled = isBlocked;
           
           return (
             <Button
