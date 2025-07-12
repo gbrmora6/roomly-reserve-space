@@ -51,17 +51,21 @@ function createBasicAuth(clientId: string, clientSecret: string): string {
 // Função para preparar dados do cliente
 function prepareCustomerData(paymentData: any) {
   return {
-    name: paymentData.nomeCompleto.trim(),
-    document: paymentData.cpfCnpj.replace(/[^\d]/g, ''),
-    phone: paymentData.telefone.replace(/[^\d]/g, ''),
-    email: paymentData.email || "",
-    address: {
-      street: paymentData.endereco || "",
-      number: paymentData.numero || "",
-      neighborhood: paymentData.bairro || "",
-      city: paymentData.cidade || "",
-      state: paymentData.estado || "",
-      zipcode: paymentData.cep?.replace(/[^\d]/g, '') || ""
+    payerInfo: {
+      address: {
+        place: paymentData.endereco || "",
+        number: paymentData.numero || "",
+        complement: paymentData.complemento || "",
+        neighborhood: paymentData.bairro || "",
+        city: paymentData.cidade || "",
+        state: paymentData.estado || "",
+        zipcode: paymentData.cep?.replace(/[^\d]/g, '') || ""
+      },
+      name: paymentData.nomeCompleto.trim(),
+      taxid: paymentData.cpfCnpj.replace(/[^\d]/g, ''),
+      phonenumber: paymentData.telefone.replace(/[^\d]/g, ''),
+      email: paymentData.email || "",
+      birth_date: paymentData.dataNascimento || ""
     }
   };
 }
@@ -238,10 +242,9 @@ serve(async (req) => {
     // Determinar endpoint e dados específicos por método
     let endpoint = "";
     let payloadData: any = {
-      amount: Math.round(totalAmount * 100), // Click2Pay espera centavos
-      description: `Pedido #${order.id}`,
-      external_identifier: order.id,
-      customer
+      id: order.id,
+      totalAmount: totalAmount,
+      ...customer
     };
 
     switch (paymentMethod) {
@@ -250,14 +253,8 @@ serve(async (req) => {
         payloadData = {
           ...payloadData,
           payment_limit_days: 3,
-          fine: {
-            mode: "FIXED",
-            value: 200 // R$ 2,00
-          },
-          interest: {
-            mode: "DAILY_AMOUNT",
-            value: 100 // R$ 1,00 por dia
-          }
+          fine: { mode: 'FIXED' },
+          interest: { mode: 'DAILY_AMOUNT' }
         };
         break;
 
