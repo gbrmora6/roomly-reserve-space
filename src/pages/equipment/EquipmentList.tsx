@@ -130,28 +130,28 @@ const EquipmentList: React.FC = () => {
                 requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
               }
 
-              const availableSlots = availability.filter(slot => slot.is_available);
-              const availableHours = availableSlots.map(slot => slot.hour);
-
-              // Verificar se TODOS os horários solicitados estão disponíveis
-              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
-              
-              // Verificar se o período solicitado está dentro do horário de funcionamento
+              // Primeiro, verificar se o período está dentro do horário de funcionamento
               const allAvailabilityHours = availability.map(slot => slot.hour);
               const allRequestedHoursInOperatingTime = requestedHours.every(hour => allAvailabilityHours.includes(hour));
               
-              if (allHoursAvailable && allRequestedHoursInOperatingTime) {
+              if (!allRequestedHoursInOperatingTime) {
+                console.log(`Equipamento ${equip.name} não funciona em todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
+                continue;
+              }
+
+              // Se está dentro do horário de funcionamento, verificar disponibilidade
+              const availableSlots = availability.filter(slot => slot.is_available);
+              const availableHours = availableSlots.map(slot => slot.hour);
+              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
+              
+              if (allHoursAvailable) {
                 console.log(`Equipamento ${equip.name} disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
                 availableEquipment.push({
                   ...equip,
                   available: Math.min(...availableSlots.map(slot => slot.available_quantity))
                 });
               } else {
-                if (!allRequestedHoursInOperatingTime) {
-                  console.log(`Equipamento ${equip.name} não funciona em todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                } else {
-                  console.log(`Equipamento ${equip.name} não disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                }
+                console.log(`Equipamento ${equip.name} não disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
               }
             } else {
               console.log(`Equipamento ${equip.name} fechado na data ${dateStr}`);
