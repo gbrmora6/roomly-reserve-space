@@ -411,18 +411,68 @@ serve(async (req) => {
 
     // Atualizar ordem com dados da Click2Pay
     console.log("21. Atualizando ordem com dados da Click2Pay...");
+    
+    // Calcular data de expiração baseada no método de pagamento
+    let expiresAt: string | null = null;
+    if (paymentMethod === 'pix') {
+      // PIX expira em 24 horas
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    } else if (paymentMethod === 'boleto') {
+      // Boleto expira em 3 dias
+      expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
       .update({
-        click2pay_tid: click2payResult.tid || click2payResult.id,
-        status: click2payResult.status || 'in_process',
-        external_identifier: click2payResult.external_identifier || order.id
+        click2pay_tid: click2payResult.data?.tid || click2payResult.tid || click2payResult.id,
+        status: click2payResult.data?.status || click2payResult.status || 'in_process',
+        external_identifier: click2payResult.data?.externalIdentifier || click2payResult.external_identifier || order.id,
+        expires_at: expiresAt
       })
       .eq('id', order.id);
 
     if (updateError) {
       console.error("Erro ao atualizar ordem:", updateError);
       // Não falhar aqui, apenas logar
+    }
+
+    // Salvar detalhes do pagamento
+    console.log("22. Salvando detalhes do pagamento...");
+    let paymentDetailsData: any = {
+      order_id: order.id,
+      payment_method: paymentMethod
+    };
+
+    if (paymentMethod === 'pix') {
+      paymentDetailsData = {
+        ...paymentDetailsData,
+        pix_code: click2payResult.data?.pix?.code || click2payResult.pix?.code || null,
+        pix_qr_code: click2payResult.data?.pix?.qrCode || click2payResult.pix?.qr_code || null,
+        pix_expiration: expiresAt
+      };
+    } else if (paymentMethod === 'boleto') {
+      paymentDetailsData = {
+        ...paymentDetailsData,
+        boleto_url: click2payResult.data?.boleto?.url || click2payResult.boleto?.url || null,
+        boleto_barcode: click2payResult.data?.boleto?.barcode || click2payResult.boleto?.barcode || null,
+        boleto_due_date: click2payResult.data?.boleto?.due_date || click2payResult.boleto?.due_date || null
+      };
+    } else if (paymentMethod === 'cartao') {
+      paymentDetailsData = {
+        ...paymentDetailsData,
+        card_transaction_id: click2payResult.data?.tid || click2payResult.tid || null,
+        card_authorization_code: click2payResult.data?.authorizationCode || click2payResult.authorization_code || null
+      };
+    }
+
+    const { error: paymentDetailsError } = await supabase
+      .from('payment_details')
+      .insert(paymentDetailsData);
+
+    if (paymentDetailsError) {
+      console.error("23. Erro ao salvar detalhes do pagamento:", paymentDetailsError);
+      // Não falha a operação, apenas loga o erro
     }
 
     // Confirmar pagamento se já estiver pago (PIX instantâneo, por exemplo)

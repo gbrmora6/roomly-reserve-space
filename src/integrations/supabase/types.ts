@@ -711,9 +711,14 @@ export type Database = {
           branch_id: string
           click2pay_tid: string | null
           created_at: string | null
+          expires_at: string | null
           external_identifier: string | null
           id: string
+          payment_data: Json | null
           payment_method: string | null
+          refund_amount: number | null
+          refund_date: string | null
+          refund_status: string | null
           status: string
           total_amount: number
           updated_at: string | null
@@ -723,9 +728,14 @@ export type Database = {
           branch_id: string
           click2pay_tid?: string | null
           created_at?: string | null
+          expires_at?: string | null
           external_identifier?: string | null
           id?: string
+          payment_data?: Json | null
           payment_method?: string | null
+          refund_amount?: number | null
+          refund_date?: string | null
+          refund_status?: string | null
           status?: string
           total_amount?: number
           updated_at?: string | null
@@ -735,9 +745,14 @@ export type Database = {
           branch_id?: string
           click2pay_tid?: string | null
           created_at?: string | null
+          expires_at?: string | null
           external_identifier?: string | null
           id?: string
+          payment_data?: Json | null
           payment_method?: string | null
+          refund_amount?: number | null
+          refund_date?: string | null
+          refund_status?: string | null
           status?: string
           total_amount?: number
           updated_at?: string | null
@@ -749,6 +764,62 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_details: {
+        Row: {
+          boleto_barcode: string | null
+          boleto_due_date: string | null
+          boleto_url: string | null
+          card_authorization_code: string | null
+          card_transaction_id: string | null
+          created_at: string
+          id: string
+          order_id: string
+          payment_method: string
+          pix_code: string | null
+          pix_expiration: string | null
+          pix_qr_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          boleto_barcode?: string | null
+          boleto_due_date?: string | null
+          boleto_url?: string | null
+          card_authorization_code?: string | null
+          card_transaction_id?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          payment_method: string
+          pix_code?: string | null
+          pix_expiration?: string | null
+          pix_qr_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          boleto_barcode?: string | null
+          boleto_due_date?: string | null
+          boleto_url?: string | null
+          card_authorization_code?: string | null
+          card_transaction_id?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          payment_method?: string
+          pix_code?: string | null
+          pix_expiration?: string | null
+          pix_qr_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_details_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
