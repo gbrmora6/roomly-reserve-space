@@ -9,17 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "btn-3d bg-gradient-to-r from-primary to-electric-blue text-primary-foreground hover:from-electric-blue hover:to-vibrant-purple transform-gpu",
+        default: "btn-3d bg-gradient-to-r from-primary to-primary/90 text-primary-foreground hover:from-primary/90 hover:to-primary/80",
         destructive:
-          "btn-3d bg-gradient-to-r from-destructive to-red-600 text-destructive-foreground hover:from-red-600 hover:to-destructive",
+          "btn-3d bg-gradient-to-r from-destructive to-destructive/90 text-destructive-foreground hover:from-destructive/90 hover:to-destructive/80",
         outline:
-          "border-2 border-primary/20 bg-background/50 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/40 hover:shadow-glow",
+          "border-2 border-input bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground hover:shadow-soft hover:border-primary/30",
         secondary:
-          "btn-3d bg-gradient-to-r from-secondary to-muted text-secondary-foreground hover:from-muted hover:to-secondary/80",
-        ghost: "hover:bg-primary/10 hover:text-primary hover:shadow-soft",
-        link: "text-primary underline-offset-4 hover:underline hover:text-electric-blue",
-        neon: "neon-glow bg-gradient-to-r from-electric-blue to-vibrant-purple text-white border-2 border-transparent hover:border-electric-blue/50",
-        floating: "btn-3d bg-gradient-to-r from-neon-green to-electric-blue text-white animate-float hover:animate-bounce-3d",
+          "btn-3d bg-gradient-to-r from-secondary to-secondary/90 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground hover:shadow-soft",
+        link: "text-primary underline-offset-4 hover:underline",
+        premium: "btn-3d bg-gradient-to-r from-primary to-accent text-primary-foreground hover:shadow-glow",
       },
       size: {
         default: "h-10 px-4 py-2",

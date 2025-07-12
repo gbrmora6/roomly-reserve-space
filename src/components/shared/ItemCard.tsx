@@ -122,11 +122,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         {status && (
           <Badge 
             className={cn(
-              "absolute top-3 right-3 border backdrop-blur-sm shadow-medium animate-pulse-color",
-              status === 'available' && "bg-neon-green/20 text-neon-green border-neon-green/40",
+              "absolute top-3 right-3 border backdrop-blur-sm shadow-medium",
+              status === 'available' && "bg-green-500/20 text-green-400 border-green-400/40",
               status === 'unavailable' && "bg-destructive/20 text-destructive border-destructive/40",
-              status === 'limited' && "bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/40",
-              status === 'active' && "bg-neon-green/20 text-neon-green border-neon-green/40",
+              status === 'limited' && "bg-yellow-500/20 text-yellow-400 border-yellow-400/40",
+              status === 'active' && "bg-green-500/20 text-green-400 border-green-400/40",
               status === 'inactive' && "bg-muted/20 text-muted-foreground border-muted/40"
             )}
           >
@@ -151,8 +151,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
         {/* Price overlay */}
         {price && (
-          <div className="absolute bottom-3 left-3 glass-intense rounded-xl px-4 py-2 shadow-glow border border-primary/20">
-            <div className="text-lg font-bold bg-gradient-to-r from-electric-blue to-vibrant-purple bg-clip-text text-transparent">
+          <div className="absolute bottom-3 left-3 glass-intense rounded-xl px-4 py-2 shadow-soft border border-primary/20">
+            <div className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {formatCurrency(price)}
             </div>
             <div className="text-xs text-muted-foreground font-medium">
@@ -164,7 +164,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:bg-gradient-to-r group-hover:from-electric-blue group-hover:to-vibrant-purple group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+          <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-all duration-300">
             {title}
           </h3>
         </div>
@@ -212,7 +212,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                 className={cn(
                   "flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-200 hover:scale-105",
                   feature.available 
-                    ? "bg-neon-green/10 text-neon-green border-neon-green/30 hover:bg-neon-green/20 hover:shadow-glow" 
+                    ? "bg-green-500/10 text-green-400 border-green-400/30 hover:bg-green-500/20 hover:shadow-soft" 
                     : "bg-muted/30 text-muted-foreground border-muted/40 hover:bg-muted/40"
                 )}
               >
@@ -241,8 +241,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <div className="w-full space-y-3">
           <Button
             onClick={onAction}
-            variant="neon"
-            className="w-full group-hover:animate-glow-pulse"
+            variant="premium"
+            className="w-full"
           >
             <Eye className="mr-2 h-4 w-4" />
             {actionLabel}
@@ -252,7 +252,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             <Button
               variant="outline"
               onClick={onSecondaryAction}
-              className="w-full glass-intense hover:neon-glow"
+              className="w-full glass-intense"
             >
               {secondaryActionLabel}
             </Button>

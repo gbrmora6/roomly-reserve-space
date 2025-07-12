@@ -237,8 +237,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <div className="flex gap-2 lg:col-span-2">
               <Button
                 onClick={onFilter}
-                variant="neon"
-                className="flex-1 h-11 animate-glow-pulse"
+                variant="premium"
+                className="flex-1 h-11"
                 disabled={showDateTimeFilters && (!filters.date || !filters.startTime || !filters.endTime)}
               >
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
