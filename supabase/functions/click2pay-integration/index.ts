@@ -86,12 +86,14 @@ serve(async (req) => {
     // Ler body
     let body;
     try {
-      body = await req.json();
-      console.log("2. Body recebido:", JSON.stringify(body, null, 2));
+      const text = await req.text();
+      console.log("2.1. Text recebido:", text);
+      body = JSON.parse(text);
+      console.log("2.2. Body parseado:", JSON.stringify(body, null, 2));
     } catch (error) {
-      console.error("Erro ao fazer parse do JSON:", error);
+      console.error("2.3. Erro ao fazer parse do JSON:", error);
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid JSON in request body" }),
+        JSON.stringify({ success: false, error: "Invalid JSON in request body", details: error.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -409,16 +411,21 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("=== ERRO NO EDGE FUNCTION ===");
-    console.error("Tipo:", error.constructor.name);
-    console.error("Mensagem:", error.message);
-    console.error("Stack:", error.stack);
+    console.error("=== ERRO CAPTURADO NO EDGE FUNCTION ===");
+    console.error("Tipo do erro:", typeof error);
+    console.error("Constructor:", error?.constructor?.name);
+    console.error("Mensagem:", error?.message);
+    console.error("Stack trace:", error?.stack);
+    console.error("Error object completo:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    
+    const errorMessage = error?.message || error?.toString() || "Erro desconhecido";
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
-        type: error.constructor.name
+        error: errorMessage,
+        errorType: error?.constructor?.name || typeof error,
+        timestamp: new Date().toISOString()
       }),
       {
         status: 500,
