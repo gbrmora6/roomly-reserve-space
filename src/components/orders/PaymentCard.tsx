@@ -103,7 +103,7 @@ export function PaymentCard({ order, onRefresh, onRefund, isRefreshing }: Paymen
   const StatusIcon = statusConfig.icon;
 
   const isExpired = order.expires_at && new Date(order.expires_at) < new Date();
-  const canRefund = order.status === 'paid' || (order.status === 'in_process' && order.payment_method !== 'cartao');
+  const canRefund = order.status === 'paid' && (order.payment_method === 'pix' || order.payment_method === 'cartao');
   const isRefunding = order.refund_status === 'processing';
 
   return (

@@ -60,8 +60,12 @@ serve(async (req) => {
       throw new Error("Esta ordem já possui um estorno em andamento ou concluído");
     }
 
-    if (order.status !== 'paid' && order.status !== 'in_process') {
-      throw new Error("Apenas pedidos pagos ou em processamento podem ser estornados");
+    if (order.status !== 'paid') {
+      throw new Error("Apenas pedidos pagos podem ser estornados");
+    }
+
+    if (order.payment_method !== 'pix' && order.payment_method !== 'cartao') {
+      throw new Error("Apenas pagamentos via PIX ou cartão podem ser estornados automaticamente");
     }
 
     // Atualizar status para processing
@@ -86,64 +90,53 @@ serve(async (req) => {
 
     switch (order.payment_method) {
       case 'pix':
-        // Para PIX, o estorno é automático se ainda não foi pago
-        if (order.status === 'in_process') {
-          console.log("4. PIX não pago - cancelando automaticamente");
-          refundResult = { success: true, message: "PIX cancelado automaticamente" };
-        } else {
-          // PIX pago requer estorno via API
-          console.log("4. Solicitando estorno PIX via API...");
-          const response = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/${order.click2pay_tid}/refund`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader
-            },
-            body: JSON.stringify({
-              amount: order.total_amount,
-              reason: reason || "Solicitação do cliente"
-            })
-          });
-          refundResult = await response.json();
-        }
-        break;
-
-      case 'boleto':
-        // Boleto pode ser cancelado se não foi pago
-        if (order.status === 'in_process') {
-          console.log("4. Boleto não pago - cancelando automaticamente");
-          const response = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/${order.click2pay_tid}/cancel`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': authHeader
-            }
-          });
-          refundResult = await response.json();
-        } else {
-          throw new Error("Boletos pagos não podem ser estornados automaticamente. Entre em contato com o suporte.");
-        }
-        break;
-
-      case 'cartao':
-        // Cartão pode ser estornado via API
-        console.log("4. Solicitando estorno de cartão via API...");
-        const response = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/${order.click2pay_tid}/refund`, {
+        // PIX pago requer estorno via API específica
+        console.log("4. Solicitando estorno PIX via API...");
+        const pixResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/pix/${order.click2pay_tid}/refund`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            amount: order.total_amount,
-            reason: reason || "Solicitação do cliente"
+            totalAmount: order.total_amount
           })
         });
-        refundResult = await response.json();
+        
+        if (!pixResponse.ok) {
+          const errorData = await pixResponse.json();
+          throw new Error(`Erro na API Click2Pay: ${errorData.message || 'Erro desconhecido'}`);
+        }
+        
+        refundResult = await pixResponse.json();
+        refundResult.success = pixResponse.ok;
+        break;
+
+      case 'cartao':
+        // Cartão pode ser estornado via API específica
+        console.log("4. Solicitando estorno de cartão via API...");
+        const cardResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/creditcard/${order.click2pay_tid}/refund`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+          },
+          body: JSON.stringify({
+            totalAmount: order.total_amount
+          })
+        });
+        
+        if (!cardResponse.ok) {
+          const errorData = await cardResponse.json();
+          throw new Error(`Erro na API Click2Pay: ${errorData.message || 'Erro desconhecido'}`);
+        }
+        
+        refundResult = await cardResponse.json();
+        refundResult.success = cardResponse.ok;
         break;
 
       default:
-        throw new Error(`Método de pagamento não suportado para estorno: ${order.payment_method}`);
+        throw new Error(`Método de pagamento não suportado para estorno: ${order.payment_method}. Apenas PIX e cartão podem ser estornados automaticamente.`);
     }
 
     console.log("5. Resultado do estorno:", refundResult);

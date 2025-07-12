@@ -37,37 +37,18 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
   const getRefundInfo = () => {
     switch (order.payment_method) {
       case 'pix':
-        if (order.status === 'in_process') {
-          return {
-            message: "O PIX será cancelado automaticamente pois ainda não foi pago.",
-            warning: "Esta ação não pode ser desfeita."
-          };
-        } else {
-          return {
-            message: "O estorno será processado automaticamente e o valor retornará em até 1 hora útil.",
-            warning: "Esta ação não pode ser desfeita."
-          };
-        }
-      case 'boleto':
-        if (order.status === 'in_process') {
-          return {
-            message: "O boleto será cancelado automaticamente pois ainda não foi pago.",
-            warning: "Esta ação não pode ser desfeita."
-          };
-        } else {
-          return {
-            message: "Boletos pagos não podem ser estornados automaticamente. Nossa equipe entrará em contato.",
-            warning: "O prazo para análise é de até 5 dias úteis."
-          };
-        }
+        return {
+          message: "O estorno PIX será processado automaticamente e o valor retornará em até 1 hora útil.",
+          warning: "Esta ação não pode ser desfeita."
+        };
       case 'cartao':
         return {
-          message: "O estorno será processado na operadora do cartão. O prazo varia de 1 a 7 dias úteis.",
+          message: "O estorno do cartão será processado na operadora. O prazo varia de 1 a 7 dias úteis para aparecer na fatura.",
           warning: "Esta ação não pode ser desfeita."
         };
       default:
         return {
-          message: "O estorno será analisado pela nossa equipe.",
+          message: "O estorno será processado automaticamente.",
           warning: "Esta ação não pode ser desfeita."
         };
     }
