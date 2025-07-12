@@ -99,7 +99,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
   return (
     <Card className={cn(
-      "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-border/50 bg-card/50 backdrop-blur-sm",
+      "group card-3d overflow-hidden border-border/30 bg-card/70 backdrop-blur-xl glass-intense transform-gpu perspective-1000",
       className
     )}>
       {/* Image */}
@@ -122,8 +122,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         {status && (
           <Badge 
             className={cn(
-              "absolute top-3 right-3 border",
-              statusConfig[status].className
+              "absolute top-3 right-3 border backdrop-blur-sm shadow-medium animate-pulse-color",
+              status === 'available' && "bg-neon-green/20 text-neon-green border-neon-green/40",
+              status === 'unavailable' && "bg-destructive/20 text-destructive border-destructive/40",
+              status === 'limited' && "bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/40",
+              status === 'active' && "bg-neon-green/20 text-neon-green border-neon-green/40",
+              status === 'inactive' && "bg-muted/20 text-muted-foreground border-muted/40"
             )}
           >
             {statusConfig[status].label}
@@ -147,11 +151,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
         {/* Price overlay */}
         {price && (
-          <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-1">
-            <div className="text-lg font-bold text-primary">
+          <div className="absolute bottom-3 left-3 glass-intense rounded-xl px-4 py-2 shadow-glow border border-primary/20">
+            <div className="text-lg font-bold bg-gradient-to-r from-electric-blue to-vibrant-purple bg-clip-text text-transparent">
               {formatCurrency(price)}
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground font-medium">
               {priceLabel}
             </div>
           </div>
@@ -160,7 +164,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:bg-gradient-to-r group-hover:from-electric-blue group-hover:to-vibrant-purple group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
             {title}
           </h3>
         </div>
@@ -206,10 +210,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               <div
                 key={index}
                 className={cn(
-                  "flex items-center gap-1 text-xs px-2 py-1 rounded-full border",
+                  "flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-200 hover:scale-105",
                   feature.available 
-                    ? "bg-green-50 text-green-700 border-green-200" 
-                    : "bg-gray-50 text-gray-500 border-gray-200"
+                    ? "bg-neon-green/10 text-neon-green border-neon-green/30 hover:bg-neon-green/20 hover:shadow-glow" 
+                    : "bg-muted/30 text-muted-foreground border-muted/40 hover:bg-muted/40"
                 )}
               >
                 <feature.icon className="h-3 w-3" />
@@ -234,10 +238,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       </CardContent>
 
       <CardFooter className="pt-0">
-        <div className="w-full space-y-2">
+        <div className="w-full space-y-3">
           <Button
             onClick={onAction}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-200"
+            variant="neon"
+            className="w-full group-hover:animate-glow-pulse"
           >
             <Eye className="mr-2 h-4 w-4" />
             {actionLabel}
@@ -247,7 +252,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             <Button
               variant="outline"
               onClick={onSecondaryAction}
-              className="w-full"
+              className="w-full glass-intense hover:neon-glow"
             >
               {secondaryActionLabel}
             </Button>

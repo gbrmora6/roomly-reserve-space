@@ -66,6 +66,12 @@ export default {
 					900: '#183d85',
 					950: '#14275a',
 				},
+				'electric-blue': 'hsl(var(--electric-blue))',
+				'vibrant-purple': 'hsl(var(--vibrant-purple))',
+				'neon-green': 'hsl(var(--neon-green))',
+				'electric-orange': 'hsl(var(--electric-orange))',
+				'hot-pink': 'hsl(var(--hot-pink))',
+				'cyber-yellow': 'hsl(var(--cyber-yellow))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -81,6 +87,15 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				'soft': 'var(--shadow-soft)',
+				'medium': 'var(--shadow-medium)', 
+				'hard': 'var(--shadow-hard)',
+				'neon': 'var(--shadow-neon)',
+				'glow': 'var(--shadow-glow)',
+				'3d': '0 10px 30px -5px hsl(var(--primary) / 0.3), 0 20px 40px -10px hsl(var(--accent) / 0.2)',
+				'3d-hover': '0 20px 60px -10px hsl(var(--primary) / 0.4), 0 30px 80px -20px hsl(var(--accent) / 0.3)',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -98,11 +113,30 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'glow-pulse': {
+					'0%, 100%': {
+						boxShadow: '0 0 20px hsl(var(--primary) / 0.5), 0 0 40px hsl(var(--accent) / 0.3)'
+					},
+					'50%': {
+						boxShadow: '0 0 30px hsl(var(--primary) / 0.8), 0 0 60px hsl(var(--accent) / 0.5)'
+					}
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0px)' },
+					'50%': { transform: 'translateY(-10px)' }
+				},
+				'bounce-3d': {
+					'0%, 100%': { transform: 'translateY(0) rotateX(0)' },
+					'50%': { transform: 'translateY(-10px) rotateX(5deg)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
+				'bounce-3d': 'bounce-3d 2s ease-in-out infinite'
 			}
 		}
 	},
