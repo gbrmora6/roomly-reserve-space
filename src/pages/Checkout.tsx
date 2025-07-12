@@ -29,6 +29,7 @@ interface PaymentData {
   nomeCompleto: string;
   cpfCnpj: string;
   telefone: string;
+  email: string;
   numeroCartao: string;
   nomeNoCartao: string;
   validadeCartao: string;
@@ -49,6 +50,7 @@ const Checkout = () => {
     nomeCompleto: "",
     cpfCnpj: "",
     telefone: "",
+    email: "",
     // Dados do cartão
     numeroCartao: "",
     nomeNoCartao: "",
@@ -244,6 +246,17 @@ const Checkout = () => {
                     id="telefone"
                     value={paymentData.telefone}
                     onChange={(e) => handlePaymentDataChange("telefone", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={paymentData.email}
+                    onChange={(e) => handlePaymentDataChange("email", e.target.value)}
+                    placeholder="seu@email.com"
                     required
                   />
                 </div>
