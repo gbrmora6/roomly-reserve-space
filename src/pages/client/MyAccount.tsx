@@ -22,22 +22,22 @@ const MyAccount = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Profile Summary Card */}
-          <Card className="lg:col-span-1 card-3d glass-intense border-border/30">
+          <Card className="lg:col-span-1 border-border/50">
             <CardHeader className="text-center pb-4">
               <div className="flex flex-col items-center space-y-4">
-                <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-medium hover:shadow-glow transition-all duration-300">
+                <Avatar className="h-24 w-24">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xl font-bold">
+                  <AvatarFallback className="bg-primary text-white text-xl font-bold">
                     {user?.user_metadata?.first_name?.[0] || user?.email?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="space-y-2">
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  <h2 className="text-xl font-bold text-foreground">
                     {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
                   </h2>
                   <p className="text-muted-foreground text-sm">{user?.email}</p>
-                  <Badge variant="secondary" className="backdrop-blur-sm">
+                  <Badge variant="secondary">
                     <Shield className="h-3 w-3 mr-1" />
                     Conta Verificada
                   </Badge>
@@ -46,7 +46,7 @@ const MyAccount = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              <div className="glass-intense rounded-lg p-4 space-y-3">
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <User className="h-4 w-4 text-primary" />
@@ -71,7 +71,7 @@ const MyAccount = () => {
           </Card>
 
           {/* Profile Form */}
-          <Card className="lg:col-span-2 card-3d glass-intense border-border/30">
+          <Card className="lg:col-span-2 border-border/50">
             <CardHeader className="border-b border-border/30">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">

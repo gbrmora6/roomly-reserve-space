@@ -99,7 +99,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
   return (
     <Card className={cn(
-      "group card-3d overflow-hidden border-border/30 bg-card/70 backdrop-blur-xl glass-intense transform-gpu perspective-1000",
+      "group overflow-hidden border-border/50 bg-card hover:border-primary/20 transition-all duration-300 hover:shadow-md",
       className
     )}>
       {/* Image */}
@@ -151,8 +151,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
         {/* Price overlay */}
         {price && (
-          <div className="absolute bottom-3 left-3 glass-intense rounded-xl px-4 py-2 shadow-soft border border-primary/20">
-            <div className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <div className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm rounded-xl px-4 py-2 border">
+            <div className="text-lg font-bold text-primary">
               {formatCurrency(price)}
             </div>
             <div className="text-xs text-muted-foreground font-medium">
@@ -210,10 +210,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               <div
                 key={index}
                 className={cn(
-                  "flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border backdrop-blur-sm transition-all duration-200 hover:scale-105",
+                  "flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-colors",
                   feature.available 
-                    ? "bg-green-500/10 text-green-400 border-green-400/30 hover:bg-green-500/20 hover:shadow-soft" 
-                    : "bg-muted/30 text-muted-foreground border-muted/40 hover:bg-muted/40"
+                    ? "bg-green-500/10 text-green-400 border-green-400/30" 
+                    : "bg-muted/30 text-muted-foreground border-muted/40"
                 )}
               >
                 <feature.icon className="h-3 w-3" />
@@ -241,7 +241,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <div className="w-full space-y-3">
           <Button
             onClick={onAction}
-            variant="premium"
+            variant="default"
             className="w-full"
           >
             <Eye className="mr-2 h-4 w-4" />
@@ -252,7 +252,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             <Button
               variant="outline"
               onClick={onSecondaryAction}
-              className="w-full glass-intense"
+              className="w-full"
             >
               {secondaryActionLabel}
             </Button>

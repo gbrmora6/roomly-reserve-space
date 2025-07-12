@@ -78,7 +78,6 @@ const MyBookings = () => {
           <Button
             variant="outline"
             onClick={handleShowAddress}
-            className="glass-intense hover:shadow-soft"
           >
             <MapPin className="mr-2 h-4 w-4" />
             Endereço da Empresa
@@ -87,7 +86,7 @@ const MyBookings = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="card-3d glass-intense border-border/30">
+          <Card className="border-border/50">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-primary/10">
@@ -101,7 +100,7 @@ const MyBookings = () => {
             </CardContent>
           </Card>
           
-          <Card className="card-3d glass-intense border-border/30">
+          <Card className="border-border/50">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-accent/10">
@@ -115,7 +114,7 @@ const MyBookings = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-3d glass-intense border-border/30">
+          <Card className="border-border/50">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-green-500/10">
@@ -132,10 +131,10 @@ const MyBookings = () => {
           </Card>
         </div>
         
-        <Card className="card-3d glass-intense border-border/30">
+        <Card className="border-border/50">
           <CardContent className="p-6">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "products" | "rooms" | "equipment")}>
-              <TabsList className="grid w-full grid-cols-3 glass-intense">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="products" className="flex items-center gap-2 data-[state=active]:bg-primary/10">
                   <ShoppingCart className="h-4 w-4" />
                   Pedidos de Produtos
@@ -180,14 +179,14 @@ const MyBookings = () => {
                     ))}
                   </div>
                 ) : (
-                  <Card className="glass-intense border-border/30">
+                  <Card className="border-border/30">
                     <CardContent className="text-center py-16">
                       <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                       <h3 className="text-lg font-medium mb-2">Nenhum pedido encontrado</h3>
                       <p className="text-muted-foreground mb-6">
                         Quando você fizer um pedido, ele aparecerá aqui.
                       </p>
-                      <Button variant="premium" className="animate-float">
+                      <Button variant="default">
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         Fazer Primeiro Pedido
                       </Button>
