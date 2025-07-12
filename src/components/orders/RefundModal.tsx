@@ -24,6 +24,11 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
   const [reason, setReason] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
 
+  // Don't render if no order data
+  if (!order) {
+    return null;
+  }
+
   const handleConfirm = async () => {
     setIsConfirming(true);
     try {
@@ -35,6 +40,13 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
   };
 
   const getRefundInfo = () => {
+    if (!order?.payment_method) {
+      return {
+        message: "Informações de pagamento não encontradas. Entre em contato com o suporte.",
+        warning: "Não é possível processar o estorno automaticamente."
+      };
+    }
+
     switch (order.payment_method) {
       case 'pix':
         return {
@@ -80,7 +92,7 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
             Solicitar Estorno
           </DialogTitle>
           <DialogDescription>
-            Você está solicitando o estorno do {getOrderType().toLowerCase()} #{order.id.slice(-8).toUpperCase()}
+            Você está solicitando o estorno do {getOrderType().toLowerCase()} #{order?.id?.slice(-8)?.toUpperCase() || 'N/A'}
           </DialogDescription>
         </DialogHeader>
 
@@ -103,7 +115,7 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
               </div>
               <div>
                 <span className="text-muted-foreground">Método:</span>
-                <p className="font-medium capitalize">{order.payment_method}</p>
+                <p className="font-medium capitalize">{order?.payment_method || 'Não informado'}</p>
               </div>
             </div>
           </div>

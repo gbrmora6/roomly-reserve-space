@@ -29,14 +29,20 @@ export const BookingCardList = ({
   const handleRefundClick = (bookingId: string) => {
     const booking = bookings.find(b => b.id === bookingId);
     if (booking) {
+      console.log("Opening refund modal for booking:", booking);
       setRefundModal({ open: true, booking });
+    } else {
+      console.error("Booking not found for ID:", bookingId);
     }
   };
 
   const handleRefundConfirm = (reason?: string) => {
     if (refundModal.booking) {
+      console.log("Confirming refund for booking:", refundModal.booking.id);
       onRefund(refundModal.booking.id, reason);
       setRefundModal({ open: false, booking: null });
+    } else {
+      console.error("No booking data available for refund");
     }
   };
 
@@ -83,12 +89,14 @@ export const BookingCardList = ({
         ))}
       </div>
 
-      <RefundModal
-        open={refundModal.open}
-        onOpenChange={(open) => setRefundModal({ open, booking: null })}
-        order={refundModal.booking}
-        onConfirm={handleRefundConfirm}
-      />
+      {refundModal.booking && (
+        <RefundModal
+          open={refundModal.open}
+          onOpenChange={(open) => setRefundModal({ open, booking: open ? refundModal.booking : null })}
+          order={refundModal.booking}
+          onConfirm={handleRefundConfirm}
+        />
+      )}
     </div>
   );
 };
