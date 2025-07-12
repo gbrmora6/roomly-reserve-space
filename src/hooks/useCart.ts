@@ -44,7 +44,25 @@ export const useCart = () => {
       }
       
       console.log("Dados do carrinho recebidos:", data);
-      return data as CartItem[];
+      
+      // Filtrar itens não expirados
+      const validItems = (data as CartItem[]).filter(item => {
+        if (!item.expires_at) return true;
+        return new Date(item.expires_at) > new Date();
+      });
+      
+      // Se encontrou itens expirados, fazer limpeza automática
+      if (validItems.length < (data as CartItem[]).length) {
+        console.log("Itens expirados detectados, executando limpeza automática");
+        try {
+          await supabase.rpc("clean_expired_cart_items");
+          console.log("Limpeza automática concluída");
+        } catch (error) {
+          console.error("Erro na limpeza automática:", error);
+        }
+      }
+      
+      return validItems;
     },
     enabled: !!user,
     refetchInterval: 30000, // Atualiza a cada 30 segundos
