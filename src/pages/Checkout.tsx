@@ -55,6 +55,7 @@ const Checkout = () => {
   
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [loading, setLoading] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentData>({
     nomeCompleto: "",
     cpfCnpj: "",
@@ -75,6 +76,53 @@ const Checkout = () => {
     cvv: "",
     parcelas: 1
   });
+
+  // Hook para carregar dados do usuário
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Erro ao buscar perfil do usuário:", error);
+          return;
+        }
+
+        if (data) {
+          setPaymentData(prev => ({
+            ...prev,
+            nomeCompleto: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+            cpfCnpj: data.cpf || data.cnpj || "",
+            telefone: data.phone || "",
+            email: user.email || "",
+            // Pré-preencher endereço
+            rua: data.street || "",
+            numero: data.house_number || "",
+            bairro: data.neighborhood || "",
+            cidade: data.city || "",
+            estado: data.state || "",
+            cep: data.cep || "",
+          }));
+          setProfileLoaded(true);
+          
+          toast({
+            title: "Dados carregados",
+            description: "Seus dados foram pré-preenchidos automaticamente a partir do seu perfil.",
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do perfil:', error);
+      }
+    };
+
+    loadUserProfile();
+  }, [user]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -252,7 +300,14 @@ const Checkout = () => {
             {/* Dados pessoais */}
             <Card>
               <CardHeader>
-                <CardTitle>Dados Pessoais</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Dados Pessoais
+                  {profileLoaded && (
+                    <span className="text-sm font-normal text-green-600 bg-green-50 px-2 py-1 rounded">
+                      ✓ Carregado do perfil
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -299,7 +354,14 @@ const Checkout = () => {
             {/* Endereço */}
             <Card>
               <CardHeader>
-                <CardTitle>Endereço</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  Endereço
+                  {profileLoaded && (
+                    <span className="text-sm font-normal text-green-600 bg-green-50 px-2 py-1 rounded">
+                      ✓ Carregado do perfil
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
