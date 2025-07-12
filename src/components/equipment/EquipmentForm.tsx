@@ -33,13 +33,22 @@ export function EquipmentForm({ initialData, onSubmit, isSubmitting }: Equipment
       price_per_hour: 0,
       open_time: "09:00",
       close_time: "18:00",
-      open_days: []
+      open_days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
     }
   });
 
+  const handleFormSubmit = async (data: EquipmentFormData) => {
+    // Formatamos os dados para enviar para o banco
+    const formattedData = {
+      ...data,
+      open_days: data.open_days // Equipment já espera array de strings dos dias
+    };
+    await onSubmit(formattedData);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"

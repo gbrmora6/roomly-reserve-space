@@ -17,6 +17,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { WeekdaySelector } from "@/components/shared/WeekdaySelector";
 import React, { useState } from "react";
 
 interface Room {
@@ -30,6 +31,7 @@ interface Room {
   price_per_hour: number;
   open_time: string | null;
   close_time: string | null;
+  open_days: number[] | null;
 }
 
 interface RoomPhoto {
@@ -84,6 +86,7 @@ const RoomForm: React.FC = () => {
     open_time: "08:00",
     close_time: "18:00",
     price_per_hour: 0,
+    open_days: [1, 2, 3, 4, 5], // Segunda a Sexta por padrão
   });
   
   const [photos, setPhotos] = useState<RoomPhoto[]>([]);
@@ -170,6 +173,39 @@ const RoomForm: React.FC = () => {
   const handleCheckboxChange = (name: string, checked: boolean) => {
     setRoom((prev) => ({ ...prev, [name]: checked }));
   };
+
+  const handleOpenDaysChange = (days: string[]) => {
+    // Converter strings do WeekdaySelector para números
+    // WeekdaySelector retorna: ['monday', 'tuesday', ...]
+    // Rooms precisa de números: [1, 2, ...] onde 0=domingo, 1=segunda, etc.
+    const dayToNumber: Record<string, number> = {
+      'sunday': 0,
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6
+    };
+    
+    const numberDays = days.map(day => dayToNumber[day]).filter(num => num !== undefined);
+    setRoom((prev) => ({ ...prev, open_days: numberDays }));
+  };
+
+  const getRoomOpenDaysAsStrings = (): string[] => {
+    // Converter números para strings para o WeekdaySelector
+    const numberToDay: Record<number, string> = {
+      0: 'sunday',
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday'
+    };
+    
+    return (room.open_days || []).map(num => numberToDay[num]).filter(Boolean);
+  };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -233,6 +269,7 @@ const RoomForm: React.FC = () => {
             price_per_hour: room.price_per_hour,
             open_time: room.open_time,
             close_time: room.close_time,
+            open_days: room.open_days,
             branch_id: branchId,
             is_active: true,
           })
@@ -254,6 +291,7 @@ const RoomForm: React.FC = () => {
             price_per_hour: room.price_per_hour,
             open_time: room.open_time,
             close_time: room.close_time,
+            open_days: room.open_days,
           })
           .eq("id", id);
         errorRoom = error;
@@ -437,6 +475,40 @@ const RoomForm: React.FC = () => {
                 value={room.price_per_hour || 0}
                 onChange={handleChange}
                 required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="open_time">Horário de Abertura</Label>
+                <Input
+                  id="open_time"
+                  name="open_time"
+                  type="time"
+                  value={room.open_time || "08:00"}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="close_time">Horário de Fechamento</Label>
+                <Input
+                  id="close_time"
+                  name="close_time"
+                  type="time"
+                  value={room.close_time || "18:00"}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Dias de Funcionamento</Label>
+              <WeekdaySelector 
+                selectedDays={getRoomOpenDaysAsStrings()} 
+                onChange={handleOpenDaysChange}
               />
             </div>
           </div>

@@ -106,7 +106,15 @@ const AdminEquipmentForm: React.FC = () => {
       </div>
       
       <EquipmentForm
-        initialData={equipment}
+        initialData={equipment ? {
+          name: equipment.name,
+          description: equipment.description || "",
+          quantity: equipment.quantity,
+          price_per_hour: equipment.price_per_hour,
+          open_time: equipment.open_time || "09:00",
+          close_time: equipment.close_time || "18:00",
+          open_days: equipment.open_days || ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        } : undefined}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
