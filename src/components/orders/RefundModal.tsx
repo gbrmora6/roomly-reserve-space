@@ -54,6 +54,21 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
     }
   };
 
+  const getOrderType = () => {
+    if (order?.room) return "Reserva de Sala";
+    if (order?.equipment) return "Reserva de Equipamento";
+    return "Pedido";
+  };
+
+  const getOrderDescription = () => {
+    if (order?.room) return order.room.name;
+    if (order?.equipment) return order.equipment.name;
+    if (order?.order_items?.length > 0) {
+      return order.order_items.map((item: any) => `${item.quantity}x ${item.product.name}`).join(", ");
+    }
+    return "Descrição não disponível";
+  };
+
   const refundInfo = getRefundInfo();
 
   return (
@@ -65,7 +80,7 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
             Solicitar Estorno
           </DialogTitle>
           <DialogDescription>
-            Você está solicitando o estorno do pedido #{order.id.slice(-8).toUpperCase()}
+            Você está solicitando o estorno do {getOrderType().toLowerCase()} #{order.id.slice(-8).toUpperCase()}
           </DialogDescription>
         </DialogHeader>
 
@@ -76,14 +91,20 @@ export function RefundModal({ open, onOpenChange, order, onConfirm }: RefundModa
             <p className="text-xs text-blue-600">{refundInfo.warning}</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Valor:</span>
-              <p className="font-medium">{formatCurrency(order.total_amount)}</p>
+          <div className="space-y-3">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Descrição:</span>
+              <p className="font-medium">{getOrderDescription()}</p>
             </div>
-            <div>
-              <span className="text-muted-foreground">Método:</span>
-              <p className="font-medium capitalize">{order.payment_method}</p>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Valor:</span>
+                <p className="font-medium">{formatCurrency(order.total_price || order.total_amount)}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Método:</span>
+                <p className="font-medium capitalize">{order.payment_method}</p>
+              </div>
             </div>
           </div>
 

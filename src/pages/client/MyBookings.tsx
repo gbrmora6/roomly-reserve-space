@@ -22,14 +22,16 @@ const MyBookings = () => {
     roomBookings,
     equipmentBookings,
     isLoading: isLoadingBookings,
-    handleCancelBooking
+    handleCancelBooking,
+    checkPaymentStatus: checkBookingPaymentStatus,
+    requestRefund: requestBookingRefund
   } = useBookings(user?.id);
 
   const { 
     productOrders, 
     isLoading: isLoadingOrders,
-    checkPaymentStatus,
-    requestRefund
+    checkPaymentStatus: checkOrderPaymentStatus,
+    requestRefund: requestOrderRefund
   } = useOrders(user?.id);
 
   const {
@@ -39,9 +41,17 @@ const MyBookings = () => {
     handleShowAddress
   } = useCompanyProfile();
 
-  // Wrapper function to match the expected signature
-  const handleCancelWrapper = (bookingId: string) => {
-    handleCancelBooking(bookingId, "room");
+  // Wrapper functions to match the expected signatures
+  const handleCancelWrapper = (bookingId: string, type: "room" | "equipment") => {
+    handleCancelBooking(bookingId, type);
+  };
+
+  const handleRefreshStatus = (bookingId: string) => {
+    checkBookingPaymentStatus.mutate(bookingId);
+  };
+
+  const handleRequestRefund = (bookingId: string, reason?: string) => {
+    requestBookingRefund.mutate({ bookingId, reason });
   };
 
   // Show loading state
@@ -80,9 +90,9 @@ const MyBookings = () => {
                   <PaymentCard
                     key={order.id}
                     order={order}
-                    onRefresh={(orderId) => checkPaymentStatus.mutate(orderId)}
-                    onRefund={(orderId, reason) => requestRefund.mutate({ orderId, reason })}
-                    isRefreshing={checkPaymentStatus.isPending}
+                    onRefresh={(orderId) => checkOrderPaymentStatus.mutate(orderId)}
+                    onRefund={(orderId, reason) => requestOrderRefund.mutate({ orderId, reason })}
+                    isRefreshing={checkOrderPaymentStatus.isPending}
                   />
                 ))}
               </div>
@@ -105,6 +115,9 @@ const MyBookings = () => {
               equipmentBookings={equipmentBookings}
               productOrders={[]}
               onCancelBooking={handleCancelWrapper}
+              onRefreshStatus={handleRefreshStatus}
+              onRequestRefund={handleRequestRefund}
+              isRefreshing={checkBookingPaymentStatus.isPending}
             />
           </TabsContent>
         </Tabs>

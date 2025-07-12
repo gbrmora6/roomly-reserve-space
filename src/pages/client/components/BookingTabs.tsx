@@ -1,7 +1,7 @@
 import React from "react";
 import { Table, HardDrive } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookingsTable } from "./BookingsTable";
+import { BookingCardList } from "./BookingCardList";
 import { Database } from "@/integrations/supabase/types";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
@@ -12,7 +12,10 @@ interface BookingTabsProps {
   roomBookings: any[] | null;
   equipmentBookings: any[] | null;
   productOrders: any[] | null;
-  onCancelBooking: (bookingId: string) => void;
+  onCancelBooking: (bookingId: string, type: "room" | "equipment") => void;
+  onRefreshStatus: (bookingId: string) => void;
+  onRequestRefund: (bookingId: string, reason?: string) => void;
+  isRefreshing?: boolean;
 }
 
 export const BookingTabs = ({
@@ -22,6 +25,9 @@ export const BookingTabs = ({
   equipmentBookings,
   productOrders,
   onCancelBooking,
+  onRefreshStatus,
+  onRequestRefund,
+  isRefreshing = false,
 }: BookingTabsProps) => {
   return (
     <Tabs defaultValue="rooms" value={activeTab} onValueChange={(value) => setActiveTab(value as "rooms" | "equipment" | "products")}>
@@ -40,24 +46,31 @@ export const BookingTabs = ({
       </TabsList>
       
       <TabsContent value="rooms">
-        <BookingsTable 
-          bookings={roomBookings} 
-          onCancelBooking={onCancelBooking} 
+        <BookingCardList
+          bookings={roomBookings || []}
+          type="room"
+          onRefresh={onRefreshStatus}
+          onCancel={onCancelBooking}
+          onRefund={onRequestRefund}
+          isRefreshing={isRefreshing}
         />
       </TabsContent>
       
       <TabsContent value="equipment">
-        <BookingsTable 
-          bookings={equipmentBookings} 
-          onCancelBooking={onCancelBooking} 
+        <BookingCardList
+          bookings={equipmentBookings || []}
+          type="equipment"
+          onRefresh={onRefreshStatus}
+          onCancel={onCancelBooking}
+          onRefund={onRequestRefund}
+          isRefreshing={isRefreshing}
         />
       </TabsContent>
 
       <TabsContent value="products">
-        <BookingsTable 
-          bookings={productOrders} 
-          onCancelBooking={() => {}} // Não permite cancelar compras de produtos
-        />
+        <div className="text-center py-8 text-muted-foreground">
+          Esta seção não é mais utilizada. As compras de produtos estão na aba "Pedidos de Produtos".
+        </div>
       </TabsContent>
     </Tabs>
   );
