@@ -49,7 +49,7 @@ function createBasicAuth(clientId: string, clientSecret: string): string {
 }
 
 // Função para preparar dados do cliente
-function prepareCustomerData(paymentData: any) {
+function prepareCustomerData(paymentData: any, userEmail: string) {
   return {
     payerInfo: {
       address: {
@@ -64,7 +64,7 @@ function prepareCustomerData(paymentData: any) {
       name: paymentData.nomeCompleto.trim(),
       taxid: paymentData.cpfCnpj.replace(/[^\d]/g, ''),
       phonenumber: paymentData.telefone.replace(/[^\d]/g, ''),
-      email: paymentData.email || "",
+      email: paymentData.email || userEmail || "",
       birth_date: paymentData.dataNascimento || ""
     }
   };
@@ -251,7 +251,8 @@ serve(async (req) => {
     console.log("15. Preparando dados para Click2Pay...");
     
     // Dados do cliente
-    const customer = prepareCustomerData(paymentData);
+    const customer = prepareCustomerData(paymentData, userData.user.email);
+    console.log("15.1. Dados do cliente preparados:", JSON.stringify(customer, null, 2));
     
     // Determinar endpoint e dados específicos por método
     let endpoint = "";
