@@ -247,6 +247,72 @@ export type Database = {
           },
         ]
       }
+      change_history: {
+        Row: {
+          branch_id: string
+          changed_fields: string[] | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_data: Json | null
+          old_data: Json | null
+          operation: string
+          record_id: string
+          table_name: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          branch_id: string
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation: string
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          branch_id?: string
+          changed_fields?: string[] | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          operation?: string
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_history_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_profile: {
         Row: {
           branch_id: string
@@ -1175,6 +1241,249 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit: {
+        Row: {
+          action: string
+          branch_id: string | null
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          request_id: string | null
+          requires_review: boolean | null
+          resource_id: string | null
+          resource_type: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_score: number | null
+          session_id: string | null
+          severity: string
+          target_user_id: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          action: string
+          branch_id?: string | null
+          created_at?: string
+          details: Json
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          request_id?: string | null
+          requires_review?: boolean | null
+          resource_id?: string | null
+          resource_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score?: number | null
+          session_id?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          action?: string
+          branch_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          request_id?: string | null
+          requires_review?: boolean | null
+          resource_id?: string | null
+          resource_type?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_score?: number | null
+          session_id?: string | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_audit_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "security_audit_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "security_audit_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "security_audit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_backups: {
+        Row: {
+          backup_metadata: Json | null
+          backup_size: number | null
+          backup_type: string
+          branch_id: string | null
+          completed_at: string | null
+          compression_type: string | null
+          created_at: string
+          error_message: string | null
+          file_path: string | null
+          file_url: string | null
+          id: string
+          initiated_by: string | null
+          retention_until: string
+          started_at: string
+          status: string
+          tables_included: string[] | null
+        }
+        Insert: {
+          backup_metadata?: Json | null
+          backup_size?: number | null
+          backup_type: string
+          branch_id?: string | null
+          completed_at?: string | null
+          compression_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          initiated_by?: string | null
+          retention_until?: string
+          started_at?: string
+          status?: string
+          tables_included?: string[] | null
+        }
+        Update: {
+          backup_metadata?: Json | null
+          backup_size?: number | null
+          backup_type?: string
+          branch_id?: string | null
+          completed_at?: string | null
+          compression_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          initiated_by?: string | null
+          retention_until?: string
+          started_at?: string
+          status?: string
+          tables_included?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_backups_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_backups_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          branch_id: string
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          permission_type: Database["public"]["Enums"]["permission_type"]
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_type: Database["public"]["Enums"]["permission_type"]
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          permission_type?: Database["public"]["Enums"]["permission_type"]
+          resource_type?: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1232,9 +1541,30 @@ export type Database = {
           user_id: string | null
         }[]
       }
+      has_permission: {
+        Args: {
+          p_user_id: string
+          p_resource: Database["public"]["Enums"]["resource_type"]
+          p_permission: Database["public"]["Enums"]["permission_type"]
+          p_branch_id?: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          p_event_type: string
+          p_action: string
+          p_details: Json
+          p_severity?: string
+          p_resource_type?: string
+          p_resource_id?: string
+          p_risk_score?: number
+        }
+        Returns: string
       }
       remove_from_cart: {
         Args: { p_id: string }
@@ -1269,6 +1599,22 @@ export type Database = {
         | "pago"
         | "falta pagar"
         | "cancelado por falta de pagamento"
+      permission_type: "read" | "write" | "delete" | "admin" | "super_admin"
+      resource_type:
+        | "rooms"
+        | "equipment"
+        | "bookings"
+        | "clients"
+        | "products"
+        | "financial"
+        | "reports"
+        | "users"
+        | "branches"
+        | "coupons"
+        | "inventory"
+        | "notifications"
+        | "logs"
+        | "backups"
       user_role: "admin" | "client" | "superadmin" | "super_admin"
       weekday:
         | "monday"
@@ -1413,6 +1759,23 @@ export const Constants = {
         "pago",
         "falta pagar",
         "cancelado por falta de pagamento",
+      ],
+      permission_type: ["read", "write", "delete", "admin", "super_admin"],
+      resource_type: [
+        "rooms",
+        "equipment",
+        "bookings",
+        "clients",
+        "products",
+        "financial",
+        "reports",
+        "users",
+        "branches",
+        "coupons",
+        "inventory",
+        "notifications",
+        "logs",
+        "backups",
       ],
       user_role: ["admin", "client", "superadmin", "super_admin"],
       weekday: [
