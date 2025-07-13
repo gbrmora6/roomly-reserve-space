@@ -8,17 +8,16 @@ import ReserveRoomForm from "@/components/rooms/ReserveRoomForm";
 import { Room } from "@/types/room";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { CityFilter } from "@/components/shared/CityFilter";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Wifi, 
   Monitor, 
   Coffee, 
   Car, 
   Clock,
-  Users,
   Search
 } from "lucide-react";
 
@@ -27,14 +26,7 @@ const RoomList: React.FC = () => {
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Estado dos filtros incluindo cidade
-  const [filters, setFilters] = useState({
-    date: null as Date | null,
-    startTime: null as string | null,
-    endTime: null as string | null,
-    city: null as string | null,
-  });
+  const [selectedCity, setSelectedCity] = useState<string>("all");
   
   // Estado para armazenar endereço da empresa
   const [companyAddress, setCompanyAddress] = useState({
@@ -65,204 +57,12 @@ const RoomList: React.FC = () => {
     fetchCompanyProfile();
   }, []);
 
-  // Query para buscar salas com filtros aplicados
-  const { data: rooms, isLoading, error, refetch } = useQuery({
-    queryKey: ["rooms", filters],
+  // Query para buscar salas ativas
+  const { data: rooms, isLoading, error } = useQuery({
+    queryKey: ["rooms", selectedCity],
     queryFn: async () => {
-      console.log("Buscando salas com filtros:", filters);
+      console.log("Buscando salas ativas...");
 
-      // Se tem filtros de data e horário, buscar salas disponíveis usando get_room_availability
-      if (filters.date && filters.startTime && filters.endTime) {
-        const dateStr = format(filters.date, 'yyyy-MM-dd');
-        const startHour = parseInt(filters.startTime.split(':')[0]);
-        const endHour = parseInt(filters.endTime.split(':')[0]);
-        
-        console.log("Filtrando salas para data:", dateStr);
-        console.log("Horário de início:", filters.startTime);
-        console.log("Horário de término:", filters.endTime);
-
-        try {
-          // Buscar filiais baseado no filtro de cidade
-          let branchQuery = supabase.from('branches').select('id');
-          if (filters.city) {
-            branchQuery = branchQuery.eq('city', filters.city);
-          }
-          
-          const { data: branches, error: branchError } = await branchQuery;
-          if (branchError) {
-            console.error("Erro ao buscar filiais:", branchError);
-            throw branchError;
-          }
-          
-          const branchIds = branches.map(branch => branch.id);
-          console.log("IDs das filiais filtradas:", branchIds);
-
-          // Buscar todas as salas ativas das filiais filtradas
-          let roomQuery = supabase
-            .from('rooms')
-            .select(`
-              *,
-              room_photos (
-                id,
-                url
-              )
-            `)
-            .eq('is_active', true);
-          
-          if (branchIds.length > 0) {
-            roomQuery = roomQuery.in('branch_id', branchIds);
-          }
-
-          const { data: allRooms, error: roomsError } = await roomQuery;
-
-          if (roomsError) {
-            console.error("Erro ao buscar salas:", roomsError);
-            throw roomsError;
-          }
-
-          // Verificar disponibilidade de cada sala usando a função get_room_availability
-          const availableRooms = [];
-          
-          for (const room of allRooms) {
-            // Buscar disponibilidade da sala para a data selecionada
-            const { data: availability, error: availabilityError } = await supabase
-              .rpc('get_room_availability', {
-                p_room_id: room.id,
-                p_date: dateStr
-              });
-
-            if (availabilityError) {
-              console.error(`Erro ao verificar disponibilidade da sala ${room.name}:`, availabilityError);
-              continue;
-            }
-
-            // Verificar se todo o período solicitado está disponível de forma contínua
-            if (availability && availability.length > 0) {
-              const requestedHours = [];
-              for (let hour = startHour; hour < endHour; hour++) {
-                requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
-              }
-
-              // Primeiro, verificar se o período está dentro do horário de funcionamento
-              const allAvailabilityHours = availability.map(slot => slot.hour);
-              const allRequestedHoursInOperatingTime = requestedHours.every(hour => allAvailabilityHours.includes(hour));
-              
-              if (!allRequestedHoursInOperatingTime) {
-                console.log(`Sala ${room.name} não funciona em todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                continue;
-              }
-
-              // Se está dentro do horário de funcionamento, verificar disponibilidade
-              const availableSlots = availability.filter(slot => slot.is_available);
-              const availableHours = availableSlots.map(slot => slot.hour);
-              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
-              
-              if (allHoursAvailable) {
-                console.log(`Sala ${room.name} disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                availableRooms.push(room);
-              } else {
-                console.log(`Sala ${room.name} não disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-              }
-            } else {
-              console.log(`Sala ${room.name} fechada na data ${dateStr}`);
-            }
-          }
-
-          console.log("Salas disponíveis:", availableRooms.length);
-          return availableRooms as unknown as Room[];
-        } catch (error) {
-          console.error("Erro na consulta de filtro de salas:", error);
-          throw error;
-        }
-      }
-
-      // Se há filtro de data (sem horário), verificar disponibilidade nos dias de funcionamento
-      if (filters.date) {
-        const dateStr = format(filters.date, 'yyyy-MM-dd');
-        const dayOfWeek = filters.date.getDay(); // 0=domingo, 1=segunda, etc.
-        
-        console.log("Filtrando salas para data:", dateStr, "Dia da semana:", dayOfWeek);
-
-        try {
-          // Buscar filiais baseado no filtro de cidade
-          let branchQuery = supabase.from('branches').select('id');
-          if (filters.city) {
-            branchQuery = branchQuery.eq('city', filters.city);
-          }
-          
-          const { data: branches, error: branchError } = await branchQuery;
-          if (branchError) {
-            console.error("Erro ao buscar filiais:", branchError);
-            throw branchError;
-          }
-          
-          const branchIds = branches.map(branch => branch.id);
-          console.log("IDs das filiais filtradas:", branchIds);
-
-          // Buscar todas as salas ativas das filiais filtradas
-          let roomQuery = supabase
-            .from('rooms')
-            .select(`
-              *,
-              room_photos (
-                id,
-                url
-              ),
-              room_schedules (
-                weekday,
-                start_time,
-                end_time
-              )
-            `)
-            .eq('is_active', true);
-          
-          if (branchIds.length > 0) {
-            roomQuery = roomQuery.in('branch_id', branchIds);
-          }
-
-          const { data: allRooms, error: roomsError } = await roomQuery;
-
-          if (roomsError) {
-            console.error("Erro ao buscar salas:", roomsError);
-            throw roomsError;
-          }
-
-          // Filtrar salas que funcionam no dia da semana selecionado
-          const availableRooms = allRooms.filter(room => {
-            // Verificar se a sala tem room_schedules para este dia
-            if (room.room_schedules && room.room_schedules.length > 0) {
-              const weekdayMap: Record<number, string> = {
-                0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
-                4: 'thursday', 5: 'friday', 6: 'saturday'
-              };
-              const weekdayName = weekdayMap[dayOfWeek];
-              
-              const hasScheduleForDay = room.room_schedules.some(
-                schedule => schedule.weekday === weekdayName
-              );
-              
-              if (hasScheduleForDay) {
-                console.log(`Sala ${room.name} tem horário específico para ${weekdayName}`);
-                return true;
-              }
-            }
-            
-            // Se não tem room_schedules específico para o dia, a sala não funciona
-            console.log(`Equipamento não tem horário configurado para este dia`);
-            
-            console.log(`Sala ${room.name} não funciona no dia selecionado`);
-            return false;
-          });
-
-          console.log("Salas disponíveis no dia selecionado:", availableRooms.length);
-          return availableRooms as unknown as Room[];
-        } catch (error) {
-          console.error("Erro na consulta de filtro por data:", error);
-          throw error;
-        }
-      }
-
-      // Buscar todas as salas ativas (sem filtros específicos)
       let roomQuery = supabase
         .from('rooms')
         .select(`
@@ -275,12 +75,12 @@ const RoomList: React.FC = () => {
         .eq('is_active', true);
 
       // Aplicar filtro de cidade se selecionado
-      if (filters.city) {
+      if (selectedCity !== "all") {
         // Buscar IDs das filiais da cidade selecionada
         const { data: branches, error: branchError } = await supabase
           .from('branches')
           .select('id')
-          .eq('city', filters.city);
+          .eq('city', selectedCity);
         
         if (branchError) {
           console.error("Erro ao buscar filiais:", branchError);
@@ -311,21 +111,6 @@ const RoomList: React.FC = () => {
     }
   };
 
-  // Handler para aplicar filtros
-  const handleFilter = () => {
-    console.log("Aplicando filtros:", filters);
-    refetch();
-  };
-
-  // Handler para limpar filtros
-  const handleClearFilters = () => {
-    setFilters({
-      date: null,
-      startTime: null,
-      endTime: null,
-      city: null,
-    });
-  };
 
   // Formatar endereço completo da empresa
   const formatAddress = () => {
@@ -368,17 +153,35 @@ const RoomList: React.FC = () => {
           description="Encontre e reserve a sala perfeita para suas necessidades"
         />
 
-        <FilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filters={filters}
-          onFiltersChange={setFilters}
-          onFilter={handleFilter}
-          onClear={handleClearFilters}
-          showDateTimeFilters
-          showLocationFilter
-          placeholder="Buscar salas..."
-        />
+        {/* Filtros simplificados */}
+        <Card className="mb-8 glass-intense border-primary/20 shadow-3d">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* Barra de busca */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar salas por nome..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11 text-base glass-intense border-primary/20 focus:border-electric-blue/50 focus:shadow-glow transition-all duration-200"
+                />
+              </div>
+              
+              {/* Filtro de cidade */}
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Cidade:</label>
+                <div className="w-64">
+                  <CityFilter
+                    selectedCity={selectedCity}
+                    onCityChange={setSelectedCity}
+                    placeholder="Todas as cidades"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <ListingGrid
           items={roomsForGrid}
@@ -390,8 +193,6 @@ const RoomList: React.FC = () => {
           emptyDescription="Ajuste os filtros ou tente novamente mais tarde"
           emptyIcon={Search}
           variant="room"
-          showFiltersMessage={!filters.date && !filters.startTime && !filters.endTime}
-          filtersMessage="Selecione uma data e horário para verificar a disponibilidade das salas"
           resultCount={filteredRooms?.length}
         />
 
