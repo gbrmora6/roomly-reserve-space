@@ -2,4 +2,13 @@
 project_id = "fgiidcdsvmqxdkclgety"
 
 [functions.click2pay-integration]
-verify_jwt = true
+verify_jwt = false
+
+[functions.click2pay-webhook]
+verify_jwt = false
+
+[functions.payment-refund]
+verify_jwt = false
+
+[functions.payment-status]
+verify_jwt = false
