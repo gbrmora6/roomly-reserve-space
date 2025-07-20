@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase";
 import { createDayBounds } from "@/utils/timezone";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];

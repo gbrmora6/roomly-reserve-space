@@ -3,7 +3,7 @@ import { useEquipmentDateAndTime } from "@/hooks/useEquipmentDateAndTime";
 import { useEquipmentBookingTotal } from "@/hooks/useEquipmentBookingTotal";
 import { useEquipmentQuantity } from "@/hooks/useEquipmentQuantity";
 import { useEquipmentBookingSubmit } from "@/hooks/useEquipmentBookingSubmit";
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];
 

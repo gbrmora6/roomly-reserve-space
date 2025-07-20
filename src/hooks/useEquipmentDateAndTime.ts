@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase";
 import { createDayBounds } from "@/utils/timezone";
 import { useEquipmentSchedule } from "@/hooks/useEquipmentSchedule";
 

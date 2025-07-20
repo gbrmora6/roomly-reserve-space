@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { Database } from "@/integrations/supabase";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
