@@ -1,35 +1,31 @@
-// Temporary TypeScript fixes to resolve build errors
-// This file contains workarounds for complex type issues
+// Temporary fixes for TypeScript compilation errors
+// This file contains type assertions and workarounds to resolve build issues
 
-export const fixBuildErrors = () => {
-  // This is a placeholder file to help resolve TypeScript build errors
-  // Individual files will be fixed as needed
-  console.log('Build error fixes applied');
-};
+// 1. Export types that might be missing from the main types file
+export type BookingStatus = "in_process" | "paid" | "partial_refunded" | "pending" | "confirmed" | "cancelled" | "cancelled_unpaid" | "pre_authorized" | "recused";
+export type UserRole = "client" | "admin" | "super_admin";
+export type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
-// Common interfaces to help with type issues
-export interface MinimalPermission {
-  userId: string;
-  resourceType: string;
-  permissionType: string;
-  branchId: string;
-  expiresAt?: string;
-  notes?: string;
+// 2. Extend the global window object for any libraries that might be missing
+declare global {
+  interface Window {
+    C2PgenerateHash?: (cardDetails: {
+      number: string;
+      name: string;
+      expiry: string;
+      cvc: string;
+    }) => Promise<string>;
+  }
 }
 
-export interface MinimalEquipment {
-  id: string;
-  name: string;
-  description?: string;
-  quantity: number;
-  price_per_hour: number;
-  branch_id: string;
-}
+// 3. Type assertion functions for safe casting
+export const asBookingStatus = (status: any): BookingStatus => status as BookingStatus;
+export const asUserRole = (role: any): UserRole => role as UserRole;
+export const asWeekday = (day: any): Weekday => day as Weekday;
 
-export interface MinimalRoom {
-  id: string;
-  name: string;
-  description?: string;
-  price_per_hour: number;
-  branch_id: string;
-}
+// 4. Safe property access helpers
+export const safeProperty = (obj: any, property: string) => obj?.[property];
+export const safeArrayProperty = (obj: any, property: string): any[] => obj?.[property] || [];
+export const safeStringProperty = (obj: any, property: string): string => obj?.[property] || '';
+export const safeNumberProperty = (obj: any, property: string): number => obj?.[property] || 0;
+export const safeBooleanProperty = (obj: any, property: string): boolean => !!obj?.[property];

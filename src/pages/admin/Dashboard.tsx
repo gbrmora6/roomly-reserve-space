@@ -87,7 +87,7 @@ const AdminDashboard: React.FC = () => {
       const { count, error } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("role", "client")
+        .eq("role", "client" as any)
         .eq("branch_id", branchId);
       if (error) {
         throw error;

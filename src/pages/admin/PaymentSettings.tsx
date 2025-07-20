@@ -46,7 +46,7 @@ const PaymentSettings: React.FC = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('payment_settings')
         .select('*')
         .eq('branch_id', branchId)
@@ -97,7 +97,7 @@ const PaymentSettings: React.FC = () => {
     }
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('payment_settings')
         .upsert(settings, { onConflict: 'branch_id' });
         

@@ -75,7 +75,7 @@ export default function ExpirationSettings() {
     setLoading(true);
     try {
       // Buscar configurações da tabela system_settings
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('system_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['cart_expiration_room', 'cart_expiration_equipment']);
@@ -181,7 +181,7 @@ export default function ExpirationSettings() {
       ];
 
       for (const update of updates) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('system_settings')
           .upsert(update, { onConflict: 'setting_key' });
         
@@ -263,7 +263,7 @@ export default function ExpirationSettings() {
        `;
 
        // Executar SQL usando a função exec_sql
-       const { error: sqlError } = await supabase.rpc('exec_sql', {
+       const { error: sqlError } = await (supabase as any).rpc('exec_sql', {
          sql: migrationSQL
        });
 

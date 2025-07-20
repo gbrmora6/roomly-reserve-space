@@ -18,17 +18,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCoupon } from "@/hooks/useCoupon";
 import { PaymentDataExtended } from "@/types/payment";
 
-// Declaração de tipos para a biblioteca Click2Pay
-declare global {
-  interface Window {
-    C2PgenerateHash: (cardDetails: {
-      number: string;
-      name: string;
-      expiry: string;
-      cvc: string;
-    }) => Promise<string>;
-  }
-}
+// Types are now in temp-fixes.ts
 
 const Checkout = () => {
   const { user } = useAuth();
@@ -142,7 +132,7 @@ const Checkout = () => {
           throw new Error("Erro ao processar dados do cartão");
         }
 
-        processedPaymentData.card_hash = cardHash;
+        (processedPaymentData as any).card_hash = cardHash;
         console.log("Card hash gerado com sucesso");
       }
 
@@ -174,8 +164,8 @@ const Checkout = () => {
               state: processedPaymentData.estado || '',
               zipcode: (processedPaymentData.cep || '').replace(/\D/g, '')
             },
-            name: processedPaymentData.nomeCompleto || '',
-            taxid: (processedPaymentData.cpfCnpj || '').replace(/\D/g, ''),
+            name: (processedPaymentData as any).nomeCompleto || processedPaymentData.nome || '',
+            taxid: ((processedPaymentData as any).cpfCnpj || processedPaymentData.cpf || '').replace(/\D/g, ''),
             phonenumber: (processedPaymentData.telefone || '').replace(/\D/g, ''),
             email: processedPaymentData.email || '',
             birth_date: "1990-01-01" // Data padrão - pode ser ajustada
@@ -243,8 +233,8 @@ const Checkout = () => {
 
         // Registrar uso do cupom se houver um aplicado
         if (hasActiveCoupon && appliedCoupon?.couponId) {
-          try {
-            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount);
+            try {
+              await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId.toString(), discountAmount.toString());
           } catch (couponError) {
             console.error("Erro ao registrar uso do cupom:", couponError);
             // Não bloquear o fluxo por erro no cupom
@@ -284,7 +274,7 @@ const Checkout = () => {
             // Registrar uso do cupom se houver um aplicado
             if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
               try {
-                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+                await recordCouponUsage(data.orderId.toString(), appliedCoupon.couponId.toString(), discountAmount.toString());
               } catch (couponError) {
                 console.error("Erro ao registrar uso do cupom:", couponError);
                 // Não bloquear o fluxo por erro no cupom
@@ -310,7 +300,7 @@ const Checkout = () => {
           // Registrar uso do cupom se houver um aplicado
           if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
             try {
-              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+              await recordCouponUsage(data.orderId.toString(), appliedCoupon.couponId.toString(), discountAmount.toString());
             } catch (couponError) {
               console.error("Erro ao registrar uso do cupom:", couponError);
               // Não bloquear o fluxo por erro no cupom

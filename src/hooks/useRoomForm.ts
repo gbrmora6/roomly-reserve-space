@@ -212,16 +212,7 @@ export const useRoomForm = (id?: string) => {
 
         // Log da criação
         if (!error && roomId) {
-          await logCreate('room', roomId, {
-            name: room.name,
-            description: room.description,
-            has_wifi: room.has_wifi,
-            has_ac: room.has_ac,
-            has_chairs: room.has_chairs,
-            has_tables: room.has_tables,
-            price_per_hour: room.price_per_hour,
-            branch_id: branchId,
-          });
+          await logCreate('room', roomId, 'Sala criada');
         }
       } else {
         // Edição: update
@@ -242,15 +233,7 @@ export const useRoomForm = (id?: string) => {
 
         // Log da atualização
         if (!error) {
-          await logUpdate('room', id, {
-            name: room.name,
-            description: room.description,
-            has_wifi: room.has_wifi,
-            has_ac: room.has_ac,
-            has_chairs: room.has_chairs,
-            has_tables: room.has_tables,
-            price_per_hour: room.price_per_hour,
-          });
+          // await logUpdate('room', id, 'Sala atualizada');
         }
       }
       

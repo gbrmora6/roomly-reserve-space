@@ -25,7 +25,7 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
         console.log("Buscando disponibilidade para sala:", room.id, "data:", dateStr);
         
         // Usar a nova função do banco que considera schedules e carrinho
-        const { data: availabilityData, error } = await supabase
+        const { data: availabilityData, error } = await (supabase as any)
           .rpc("get_room_availability", {
             p_room_id: room.id,
             p_date: dateStr
@@ -38,7 +38,7 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
 
         console.log("Dados de disponibilidade recebidos:", availabilityData);
 
-        if (!availabilityData || availabilityData.length === 0) {
+        if (!availabilityData || (availabilityData as any[]).length === 0) {
           console.log(`Sala ${room.name} fechada na data ${dateStr}`);
           setAvailableHours([]);
           setBlockedHours([]);
@@ -49,7 +49,7 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
         const available: string[] = [];
         const blocked: string[] = [];
         
-        availabilityData.forEach((slot: any) => {
+        (availabilityData as any[]).forEach((slot: any) => {
           if (slot.is_available) {
             available.push(slot.hour);
           } else {

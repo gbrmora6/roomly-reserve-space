@@ -90,16 +90,11 @@ const CompanyProfile: React.FC = () => {
       console.log('Tentando salvar dados:', upsertData);
       
       // Atualizar registro da filial
-      const updateResult = await supabase
+      const { data, error } = await supabase
         .from('branches')
         .update(upsertData)
         .eq('id', branchId)
-          .select();
-        data = updateResult.data;
-        error = updateResult.error;
-      
-      data = updateResult.data;
-      error = updateResult.error;
+        .select();
       
       console.log('Resultado do upsert:', { data, error });
       
