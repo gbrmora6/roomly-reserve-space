@@ -1,148 +1,147 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useBranchFilter } from "./useBranchFilter";
+import { toast } from "sonner";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
-
-type SecurityAuditRow = Database['public']['Tables']['security_audit']['Row'];
-
-export interface SecurityAuditEvent extends SecurityAuditRow {
-  user_name?: string;
-  target_user_name?: string;
-}
-
-interface SecurityAuditFilters {
-  event_type?: string;
-  severity?: string;
+export interface SecurityAuditEvent {
+  id: string;
+  event_type: string;
+  severity: 'info' | 'warning' | 'critical';
   user_id?: string;
-  date_from?: string;
-  date_to?: string;
-  requires_review?: boolean;
+  user_email?: string;
+  user_role?: string;
+  target_user_id?: string;
+  resource_type?: string;
+  resource_id?: string;
+  action: string;
+  details: any;
+  ip_address?: string;
+  user_agent?: string;
+  session_id?: string;
+  request_id?: string;
+  branch_id?: string;
+  risk_score: number;
+  requires_review: boolean;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  review_notes?: string;
+  created_at: string;
 }
 
 export const useSecurityAudit = () => {
-  const [events, setEvents] = useState<SecurityAuditEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { branchId } = useBranchFilter();
+  const queryClient = useQueryClient();
 
-  const fetchEvents = async (filters?: SecurityAuditFilters) => {
-    try {
-      setLoading(true);
-      
-      let query = supabase
+  // Buscar eventos de auditoria
+  const { data: auditEvents = [], isLoading } = useQuery({
+    queryKey: ['security-audit', branchId],
+    queryFn: async () => {
+      if (!branchId) return [];
+
+      const { data, error } = await supabase
         .from('security_audit')
         .select('*')
-        .order('created_at', { ascending: false });
-
-      if (filters?.event_type) {
-        query = query.eq('event_type', filters.event_type);
-      }
-      
-      if (filters?.severity) {
-        query = query.eq('severity', filters.severity);
-      }
-      
-      if (filters?.user_id) {
-        query = query.eq('user_id', filters.user_id);
-      }
-      
-      if (filters?.date_from) {
-        query = query.gte('created_at', filters.date_from);
-      }
-      
-      if (filters?.date_to) {
-        query = query.lte('created_at', filters.date_to);
-      }
-      
-      if (filters?.requires_review !== undefined) {
-        query = query.eq('requires_review', filters.requires_review);
-      }
-
-      const { data, error } = await query;
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
       if (error) throw error;
+      return data as SecurityAuditEvent[];
+    },
+    enabled: !!branchId,
+  });
 
-      setEvents(data || []);
-    } catch (err: any) {
-      console.error('Error fetching security audit events:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Buscar eventos que requerem revisão
+  const { data: eventsRequiringReview = [] } = useQuery({
+    queryKey: ['security-audit-review', branchId],
+    queryFn: async () => {
+      if (!branchId) return [];
 
-  const markAsReviewed = async (eventId: string, reviewNotes?: string) => {
-    try {
+      const { data, error } = await supabase
+        .from('security_audit')
+        .select('*')
+        .eq('requires_review', true)
+        .is('reviewed_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as SecurityAuditEvent[];
+    },
+    enabled: !!branchId,
+  });
+
+  // Marcar evento como revisado
+  const reviewEventMutation = useMutation({
+    mutationFn: async (params: {
+      eventId: string;
+      reviewNotes?: string;
+    }) => {
       const { error } = await supabase
         .from('security_audit')
         .update({
-          requires_review: false,
           reviewed_by: (await supabase.auth.getUser()).data.user?.id,
           reviewed_at: new Date().toISOString(),
-          review_notes: reviewNotes
+          review_notes: params.reviewNotes,
         })
-        .eq('id', eventId);
+        .eq('id', params.eventId);
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-audit'] });
+      queryClient.invalidateQueries({ queryKey: ['security-audit-review'] });
+      toast.success('Evento marcado como revisado');
+    },
+    onError: (error) => {
+      console.error('Error reviewing event:', error);
+      toast.error('Erro ao revisar evento');
+    },
+  });
 
-      // Log this review action
-      await supabase.rpc('log_security_event', {
-        p_event_type: 'audit_review',
-        p_action: 'mark_reviewed',
-        p_details: {
-          reviewed_event_id: eventId,
-          review_notes: reviewNotes
-        },
-        p_severity: 'info',
-        p_resource_type: 'security_audit',
-        p_resource_id: eventId,
-        p_risk_score: 10
-      });
-
-      await fetchEvents();
-    } catch (err: any) {
-      console.error('Error marking event as reviewed:', err);
-      throw err;
-    }
+  // Log de evento de segurança
+  const logSecurityEvent = async (params: {
+    eventType: string;
+    action: string;
+    details: any;
+    severity?: 'info' | 'warning' | 'critical';
+    resourceType?: string;
+    resourceId?: string;
+    riskScore?: number;
+  }) => {
+    await supabase.rpc('log_security_event', {
+      p_event_type: params.eventType,
+      p_action: params.action,
+      p_details: params.details,
+      p_severity: params.severity || 'info',
+      p_resource_type: params.resourceType,
+      p_resource_id: params.resourceId,
+      p_risk_score: params.riskScore || 0
+    });
   };
 
-  const logSecurityEvent = async (
-    eventType: string,
-    action: string,
-    details: any,
-    severity: string = 'info',
-    resourceType?: string,
-    resourceId?: string,
-    riskScore: number = 0
-  ) => {
-    try {
-      await supabase.rpc('log_security_event', {
-        p_event_type: eventType,
-        p_action: action,
-        p_details: details,
-        p_severity: severity,
-        p_resource_type: resourceType,
-        p_resource_id: resourceId,
-        p_risk_score: riskScore
-      });
-    } catch (err: any) {
-      console.error('Error logging security event:', err);
-      throw err;
-    }
-  };
+  // Estatísticas de auditoria
+  const getAuditStats = () => {
+    const totalEvents = auditEvents.length;
+    const criticalEvents = auditEvents.filter(e => e.severity === 'critical').length;
+    const warningEvents = auditEvents.filter(e => e.severity === 'warning').length;
+    const highRiskEvents = auditEvents.filter(e => e.risk_score >= 70).length;
+    const pendingReviewEvents = eventsRequiringReview.length;
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+    return {
+      totalEvents,
+      criticalEvents,
+      warningEvents,
+      highRiskEvents,
+      pendingReviewEvents,
+    };
+  };
 
   return {
-    events,
-    loading,
-    error,
-    fetchEvents,
-    markAsReviewed,
+    auditEvents,
+    eventsRequiringReview,
+    isLoading,
+    reviewEvent: reviewEventMutation.mutate,
+    isReviewing: reviewEventMutation.isPending,
     logSecurityEvent,
-    refetch: fetchEvents,
+    getAuditStats,
   };
 };
-
-export default useSecurityAudit;

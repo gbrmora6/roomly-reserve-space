@@ -51,18 +51,15 @@ export function useEquipmentSelection(
         quantity,
         start_time: formatDateTimeForDatabase(startTime!),
         end_time: formatDateTimeForDatabase(endTime!),
-        status: 'in_process' as const,
+        status: 'pending' as const,
         branch_id: profile.branch_id
       }));
 
-      // Insert equipment bookings one by one to avoid type issues
-      for (const equipment of equipmentToAdd) {
-        const { error } = await supabase
-          .from('booking_equipment')
-          .insert(equipment);
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('booking_equipment')
+        .insert(equipmentToAdd);
+
+      if (error) throw error;
 
       toast({
         title: "Sucesso",

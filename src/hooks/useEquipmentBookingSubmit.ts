@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,48 +52,30 @@ export function useEquipmentBookingSubmit({
 
       if (equipmentError) throw equipmentError;
 
-      console.log("Adicionando equipamento ao carrinho via inserção direta");
+      console.log("Adicionando equipamento ao carrinho via RPC add_to_cart");
 
-      // Calculate price
-      const hours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-      const totalPrice = equipment.price_per_hour * hours * quantity;
-
-      // Get user's branch
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('branch_id')
-        .eq('id', user.id)
-        .single();
-
-      const branchId = profile?.branch_id || '';
-
-      // Add to cart directly
-      const { error } = await supabase
-        .from('cart_items')
-        .insert({
-          user_id: user.id,
-          item_type: 'equipment',
-          item_id: equipmentId,
-          quantity: quantity,
-          price: totalPrice,
-          metadata: {
-            equipment_name: equipment.name,
-            start_time: formatDateTimeForDatabase(startDate),
-            end_time: formatDateTimeForDatabase(endDate),
-            date: selectedDate.toISOString().split('T')[0],
-            start_hour: startHour,
-            end_hour: endHour
-          },
-          branch_id: branchId,
-          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() // 15 minutes from now
-        });
+      // Use add_to_cart function that handles all validation and creates temporary reservation
+      const { data: cartItem, error } = await supabase.rpc("add_to_cart", {
+        p_user_id: user.id,
+        p_item_type: "equipment",
+        p_item_id: equipmentId,
+        p_quantity: quantity,
+        p_metadata: {
+          equipment_name: equipment.name,
+          start_time: formatDateTimeForDatabase(startDate),
+          end_time: formatDateTimeForDatabase(endDate),
+          date: selectedDate.toISOString().split('T')[0], // Use ISO date format for metadata
+          start_hour: startHour,
+          end_hour: endHour
+        }
+      });
 
       if (error) {
-        console.error("Erro ao adicionar ao carrinho:", error);
+        console.error("Erro no add_to_cart:", error);
         throw error;
       }
 
-      console.log("Equipamento adicionado ao carrinho com sucesso");
+      console.log("Equipamento adicionado ao carrinho com sucesso:", cartItem);
       
       toast.success("Equipamento adicionado ao carrinho!");
       onSuccess();

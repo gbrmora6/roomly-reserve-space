@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,14 +13,9 @@ export const useProfileCompletion = () => {
   useEffect(() => {
     const checkProfileCompletion = async () => {
       if (!user) {
-        setIsProfileComplete(null);
         setIsLoading(false);
         return;
       }
-
-      // Páginas onde permitimos acesso mesmo com perfil incompleto
-      const allowedPaths = ['/my-account', '/checkout', '/cart'];
-      const isOnAllowedPath = allowedPaths.some(path => location.pathname.includes(path));
 
       try {
         const { data: profile, error } = await supabase
@@ -58,11 +52,8 @@ export const useProfileCompletion = () => {
 
         setIsProfileComplete(isComplete);
         
-        // IMPORTANTE: Só redirecionar se:
-        // 1. O perfil não está completo
-        // 2. NÃO estamos numa página permitida
-        // 3. NÃO estamos já indo para /my-account
-        if (!isComplete && !isOnAllowedPath && location.pathname !== '/my-account') {
+        // Se o perfil não está completo e não estamos na página de conta, redirecionar
+        if (!isComplete && location.pathname !== '/my-account') {
           navigate('/my-account', { 
             replace: true,
             state: { 

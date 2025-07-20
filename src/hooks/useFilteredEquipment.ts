@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
@@ -24,8 +23,8 @@ const timeToMinutes = (time: string): number => {
   return hours * 60 + minutes;
 };
 
-const getWeekdayFromDate = (date: Date): Weekday => {
-  const weekdays: Weekday[] = [
+const getWeekdayFromDate = (date: Date): string => {
+  const weekdays = [
     'sunday', 'monday', 'tuesday', 'wednesday',
     'thursday', 'friday', 'saturday'
   ];
@@ -34,7 +33,7 @@ const getWeekdayFromDate = (date: Date): Weekday => {
 
 const checkEquipmentSchedule = async (
   equipmentId: string,
-  weekday: Weekday,
+  weekday: string,
   startTime: string,
   endTime: string
 ): Promise<boolean> => {
@@ -286,9 +285,9 @@ const checkTimeRangeAvailability = async (
       return false;
     }
 
-    // Verificar conflitos com reservas existentes (usar booking_equipment em vez de equipment_bookings)
+    // Verificar conflitos com reservas existentes
     const { data: bookings } = await supabase
-      .from("booking_equipment")
+      .from("equipment_bookings")
       .select("start_time, end_time, quantity")
       .eq("equipment_id", equipmentId)
       .gte("start_time", `${dateStr} 00:00:00`)
@@ -315,21 +314,21 @@ const checkTimeRangeAvailability = async (
       .from("cart_items")
       .select(`
         reserved_equipment_booking_id,
-        booking_equipment!inner(
+        equipment_bookings!inner(
           start_time,
           end_time,
           equipment_id,
           quantity
         )
       `)
-      .eq("booking_equipment.equipment_id", equipmentId)
-      .gte("booking_equipment.start_time", `${dateStr} 00:00:00`)
-      .lt("booking_equipment.start_time", `${dateStr} 23:59:59`)
+      .eq("equipment_bookings.equipment_id", equipmentId)
+      .gte("equipment_bookings.start_time", `${dateStr} 00:00:00`)
+      .lt("equipment_bookings.start_time", `${dateStr} 23:59:59`)
       .gt("expires_at", new Date().toISOString());
 
     if (cartItems && cartItems.length > 0) {
       for (const item of cartItems) {
-        const booking = item.booking_equipment;
+        const booking = item.equipment_bookings;
         if (booking) {
           const bookingStart = new Date(booking.start_time);
           const bookingEnd = new Date(booking.end_time);

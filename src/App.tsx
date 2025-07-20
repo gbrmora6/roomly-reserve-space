@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
 import FirstLoginHandler from "@/components/auth/FirstLoginHandler";
@@ -62,10 +63,11 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <FirstLoginHandler>
-          <QueryClientProvider client={queryClient}>
-            <Toaster />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <CartProvider>
+            <FirstLoginHandler>
+              <Toaster />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -174,9 +176,10 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
             </Routes>
-          </QueryClientProvider>
-        </FirstLoginHandler>
-      </AuthProvider>
+            </FirstLoginHandler>
+          </CartProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </Router>
   );
 }

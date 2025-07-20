@@ -1,69 +1,46 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useBranchFilter } from '@/hooks/useBranchFilter';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 interface CompanyAddress {
-  street?: string;
-  number?: string;
-  neighborhood?: string;
-  city?: string;
-  state?: string;
-  name?: string;
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  name: string;
 }
 
 export const useCompanyAddress = () => {
-  const [companyAddress, setCompanyAddress] = useState<CompanyAddress>({});
+  const [companyAddress, setCompanyAddress] = useState<CompanyAddress>({
+    street: "",
+    number: "",
+    neighborhood: "",
+    city: "",
+    name: ""
+  });
   const { branchId } = useBranchFilter();
 
   useEffect(() => {
-    const fetchCompanyAddress = async () => {
+    const fetchCompanyProfile = async () => {
       if (!branchId) return;
+      const { data, error } = await supabase
+        .from("branches")
+        .select("street, number, neighborhood, city, name")
+        .eq("id", branchId)
+        .single();
       
-      try {
-        const { data, error } = await supabase
-          .from('branches')
-          .select('name, street, number, neighborhood, city, state')
-          .eq('id', branchId)
-          .single();
-        
-        if (data && !error) {
-          setCompanyAddress(data);
-        } else {
-          console.error('Erro ao buscar endereço da empresa:', error);
-        }
-      } catch (err) {
-        console.error('Erro ao buscar endereço da empresa:', err);
+      if (data && !error) {
+        setCompanyAddress(data);
       }
     };
     
-    fetchCompanyAddress();
+    fetchCompanyProfile();
   }, [branchId]);
 
   const formatAddress = () => {
-    if (!companyAddress.street) return '';
-    
-    const addressParts = [
-      companyAddress.street,
-      companyAddress.number,
-      companyAddress.neighborhood,
-      companyAddress.city,
-      companyAddress.state
-    ].filter(Boolean);
-    
-    return addressParts.join(', ');
+    if (!companyAddress.street) return "";
+    return `${companyAddress.street}, ${companyAddress.number} - ${companyAddress.neighborhood}, ${companyAddress.city}`;
   };
 
-  const formatFullAddress = () => {
-    if (!companyAddress.name) return formatAddress();
-    
-    const address = formatAddress();
-    return address ? `${companyAddress.name} - ${address}` : companyAddress.name;
-  };
-
-  return {
-    companyAddress,
-    formatAddress,
-    formatFullAddress,
-    isLoading: !branchId,
-  };
+  return { companyAddress, formatAddress };
 };
