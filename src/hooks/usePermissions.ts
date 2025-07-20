@@ -217,5 +217,5 @@ export const usePermissions = () => {
   };
 };
 
-export { ResourceType, PermissionType };
+export type { ResourceType, PermissionType };
 export default usePermissions;
