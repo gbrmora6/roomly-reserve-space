@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
+import { useCoupon } from "@/hooks/useCoupon";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +57,16 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { cartItems, cartTotal, clearCart } = useCart();
+  const {
+    appliedCoupon,
+    getDiscountedTotal,
+    hasActiveCoupon,
+    discountAmount,
+    recordCouponUsage
+  } = useCoupon();
+
+  // Calcular total com desconto
+  const finalTotal = getDiscountedTotal(cartTotal);
   
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [loading, setLoading] = useState(false);
@@ -191,14 +202,67 @@ const Checkout = () => {
         paymentData: processedPaymentData
       });
 
-      const { data, error } = await supabase.functions.invoke('click2pay-integration', {
-        body: {
-          action: 'create-checkout',
-          userId: user.id,
-          paymentMethod,
-          paymentData: processedPaymentData
+      let data, error;
+
+      // Processar pagamento baseado no método selecionado
+      if (paymentMethod === "boleto") {
+        // Validar valor mínimo para boleto
+        if (finalTotal < 30) {
+          throw new Error(`Valor mínimo para boleto é R$ 30,00. Valor atual: ${formatCurrency(finalTotal)}`);
         }
-      });
+
+        // Para boleto, usar a edge function específica
+        const boletoPayload = {
+          payerInfo: {
+            address: {
+              place: processedPaymentData.rua || '',
+              number: processedPaymentData.numero || '',
+              complement: processedPaymentData.complemento || '',
+              neighborhood: processedPaymentData.bairro || '',
+              city: processedPaymentData.cidade || '',
+              state: processedPaymentData.estado || '',
+              zipcode: (processedPaymentData.cep || '').replace(/\D/g, '')
+            },
+            name: processedPaymentData.nomeCompleto || '',
+            taxid: (processedPaymentData.cpfCnpj || '').replace(/\D/g, ''),
+            phonenumber: (processedPaymentData.telefone || '').replace(/\D/g, ''),
+            email: processedPaymentData.email || '',
+            birth_date: "1990-01-01" // Data padrão - pode ser ajustada
+          },
+          totalAmount: finalTotal,
+          orderId: `order_${Date.now()}_${user.id.substring(0, 8)}`,
+          callbackUrl: `${window.location.origin}/payment-webhook`
+        };
+
+        console.log('Payload do boleto:', JSON.stringify(boletoPayload, null, 2));
+
+        const response = await supabase.functions.invoke('checkout-boleto', {
+          body: boletoPayload
+        });
+        
+        data = response.data;
+        error = response.error;
+      } else {
+        // Para PIX e cartão, usar a edge function click2pay-integration
+        const response = await supabase.functions.invoke('click2pay-integration', {
+          body: {
+            action: 'create-checkout',
+            userId: user.id,
+            paymentMethod,
+            paymentData: processedPaymentData,
+            couponData: hasActiveCoupon ? {
+              couponId: appliedCoupon?.couponId,
+              couponCode: appliedCoupon?.couponCode,
+              discountAmount: discountAmount,
+              originalTotal: cartTotal,
+              finalTotal: finalTotal
+            } : null
+          }
+        });
+        
+        data = response.data;
+        error = response.error;
+      }
 
       console.log("Resposta completa da função:", { data, error });
 
@@ -219,41 +283,109 @@ const Checkout = () => {
 
       console.log("Resposta da API Click2Pay:", data);
 
-      // Verificar se a transação foi criada corretamente
-      if (!data.orderId) {
-        throw new Error("Erro: Ordem não foi criada corretamente");
-      }
-
-      // Redirecionar baseado no método de pagamento e status
-      if (paymentMethod === "cartao") {
-        if (data.status === "paid" || data.status === "approved") {
-          // Limpar carrinho apenas se pagamento foi aprovado
-          clearCart();
-          toast({
-            title: "Pagamento aprovado!",
-            description: "Seu pagamento foi processado com sucesso.",
-          });
-          navigate("/payment-success");
-        } else {
-          throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
+      // Processar resposta baseado no método de pagamento
+      if (paymentMethod === "boleto") {
+        // Verificar se o boleto foi criado corretamente
+        if (!data.success || !data.boleto) {
+          throw new Error(data.error || "Erro ao gerar boleto");
         }
-      } else {
-        // Para boleto e Pix, verificar se temos os dados necessários
-        if (!data.barcode && !data.qr_code && !data.pix_code) {
-          throw new Error("Erro: Dados de pagamento não foram gerados corretamente");
+
+        // Registrar uso do cupom se houver um aplicado
+        if (hasActiveCoupon && appliedCoupon?.couponId) {
+          try {
+            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount);
+          } catch (couponError) {
+            console.error("Erro ao registrar uso do cupom:", couponError);
+            // Não bloquear o fluxo por erro no cupom
+          }
         }
         
         // Limpar carrinho
         clearCart();
         
-        // Redirecionar para página de instrução
+        // Redirecionar para página de instruções do boleto
         navigate("/payment-instructions", { 
           state: { 
-            paymentMethod, 
-            paymentData: data,
-            orderId: data.orderId 
+            paymentMethod: "boleto", 
+            paymentData: {
+              barcode: data.boleto.barcode,
+              linhaDigitavel: data.boleto.linhaDigitavel,
+              url: data.boleto.url,
+              urlBoleto: data.boleto.urlBoleto || data.boleto.url,
+              vencimento: data.boleto.vencimento || data.boleto.due_date,
+              tid: data.boleto.tid,
+              due_date: data.boleto.due_date,
+              amount: data.boleto.amount
+            },
+            orderId: data.boleto.tid
           } 
         });
+      } else {
+        // Lógica original para outros métodos de pagamento
+        // Verificar se a transação foi criada corretamente
+        if (!data.orderId) {
+          throw new Error("Erro: Ordem não foi criada corretamente");
+        }
+
+        // Redirecionar baseado no método de pagamento e status
+        if (paymentMethod === "cartao") {
+          if (data.status === "paid" || data.status === "approved") {
+            // Registrar uso do cupom se houver um aplicado
+            if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
+              try {
+                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+              } catch (couponError) {
+                console.error("Erro ao registrar uso do cupom:", couponError);
+                // Não bloquear o fluxo por erro no cupom
+              }
+            }
+            
+            // Limpar carrinho apenas se pagamento foi aprovado
+            clearCart();
+            toast({
+              title: "Pagamento aprovado!",
+              description: "Seu pagamento foi processado com sucesso.",
+            });
+            navigate("/payment-success");
+          } else {
+            throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
+          }
+        } else if (paymentMethod === "pix") {
+          // Para PIX, verificar se temos os dados necessários
+          if (!data.pix?.qr_code_image && !data.pix?.qr_code) {
+            throw new Error("Erro: QR Code PIX não foi gerado corretamente");
+          }
+          
+          // Registrar uso do cupom se houver um aplicado
+          if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
+            try {
+              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+            } catch (couponError) {
+              console.error("Erro ao registrar uso do cupom:", couponError);
+              // Não bloquear o fluxo por erro no cupom
+            }
+          }
+          
+          // Limpar carrinho
+          clearCart();
+          
+          // Preparar dados do PIX para a página de instruções
+          const pixData = {
+            qrCodeImage: data.pix.qr_code_image,
+            pixCode: data.pix.qr_code,
+            reference: data.reference,
+            orderId: data.orderId
+          };
+          
+          // Redirecionar para página de instrução
+          navigate("/payment-instructions", { 
+            state: { 
+              paymentMethod: "pix", 
+              paymentData: pixData,
+              orderId: data.orderId 
+            } 
+          });
+        }
       }
 
     } catch (error) {
@@ -518,7 +650,7 @@ const Checkout = () => {
                                 <SelectContent>
                                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
                                     <SelectItem key={i} value={i.toString()}>
-                                      {i}x de {formatCurrency(cartTotal / i)}
+                                      {i}x de {formatCurrency(finalTotal / i)}
                                       {i === 1 ? " à vista" : " sem juros"}
                                     </SelectItem>
                                   ))}
@@ -552,14 +684,20 @@ const Checkout = () => {
                       <span>Processando pagamento...</span>
                     </div>
                   ) : (
-                    `Finalizar Pagamento - ${formatCurrency(cartTotal)}`
+                    `Finalizar Pagamento - ${formatCurrency(finalTotal)}`
                   )}
                 </Button>
               </div>
 
               {/* Resumo do Pedido */}
               <div className="lg:col-span-1">
-                <OrderSummary cartItems={cartItems} cartTotal={cartTotal} />
+                <OrderSummary 
+                  cartItems={cartItems} 
+                  cartTotal={cartTotal}
+                  appliedCoupon={appliedCoupon}
+                  discountAmount={discountAmount}
+                  finalTotal={finalTotal}
+                />
               </div>
             </div>
           </div>

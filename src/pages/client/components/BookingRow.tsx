@@ -35,14 +35,37 @@ interface BookingRowProps {
 }
 
 export const BookingRow = ({ booking, onCancelBooking }: BookingRowProps) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "bg-green-100 text-green-800";
+      case "in_process":
+        return "bg-blue-100 text-blue-800";
+      case "pre_authorized":
+        return "bg-purple-100 text-purple-800";
+      case "partial_refunded":
+        return "bg-orange-100 text-orange-800";
+      case "cancelled":
+      case "recused":
+        return "bg-red-100 text-red-800";
+      // Status legados para compatibilidade
+      case "confirmed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; variant: any }> = {
       pending: { label: "Pendente", variant: "secondary" },
       confirmed: { label: "Confirmado", variant: "default" },
       paid: { label: "Pago", variant: "default" },
-      cancelled: { label: "Cancelado", variant: "destructive" },
-      "awaiting_payment": { label: "Aguardando Pagamento", variant: "secondary" },
-      "cancelled_due_to_payment": { label: "Cancelado por Falta de Pagamento", variant: "destructive" },
+      recused: { label: "Cancelado", variant: "destructive" },
+  
+
     };
 
     const statusInfo = statusMap[status] || { label: status, variant: "secondary" };

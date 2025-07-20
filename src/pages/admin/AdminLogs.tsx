@@ -21,14 +21,11 @@ export default function AdminLogs() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["admin-logs", branchId, searchTerm, actionFilter],
+    queryKey: ["admin-logs", searchTerm, actionFilter],
     queryFn: async () => {
-      if (!branchId) return [];
-      
       let query = supabase
         .from("admin_logs")
         .select("*")
-        .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
 
       if (searchTerm) {
@@ -40,10 +37,12 @@ export default function AdminLogs() {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Erro ao buscar logs:", error);
+        throw error;
+      }
+      return data || [];
     },
-    enabled: !!branchId,
   });
 
   // Função para criar log de administrador
@@ -141,60 +140,71 @@ export default function AdminLogs() {
           </div>
 
           {/* Tabela de logs */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Administrador</TableHead>
-                <TableHead>Ação</TableHead>
-                <TableHead>Detalhes</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      {log.admin_email || "Sistema"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionBadgeVariant(log.action)}>
-                      {log.action}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[300px] truncate">
-                    {typeof log.details === "object" 
-                      ? JSON.stringify(log.details).substring(0, 100) + "..."
-                      : log.details?.toString().substring(0, 100) + "..."
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewDetails(log)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {logs.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum log encontrado.
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-muted-foreground">Carregando logs...</p>
             </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Administrador</TableHead>
+                    <TableHead>Ação</TableHead>
+                    <TableHead>Detalhes</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          {log.admin_email || "Sistema"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getActionBadgeVariant(log.action)}>
+                          {log.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[300px] truncate">
+                        {typeof log.details === "object" 
+                          ? JSON.stringify(log.details).substring(0, 100) + "..."
+                          : log.details?.toString().substring(0, 100) + "..."
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(log)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {logs.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum log encontrado.</p>
+                  <p className="text-sm mt-2">Os logs aparecerão aqui conforme as ações administrativas forem realizadas.</p>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

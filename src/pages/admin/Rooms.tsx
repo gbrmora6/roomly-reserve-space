@@ -8,6 +8,7 @@ import { Plus, Pencil, Trash, PowerOff, Power } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Bed } from "lucide-react";
@@ -28,6 +29,7 @@ interface Room {
 const AdminRooms: React.FC = () => {
   const { refreshUserClaims } = useAuth();
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
+  const { logDelete, logStatusChange } = useAdminCRUDLogger();
   
   // Execute refresh claims on component mount
   useEffect(() => {
@@ -64,12 +66,24 @@ const AdminRooms: React.FC = () => {
     if (!window.confirm("Tem certeza que deseja excluir esta sala?")) return;
     
     try {
+      // Buscar dados da sala antes de excluir para o log
+      const { data: roomData } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("rooms")
         .delete()
         .eq("id", id);
       
       if (error) throw error;
+
+      // Log da exclusão
+      if (roomData) {
+        await logDelete('room', id, roomData);
+      }
       
       toast({
         title: "Sala excluída com sucesso",
@@ -92,6 +106,13 @@ const AdminRooms: React.FC = () => {
         .eq("id", id);
       
       if (error) throw error;
+
+      // Log da mudança de status
+      await logStatusChange('room', id, {
+        previous_status: currentStatus,
+        new_status: !currentStatus,
+        action: currentStatus ? 'deactivated' : 'activated'
+      });
       
       toast({
         title: currentStatus ? "Sala desativada com sucesso" : "Sala ativada com sucesso",

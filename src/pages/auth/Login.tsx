@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import AuthNavbar from "@/components/navbar/AuthNavbar";
 import { toast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { devLog } from "@/utils/logger";
 
 const Login: React.FC = () => {
@@ -17,7 +12,6 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Log component state for debugging
   useEffect(() => {
     devLog("Login component - Auth state", { 
       userId: user?.id || null, 
@@ -29,18 +23,18 @@ const Login: React.FC = () => {
 
   if (loading) {
     return (
-      <MainLayout>
-        <div className="container mx-auto flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-16">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <AuthNavbar showRegisterButton={true} />
+        <div className="flex min-h-screen items-center justify-center pt-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Verificando autenticação...</p>
           </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
-  // Redirect based on user role
   if (user) {
     console.log("User is already logged in, checking role for redirect");
     const isAdmin = 
@@ -77,7 +71,6 @@ const Login: React.FC = () => {
     try {
       await signIn(email, password);
       console.log("Login successful in Login component");
-      // O redirecionamento acontecerá automaticamente quando o user state for atualizado
     } catch (error: any) {
       console.error("Login error in component:", error);
       
@@ -98,94 +91,118 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
-        {/* Lado esquerdo: formulário */}
-        <div className="flex-1 flex flex-col justify-center px-8 py-12 md:px-12">
-          <div className="flex items-center gap-2 mb-8">
-            <span className="bg-blue-100 rounded-full p-2">
-              <svg width="32" height="32" fill="none" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#23406e"/><path d="M8 20V12a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 22v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </span>
-            <span className="font-extrabold text-2xl text-[#23406e]">Roomly</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <AuthNavbar showRegisterButton={true} />
+      <div className="flex min-h-screen items-center justify-center pt-16 px-4">
+        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+          <div className="flex-1 flex flex-col justify-center px-6 py-8 md:px-8 md:py-12 lg:px-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-primary">Bem-vindo de volta!</h2>
+            <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8">Entre na sua conta</p>
+            
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6 mt-6">
+              {loginError && (
+                <div className="bg-red-100 text-red-700 rounded px-3 py-2 text-sm mb-2">{loginError}</div>
+              )}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                  disabled={isLoading}
+                  autoComplete="email"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Sua senha"
+                  required
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs md:text-sm mb-2 md:mb-4">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                  Lembrar-me
+                </label>
+                <Link to="/forgot-password" className="text-primary hover:underline font-medium">Esqueceu sua senha?</Link>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm md:text-base py-2 md:py-3 rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
+                disabled={isLoading}
+              >
+                {isLoading ? "Entrando..." : "Login"}
+              </button>
+              <div className="flex items-center my-3 md:my-4">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="mx-3 text-gray-400 text-xs md:text-sm">Ou</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 md:py-3 bg-white hover:bg-gray-50 font-medium text-gray-700 text-sm md:text-base"
+              >
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+                Cadastre-se com o Google
+              </button>
+              <div className="text-center text-xs md:text-sm mt-3 md:mt-4">
+                Não tem uma conta? <Link to="/register" className="text-primary hover:underline font-medium">Cadastre-se</Link>
+              </div>
+            </form>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-[#23406e]">Bem-vindo de volta!</h2>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-            {loginError && (
-              <div className="bg-red-100 text-red-700 rounded px-3 py-2 text-sm mb-2">{loginError}</div>
-            )}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                required
-                disabled={isLoading}
-                autoComplete="email"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#23406e]"
-              />
+          <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-primary to-primary/80 relative">
+            <div className="absolute inset-0 flex flex-col items-center justify-center h-full w-full p-6 lg:p-8">
+              <div className="text-center text-white">
+                <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4">Gerencie seus espaços</h3>
+                <p className="text-white/80 mb-6 lg:mb-8 text-sm lg:text-base">Reserve salas, equipamentos e produtos de forma simples e eficiente</p>
+                <div className="grid grid-cols-2 gap-3 lg:gap-4 max-w-xs mx-auto">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 text-center">
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white/20 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Salas</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 text-center">
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white/20 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Equipamentos</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 text-center">
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white/20 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Produtos</span>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 text-center">
+                    <div className="w-6 h-6 lg:w-8 lg:h-8 bg-white/20 rounded-lg mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs font-medium">Reservas</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1">Senha</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Senha"
-                required
-                disabled={isLoading}
-                autoComplete="current-password"
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#23406e]"
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs mb-2">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="rounded border-gray-300" />
-                Lembrar-me
-              </label>
-              <Link to="/forgot-password" className="text-[#23406e] hover:underline font-medium">Esqueceu sua senha?</Link>
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#23406e] hover:bg-[#1a2e4d] text-white font-semibold text-base py-3 rounded-md transition"
-              disabled={isLoading}
-            >
-              {isLoading ? "Entrando..." : "Login"}
-            </button>
-            <div className="flex items-center my-4">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="mx-3 text-gray-400 text-xs">Ou</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 bg-white hover:bg-gray-50 font-medium text-gray-700"
-              // onClick={handleGoogleLogin} // implementar se necessário
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-              Cadastre-se com o Google
-            </button>
-            <div className="text-center text-sm mt-4">
-              Não tem uma conta? <Link to="/register" className="text-[#23406e] hover:underline font-medium">Cadastre-se</Link>
-            </div>
-          </form>
-        </div>
-        {/* Lado direito: ilustração */}
-        <div className="hidden md:block md:w-1/2 bg-[#23406e] relative">
-          <div className="absolute inset-0 flex flex-col items-center justify-center h-full w-full">
-            {/* SVG decorativo ou imagem ilustrativa */}
-            <svg width="260" height="260" fill="none" viewBox="0 0 260 260">
-              <rect width="260" height="260" rx="32" fill="#1a2e4d" />
-              <rect x="30" y="30" width="60" height="60" rx="12" fill="#23406e" />
-              <rect x="110" y="30" width="120" height="40" rx="10" fill="#23406e" />
-              <rect x="30" y="110" width="80" height="40" rx="10" fill="#23406e" />
-              <rect x="130" y="110" width="60" height="60" rx="12" fill="#23406e" />
-              <rect x="30" y="170" width="60" height="60" rx="12" fill="#23406e" />
-              <rect x="110" y="190" width="120" height="40" rx="10" fill="#23406e" />
-            </svg>
           </div>
         </div>
       </div>

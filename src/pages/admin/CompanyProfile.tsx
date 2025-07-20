@@ -25,38 +25,39 @@ const CompanyProfile: React.FC = () => {
   const { branchId } = useBranchFilter();
 
   useEffect(() => {
-    if (branchId) fetchProfileData();
+    console.log('CompanyProfile useEffect - branchId:', branchId);
+    if (branchId) {
+      fetchProfileData();
+    } else {
+      console.log('Nenhum branchId encontrado');
+      setLoading(false);
+    }
   }, [branchId]);
 
   const fetchProfileData = async () => {
     setLoading(true);
     try {
+      console.log('Buscando perfil da empresa para branch_id:', branchId);
       const { data, error } = await supabase
         .from('company_profile')
         .select('*')
         .eq('branch_id', branchId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        .maybeSingle();
+      
+      console.log('Resultado da busca:', { data, error });
+      
+      if (error) {
+        console.error('Erro ao buscar perfil da empresa:', error);
         toast({
           title: "Erro ao carregar dados",
           description: error.message,
           variant: "destructive"
         });
-      } else if (data) {
-        setProfile(data as CompanyProfileData);
       } else {
-        setProfile({
-          id: '',
-          name: '',
-          street: '',
-          number: '',
-          neighborhood: '',
-          city: '',
-        });
+        setProfile(data as CompanyProfileData);
       }
     } catch (err) {
-      console.error("Erro ao buscar perfil da empresa:", err);
+      console.error('Erro inesperado:', err);
     } finally {
       setLoading(false);
     }
@@ -70,20 +71,68 @@ const CompanyProfile: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!profile) return;
+    if (!profile || !branchId) {
+      console.log('Dados insuficientes para salvar:', { profile, branchId });
+      return;
+    }
     setSaving(true);
     try {
+      // Log da sessão atual
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Sessão atual:', {
+        user: session?.user?.id,
+        email: session?.user?.email,
+        role: session?.user?.role,
+        aud: session?.user?.aud
+      });
+      
       const upsertData = { ...profile, branch_id: branchId };
-      const { error } = await supabase
+      console.log('Tentando salvar dados:', upsertData);
+      
+      // Primeiro, verificar se já existe um registro para esta filial
+      const { data: existingData } = await supabase
         .from('company_profile')
-        .upsert(upsertData, { onConflict: 'branch_id' });
+        .select('id')
+        .eq('branch_id', branchId)
+        .single();
+      
+      let data, error;
+      
+      if (existingData) {
+        // Atualizar registro existente
+        const updateResult = await supabase
+          .from('company_profile')
+          .update(upsertData)
+          .eq('branch_id', branchId)
+          .select();
+        data = updateResult.data;
+        error = updateResult.error;
+      } else {
+        // Inserir novo registro
+        const insertResult = await supabase
+          .from('company_profile')
+          .insert(upsertData)
+          .select();
+        data = insertResult.data;
+        error = insertResult.error;
+      }
+      
+      console.log('Resultado do upsert:', { data, error });
+      
       if (error) {
+        console.error('Erro detalhado do Supabase:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         toast({
           title: "Erro ao salvar",
-          description: error.message,
+          description: `${error.message} ${error.details ? '- ' + error.details : ''}`,
           variant: "destructive"
         });
       } else {
+        console.log('Dados salvos com sucesso:', data);
         toast({
           title: "Sucesso!",
           description: "Perfil da empresa atualizado com sucesso."
@@ -91,6 +140,11 @@ const CompanyProfile: React.FC = () => {
       }
     } catch (err) {
       console.error("Erro ao salvar perfil da empresa:", err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao salvar o perfil da empresa.",
+        variant: "destructive"
+      });
     } finally {
       setSaving(false);
     }
@@ -112,6 +166,27 @@ const CompanyProfile: React.FC = () => {
                   <Skeleton className="h-10 w-full" />
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!branchId) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+              <Building className="h-7 w-7 text-blue-700" /> Perfil da Empresa
+            </CardTitle>
+            <CardDescription className="text-gray-500">Gerencie as informações da empresa</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">Nenhuma filial encontrada para este usuário.</p>
+              <p className="text-sm text-gray-400">Entre em contato com o administrador do sistema para configurar sua filial.</p>
             </div>
           </CardContent>
         </Card>

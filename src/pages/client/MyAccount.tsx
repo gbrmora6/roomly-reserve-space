@@ -7,10 +7,15 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Settings, Shield, CreditCard } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { User, Settings, Shield, CreditCard, AlertCircle } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const MyAccount = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const isFirstLogin = location.state?.isFirstLogin;
+  const message = location.state?.message;
   
   return (
     <MainLayout>
@@ -19,6 +24,15 @@ const MyAccount = () => {
           title="Minha Conta"
           description="Gerencie suas informações pessoais e preferências"
         />
+        
+        {isFirstLogin && message && (
+          <Alert className="mb-6 border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <strong>Bem-vindo ao Roomly!</strong> {message}
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Profile Summary Card */}

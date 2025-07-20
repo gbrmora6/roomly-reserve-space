@@ -49,6 +49,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -67,6 +68,7 @@ const AdminProducts = () => {
   const { toast } = useToast();
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
   const { user } = useAuth();
+  const { logCreate, logUpdate, logDelete } = useAdminCRUDLogger();
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -135,6 +137,9 @@ const AdminProducts = () => {
           .select()
           .single();
         if (error) throw error;
+
+        // Log da atualização
+        await logUpdate('product', editingProductId, productData);
         return data;
       } else {
         // Create new product
@@ -144,6 +149,9 @@ const AdminProducts = () => {
           .select()
           .single();
         if (error) throw error;
+
+        // Log da criação
+        await logCreate('product', data.id, { ...productData, branch_id: branchId });
         return data;
       }
     },
@@ -171,12 +179,24 @@ const AdminProducts = () => {
   // Delete product
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Buscar dados do produto antes de excluir para o log
+      const { data: productData } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("products")
         .delete()
         .eq("id", id);
 
       if (error) throw error;
+
+      // Log da exclusão
+      if (productData) {
+        await logDelete('product', id, productData);
+      }
       return id;
     },
     onSuccess: (id) => {

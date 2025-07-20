@@ -13,6 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Mic } from "lucide-react";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 
 interface Equipment {
   id: string;
@@ -25,6 +26,7 @@ interface Equipment {
 const AdminEquipment: React.FC = () => {
   const { refreshUserClaims } = useAuth();
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
+  const { logDelete, logStatusChange } = useAdminCRUDLogger();
   
   // Execute refresh claims on component mount
   useEffect(() => {
@@ -61,12 +63,24 @@ const AdminEquipment: React.FC = () => {
     if (!window.confirm("Tem certeza que deseja excluir este equipamento?")) return;
     
     try {
+      // Buscar dados do equipamento antes de excluir para o log
+      const { data: equipmentData } = await supabase
+        .from("equipment")
+        .select("*")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("equipment")
         .delete()
         .eq("id", id);
       
       if (error) throw error;
+      
+      // Registrar log da exclusão
+      if (equipmentData) {
+        logDelete("equipment", id, equipmentData);
+      }
       
       toast({
         title: "Equipamento excluído com sucesso",
@@ -83,12 +97,22 @@ const AdminEquipment: React.FC = () => {
 
   const toggleEquipmentStatus = async (id: string, currentStatus: boolean) => {
     try {
+      // Buscar nome do equipamento para o log
+      const { data: equipmentData } = await supabase
+        .from("equipment")
+        .select("name")
+        .eq("id", id)
+        .single();
+
       const { error } = await supabase
         .from("equipment")
         .update({ is_active: !currentStatus })
         .eq("id", id);
       
       if (error) throw error;
+      
+      // Registrar log da mudança de status
+      logStatusChange("equipment", id, currentStatus, !currentStatus, equipmentData?.name);
       
       toast({
         title: currentStatus ? "Equipamento desativado com sucesso" : "Equipamento ativado com sucesso",

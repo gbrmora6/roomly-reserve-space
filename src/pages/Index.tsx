@@ -8,10 +8,10 @@ import StatsSection from "@/components/home/StatsSection";
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
-  const [heroImageUrl, setHeroImageUrl] = useState<string>("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
+  const [heroImageUrl, setHeroImageUrl] = useState<string>("/inicial.png");
 
   useEffect(() => {
-    setHeroImageUrl("https://fgiidcdsvmqxdkclgety.supabase.co/storage/v1/object/public/site-photos//inicial.jpg");
+    setHeroImageUrl("/inicial.png");
   }, []);
 
   return (
@@ -21,24 +21,24 @@ const Index: React.FC = () => {
       <StatsSection />
 
       {/* Modern Services Section */}
-      <section className="py-20 bg-gradient-to-br from-background to-muted/30 relative overflow-hidden">
+      <section className="py-12 md:py-20 bg-gradient-to-br from-background to-muted/30 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg mb-6">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Nossos Serviços</span>
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
+          <div className="text-center mb-12 md:mb-16">
+            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg mb-4 md:mb-6">
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              <span className="text-xs md:text-sm font-medium text-muted-foreground">Nossos Serviços</span>
             </div>
-            <h2 className="text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-4 px-4">
               Soluções Completas para <span className="text-primary">Psicólogos</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Oferecemos tudo o que você precisa para realizar seus atendimentos com excelência
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 title: "Salas Especializadas",
@@ -96,16 +96,16 @@ const Index: React.FC = () => {
       </section>
 
       {/* Modern Steps Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">Como Funciona</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+      <section className="py-12 md:py-20 bg-white">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-4 px-4">Como Funciona</h2>
+            <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Processo simples e rápido para você focar no que realmente importa
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-4">
+          <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 step: "01",
@@ -154,20 +154,20 @@ const Index: React.FC = () => {
       </section>
 
       {/* Modern CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground relative overflow-hidden">
+      <section className="py-12 md:py-20 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         
-        <div className="container mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl font-bold mb-4">Pronto para Começar?</h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-10">
+        <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 px-4">Pronto para Começar?</h2>
+          <p className="text-base md:text-lg lg:text-xl opacity-90 max-w-2xl mx-auto mb-6 md:mb-10 px-4">
             Cadastre-se agora e tenha acesso a espaços preparados para sua prática profissional
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 px-4">
             <Button
               size="lg"
               variant="secondary"
-              className="bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 min-w-[200px] shadow-lg"
+              className="bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px] shadow-lg"
               onClick={() => navigate("/register")}
             >
               Criar uma Conta
@@ -175,7 +175,7 @@ const Index: React.FC = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-white text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 min-w-[200px]"
+              className="border-white text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px]"
               onClick={() => navigate("/rooms")}
             >
               Ver Salas
@@ -185,16 +185,16 @@ const Index: React.FC = () => {
       </section>
       
       {/* Modern Testimonials */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">O Que Dizem Nossos Clientes</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+      <section className="py-12 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-4 px-4">O Que Dizem Nossos Clientes</h2>
+            <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Profissionais que confiam em nossos espaços para seus atendimentos
             </p>
           </div>
           
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-6 md:gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 name: "Ana Silva",

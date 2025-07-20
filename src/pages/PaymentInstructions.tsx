@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCode, FileText, Copy, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
+import PixQRCode from "@/components/checkout/PixQRCode";
 
 const PaymentInstructions: React.FC = () => {
   const location = useLocation();
@@ -44,52 +45,12 @@ const PaymentInstructions: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           {paymentMethod === "pix" && (
-            <Card>
-              <CardHeader className="text-center">
-                <QrCode className="mx-auto h-16 w-16 text-blue-500 mb-4" />
-                <CardTitle>Pagamento via Pix</CardTitle>
-                <p className="text-muted-foreground">
-                  Escaneie o QR Code ou copie o código para pagar
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {paymentData.qrCodeImage && (
-                  <div className="flex justify-center">
-                    <img 
-                      src={`data:image/png;base64,${paymentData.qrCodeImage}`}
-                      alt="QR Code Pix"
-                      className="max-w-full h-auto border rounded"
-                    />
-                  </div>
-                )}
-                
-                {paymentData.pixCode && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">Código Pix (Copia e Cola):</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={paymentData.pixCode}
-                        readOnly
-                        className="flex-1 p-2 text-xs border rounded bg-muted"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => copyToClipboard(paymentData.pixCode)}
-                        disabled={copied}
-                      >
-                        {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center text-sm text-muted-foreground">
-                  <p>O pagamento será confirmado automaticamente após a transferência.</p>
-                  <p className="mt-2">Pedido: {orderId}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <PixQRCode
+              qrCodeImage={paymentData.qrCodeImage}
+              pixCode={paymentData.pixCode}
+              reference={paymentData.reference}
+              orderId={orderId}
+            />
           )}
 
           {paymentMethod === "boleto" && (

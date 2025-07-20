@@ -3,241 +3,461 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Calendar, Clock, User, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Calendar, Clock, User, Package, Eye, MapPin } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 
 export default function TodayReservations() {
   const { branchId } = useBranchFilter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const today = new Date();
 
-  const { data: todayData = [], isLoading } = useQuery({
-    queryKey: ["today-reservations", branchId],
+  // Buscar todas as salas da filial
+  const { data: rooms = [], isLoading: roomsLoading } = useQuery({
+    queryKey: ["rooms", branchId],
     queryFn: async () => {
       if (!branchId) return [];
       
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("branch_id", branchId)
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!branchId,
+  });
+
+  // Buscar reservas de salas do dia
+  const { data: roomBookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ["today-room-bookings", branchId],
+    queryFn: async () => {
+      if (!branchId) {
+        throw new Error("Branch ID não encontrado");
+      }
+      
       const startOfToday = startOfDay(today).toISOString();
       const endOfToday = endOfDay(today).toISOString();
-
-      // Buscar reservas de salas do dia
-      const { data: roomBookings, error: roomError } = await supabase
+      const { data, error } = await supabase
         .from("bookings")
         .select(`
           *,
-          room:rooms(name),
-          user:profiles!bookings_user_id_fkey(first_name, last_name, email)
+          room:rooms(id, name, description)
         `)
         .eq("branch_id", branchId)
         .gte("start_time", startOfToday)
         .lte("start_time", endOfToday)
-        .in("status", ["confirmed"]);
+        .eq("status", "paid")
+        .order("start_time");
 
-      if (roomError) throw roomError;
-
-      // Buscar reservas de equipamentos do dia
-      const { data: equipmentBookings, error: equipmentError } = await supabase
-        .from("booking_equipment")
-        .select(`
-          *,
-          equipment(name),
-          user:profiles!booking_equipment_user_id_fkey(first_name, last_name, email)
-        `)
-        .eq("branch_id", branchId)
-        .gte("start_time", startOfToday)
-        .lte("start_time", endOfToday)
-        .in("status", ["confirmed"]);
-
-      if (equipmentError) throw equipmentError;
-
-      // Buscar pedidos do dia
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          order_items(quantity, product:products(name)),
-          user:profiles!orders_user_id_fkey(first_name, last_name, email)
-        `)
-        .eq("branch_id", branchId)
-        .gte("created_at", startOfToday)
-        .lte("created_at", endOfToday)
-        .eq("status", "confirmed");
-
-      if (ordersError) throw ordersError;
-
-      // Combinar todos os dados
-      const allReservations = [
-        ...(roomBookings || []).map(booking => ({
-          ...booking,
-          type: "room" as const,
-          title: booking.room?.name || "Sala",
-          time: booking.start_time,
-          details: `${format(new Date(booking.start_time), "HH:mm")} - ${format(new Date(booking.end_time), "HH:mm")}`
-        })),
-        ...(equipmentBookings || []).map(booking => ({
-          ...booking,
-          type: "equipment" as const,
-          title: booking.equipment?.name || "Equipamento",
-          time: booking.start_time,
-          details: `${booking.quantity}x - ${format(new Date(booking.start_time), "HH:mm")} - ${format(new Date(booking.end_time), "HH:mm")}`
-        })),
-        ...(orders || []).map(order => ({
-          ...order,
-          type: "order" as const,
-          title: "Compra de Produtos",
-          time: order.created_at,
-          details: order.order_items?.map((item: any) => `${item.quantity}x ${item.product?.name}`).join(", ") || ""
-        }))
-      ];
-
-      return allReservations.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+      if (error) {
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
+      
+      // Buscar dados dos usuários separadamente
+      const bookingsWithProfiles = await Promise.all(
+        data.map(async (booking) => {
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from("profiles")
+              .select("first_name, last_name, email, phone")
+              .eq("id", booking.user_id)
+              .maybeSingle();
+            
+            return {
+              ...booking,
+              profiles: profileError || !profileData
+                ? { first_name: 'Usuário', last_name: 'Desconhecido', email: '', phone: '' }
+                : profileData
+            };
+            
+          } catch (err) {
+            return {
+              ...booking,
+              profiles: { first_name: 'Usuário', last_name: 'Desconhecido', email: '', phone: '' }
+            };
+          }
+        })
+      );
+      
+      return bookingsWithProfiles;
     },
     enabled: !!branchId,
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchInterval: 30000
   });
 
-  const filteredData = todayData.filter(item => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    
-    // Use helper functions for safe access
-    const userName = getUserName(item.user).toLowerCase();
-    const userEmail = getUserEmail(item.user).toLowerCase();
-    const title = item.title?.toLowerCase() || "";
-    
-    return userName.includes(searchLower) || 
-           userEmail.includes(searchLower) || 
-           title.includes(searchLower);
-  });
+  const isLoading = roomsLoading || bookingsLoading;
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "room":
-        return <Calendar className="h-4 w-4" />;
-      case "equipment":
-        return <Clock className="h-4 w-4" />;
-      case "order":
-        return <Package className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTypeBadge = (type: string) => {
-    const typeMap: Record<string, { label: string; variant: any }> = {
-      room: { label: "Sala", variant: "default" },
-      equipment: { label: "Equipamento", variant: "secondary" },
-      order: { label: "Produto", variant: "outline" },
+  // Agrupar reservas por sala
+  const roomsWithBookings = rooms.map(room => {
+    const bookings = roomBookings.filter(booking => {
+      const match = booking.room_id === room.id;
+      return match;
+    });
+    
+    const result = {
+      ...room,
+      bookings: bookings.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     };
+    
+    return result;
+  });
 
-    const typeInfo = typeMap[type] || { label: type, variant: "secondary" };
-    return <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>;
+  // Filtrar salas baseado na busca
+  const filteredRooms = roomsWithBookings.filter(room => {
+    if (!searchTerm) {
+      return true;
+    }
+    
+    const searchLower = searchTerm.toLowerCase();
+    const roomName = room.name?.toLowerCase() || "";
+    
+    const hasMatchingBooking = room.bookings.some(booking => {
+      const userName = getUserName(booking.profiles).toLowerCase();
+      const userEmail = getUserEmail(booking.profiles).toLowerCase();
+      return userName.includes(searchLower) || userEmail.includes(searchLower);
+    });
+    
+    const roomNameMatch = roomName.includes(searchLower);
+    return roomNameMatch || hasMatchingBooking;
+  });
+
+  // Função para obter status da sala
+  const getRoomStatus = (bookings: any[]) => {
+    if (bookings.length === 0) {
+      return { status: "Livre", variant: "secondary" as const };
+    }
+    
+    const now = new Date();
+    
+    const currentBooking = bookings.find(booking => {
+      const start = new Date(booking.start_time);
+      const end = new Date(booking.end_time);
+      const isCurrentlyActive = now >= start && now <= end;
+      return isCurrentlyActive;
+    });
+    
+    if (currentBooking) {
+      return { status: "Ocupada", variant: "destructive" as const };
+    }
+    
+    const nextBooking = bookings.find(booking => {
+      const start = new Date(booking.start_time);
+      const isFuture = start > now;
+      return isFuture;
+    });
+    
+    if (nextBooking) {
+      return { status: "Reservada", variant: "default" as const };
+    }
+    
+    return { status: "Livre", variant: "secondary" as const };
   };
 
-  const getUserName = (user: any) => {
-    if (!user || typeof user !== 'object') return "Usuário não encontrado";
-    if (!('first_name' in user) || !('last_name' in user)) return "Usuário não encontrado";
-    return `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Usuário não encontrado";
+  const getUserName = (profiles: any) => {
+    if (!profiles || typeof profiles !== 'object') {
+      return "Usuário não encontrado";
+    }
+    if (!('first_name' in profiles) || !('last_name' in profiles)) {
+      return "Usuário não encontrado";
+    }
+    return `${profiles.first_name || ""} ${profiles.last_name || ""}`.trim() || "Usuário não encontrado";
   };
 
-  const getUserEmail = (user: any) => {
-    if (!user || typeof user !== 'object') return "";
-    if (!('email' in user)) return "";
-    return user.email || "";
+  const getUserEmail = (profiles: any) => {
+    if (!profiles || typeof profiles !== 'object') {
+      return "";
+    }
+    if (!('email' in profiles)) {
+      return "";
+    }
+    return profiles.email || "";
   };
+
+  const getUserPhone = (profiles: any) => {
+    if (!profiles || typeof profiles !== 'object') {
+      return "";
+    }
+    if (!('phone' in profiles)) {
+      return "";
+    }
+    return profiles.phone || "";
+  };
+
+  const getTotalRevenue = (bookings: any[]) => {
+    return bookings.reduce((total, booking) => total + (booking.total_price || 0), 0);
+  };
+
+  // Estatísticas
+  const totalRooms = filteredRooms.length;
+  
+  const occupiedRooms = filteredRooms.filter(room => {
+    const status = getRoomStatus(room.bookings);
+    return status.status === "Ocupada";
+  }).length;
+  
+  const reservedRooms = filteredRooms.filter(room => getRoomStatus(room.bookings).status === "Reservada").length;
+  
+  const freeRooms = filteredRooms.filter(room => getRoomStatus(room.bookings).status === "Livre").length;
+  
+  const totalBookings = roomBookings.length;
+  
+  const totalRevenue = getTotalRevenue(roomBookings);
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-6 w-6" />
-              Reservas de Hoje - {format(today, "dd/MM/yyyy")}
-            </CardTitle>
-            <Badge variant="outline" className="text-lg px-3 py-1">
-              {filteredData.length} reservas
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-6">
-            <Input
-              placeholder="Buscar por nome, email ou item..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Detalhes</TableHead>
-                <TableHead>Horário</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item) => (
-                <TableRow key={`${item.type}-${item.id}`}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      {getUserName(item.user)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getUserEmail(item.user)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getTypeIcon(item.type)}
-                      {getTypeBadge(item.type)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.title}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {item.details}
-                  </TableCell>
-                  <TableCell>
-                    {item.type === "order" 
-                      ? format(new Date(item.time), "HH:mm")
-                      : item.details
-                    }
-                  </TableCell>
-                  <TableCell>
-                    R$ {"total_price" in item ? (item.total_price?.toFixed(2) || "0,00") : 
-                        "total_amount" in item ? (item.total_amount?.toFixed(2) || "0,00") : "0,00"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="default">
-                      Confirmado
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {filteredData.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm 
-                ? "Nenhuma reserva encontrada com os critérios de busca."
-                : "Nenhuma reserva confirmada para hoje."
-              }
+      {/* Header com estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-8 w-8 text-blue-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Data</p>
+                <p className="text-lg font-semibold">{format(today, "dd/MM/yyyy", { locale: ptBR })}</p>
+              </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <Clock className="h-8 w-8 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Reservas</p>
+                <p className="text-lg font-semibold">{totalBookings}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <Package className="h-8 w-8 text-purple-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Receita do Dia</p>
+                <p className="text-lg font-semibold">R$ {totalRevenue.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtro de busca */}
+      <Card>
+        <CardContent className="p-6">
+          <Input
+            placeholder="Buscar por sala ou cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-md"
+          />
         </CardContent>
       </Card>
+
+      {/* Grid de salas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredRooms.map((room) => {
+          const roomStatus = getRoomStatus(room.bookings);
+          
+          return (
+            <Card key={room.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{room.name}</CardTitle>
+                  <Badge variant={roomStatus.variant}>{roomStatus.status}</Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    <span>{room.capacity} pessoas</span>
+                  </div>
+                  {room.location && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      <span>{room.location}</span>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Reservas hoje:</span>
+                    <Badge variant="outline">{room.bookings.length}</Badge>
+                  </div>
+                  
+                  {room.bookings.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      <p>Próxima reserva:</p>
+                      <p className="font-medium text-foreground">
+                        {format(new Date(room.bookings[0].start_time), "HH:mm", { locale: ptBR })} - {getUserName(room.bookings[0].profiles)}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => setSelectedRoom(room)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </Button>
+                    </DialogTrigger>
+                    
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5" />
+                          {room.name} - {format(today, "dd/MM/yyyy", { locale: ptBR })}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Visualize todas as reservas e informações detalhadas desta sala para o dia de hoje.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        {/* Informações da sala */}
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Capacidade</p>
+                            <p className="font-medium">{room.capacity} pessoas</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Localização</p>
+                            <p className="font-medium">{room.location || "Não informado"}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Status Atual</p>
+                            <Badge variant={roomStatus.variant}>{roomStatus.status}</Badge>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Receita do Dia</p>
+                            <p className="font-medium">R$ {getTotalRevenue(room.bookings).toFixed(2)}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Lista de reservas */}
+                        <div>
+                          <h4 className="font-semibold mb-3">Reservas do Dia ({room.bookings.length})</h4>
+                          
+                          {room.bookings.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                              <p>Nenhuma reserva para hoje</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {room.bookings.map((booking, index) => (
+                                <div key={booking.id} className="border rounded-lg p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline">{index + 1}</Badge>
+                                      <span className="font-medium">
+                                        {format(new Date(booking.start_time), "HH:mm", { locale: ptBR })} - 
+                                        {format(new Date(booking.end_time), "HH:mm", { locale: ptBR })}
+                                      </span>
+                                    </div>
+                                    <Badge variant="default">R$ {booking.total_price?.toFixed(2) || "0,00"}</Badge>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <p className="text-muted-foreground">Cliente</p>
+                                      <p className="font-medium">{getUserName(booking.profiles)}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Email</p>
+                                      <p className="font-medium">{getUserEmail(booking.profiles)}</p>
+                                    </div>
+                                    {getUserPhone(booking.profiles) && (
+                                      <div>
+                                        <p className="text-muted-foreground">Telefone</p>
+                                        <p className="font-medium">{getUserPhone(booking.profiles)}</p>
+                                      </div>
+                                    )}
+                                    <div>
+                                      <p className="text-muted-foreground">Status</p>
+                                      <Badge variant="default">{booking.status === "paid" ? "Pago" : "Confirmado"}</Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  {booking.notes && (
+                                    <div className="mt-3 pt-3 border-t">
+                                      <p className="text-muted-foreground text-sm">Observações</p>
+                                      <p className="text-sm">{booking.notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Estado vazio */}
+      {filteredRooms.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Calendar className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma sala encontrada</h3>
+            <p className="text-muted-foreground">
+              {searchTerm 
+                ? "Tente ajustar os critérios de busca."
+                : "Não há salas cadastradas para esta filial."
+              }
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Loading state */}
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-6 bg-muted rounded w-3/4"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="h-4 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded w-2/3"></div>
+                  <div className="h-10 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

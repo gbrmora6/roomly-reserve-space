@@ -11,12 +11,20 @@ import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
 import { CityFilter } from "@/components/shared/CityFilter";
 import { useBranchByCity } from "@/hooks/useBranchByCity";
+import { useCityValidation } from "@/hooks/useCityValidation";
+import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
 
 const ProductStore = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [selectedCity, setSelectedCity] = useState("all");
+  const [showCityAlert, setShowCityAlert] = useState(true);
+
+  const { isCityRequired, validateCitySelection } = useCityValidation({
+    selectedCity,
+    pageName: "produtos"
+  });
 
   const { data: branchId } = useBranchByCity(selectedCity);
 
@@ -66,6 +74,11 @@ const ProductStore = () => {
   })) || [];
 
   const handleItemAction = (id: string) => {
+    // Validar se a cidade foi selecionada antes de permitir a navegação
+    if (!validateCitySelection()) {
+      return;
+    }
+    
     // Navigate to product detail page
     window.location.href = `/store/product/${id}`;
   };
@@ -82,6 +95,13 @@ const ProductStore = () => {
           title="Loja de Produtos"
           description="Encontre os melhores produtos para suas necessidades"
         />
+        
+        {isCityRequired && showCityAlert && (
+          <CityRequiredAlert 
+            pageName="produtos" 
+            onDismiss={() => setShowCityAlert(false)}
+          />
+        )}
 
         <FilterBar
           searchTerm={searchTerm}

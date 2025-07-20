@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { WeekdaySelector } from "@/components/shared/WeekdaySelector";
+import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 import React, { useState } from "react";
 
 interface Room {
@@ -75,6 +76,7 @@ const RoomForm: React.FC = () => {
   const navigate = useNavigate();
   const isEditing = !!id;
   const { user } = useAuth();
+  const { logCreate, logUpdate } = useAdminCRUDLogger();
   
   const [room, setRoom] = useState<Partial<Room>>({
     name: "",
@@ -95,21 +97,30 @@ const RoomForm: React.FC = () => {
     queryKey: ["room", id],
     enabled: isEditing,
     queryFn: async () => {
+      console.log("=== CARREGANDO DADOS DA SALA PARA EDIÇÃO ===");
+      console.log("ID da sala:", id);
+      
       const { data: roomInfo, error: roomError } = await supabase
         .from("rooms")
         .select("*")
         .eq("id", id)
         .single();
       
+      console.log("Dados da sala carregados:", { roomInfo, roomError });
+      
       const { data: photoData } = await supabase
         .from("room_photos")
         .select("*")
         .eq("room_id", id);
       
+      console.log("Fotos carregadas:", photoData);
+      
       const { data: scheduleData } = await supabase
         .from("room_schedules")
         .select("*")
         .eq("room_id", id);
+      
+      console.log("Horários carregados:", scheduleData);
       
       setRoom(roomInfo || {});
       setPhotos(photoData || []);
@@ -118,6 +129,10 @@ const RoomForm: React.FC = () => {
       if (scheduleData) {
         setSchedules(scheduleData);
       }
+      
+      console.log("Estado atualizado - room:", roomInfo);
+      console.log("Estado atualizado - photos:", photoData);
+      console.log("Estado atualizado - schedules:", scheduleData);
       
       return { room: roomInfo, photos: photoData, schedules: scheduleData };
     },
@@ -241,18 +256,30 @@ const RoomForm: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    console.log("=== INÍCIO DO SUBMIT DA SALA ===");
+    console.log("Modo de edição:", isEditing);
+    console.log("ID da sala:", id);
+    console.log("Dados da sala:", room);
+    console.log("Usuário:", user);
+    console.log("Branch ID:", user?.user_metadata?.branch_id);
+    console.log("Horários:", schedules);
+    console.log("Arquivos:", files);
+
     try {
       if (!room.name) {
+        console.error("Nome da sala é obrigatório");
         throw new Error("O nome da sala é obrigatório");
       }
       // Verifica sessão e branch_id
       const branchId = user?.user_metadata?.branch_id;
       if (!user || !branchId) {
+        console.error("Usuário ou branch_id inválido:", { user, branchId });
         throw new Error("Sessão expirada ou usuário sem filial associada. Faça login novamente.");
       }
       let roomId = id;
       let errorRoom;
       if (!isEditing) {
+        console.log("=== CRIANDO NOVA SALA ===");
         // Criação: insert
         const { data, error } = await supabase
           .from("rooms")
@@ -269,9 +296,34 @@ const RoomForm: React.FC = () => {
           })
           .select("id")
           .single();
+        console.log("Resultado da criação:", { data, error });
         errorRoom = error;
         roomId = data?.id;
+
+        // Log da criação
+        if (!error && roomId) {
+          await logCreate('room', roomId, {
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables,
+            price_per_hour: room.price_per_hour,
+            branch_id: branchId,
+          });
+        }
       } else {
+        console.log("=== EDITANDO SALA EXISTENTE ===");
+        console.log("Dados para atualização:", {
+          name: room.name,
+          description: room.description,
+          has_wifi: room.has_wifi,
+          has_ac: room.has_ac,
+          has_chairs: room.has_chairs,
+          has_tables: room.has_tables,
+          price_per_hour: room.price_per_hour,
+        });
         // Edição: update
         const { error } = await supabase
           .from("rooms")
@@ -285,21 +337,40 @@ const RoomForm: React.FC = () => {
             price_per_hour: room.price_per_hour,
           })
           .eq("id", id);
+        console.log("Resultado da edição:", { error });
         errorRoom = error;
+
+        // Log da atualização
+        if (!error) {
+          await logUpdate('room', id, {
+            name: room.name,
+            description: room.description,
+            has_wifi: room.has_wifi,
+            has_ac: room.has_ac,
+            has_chairs: room.has_chairs,
+            has_tables: room.has_tables,
+            price_per_hour: room.price_per_hour,
+          });
+        }
       }
       if (errorRoom || !roomId) {
+        console.error("Erro ao criar/atualizar sala:", { errorRoom, roomId });
         throw new Error(errorRoom?.message || "Erro desconhecido ao criar/atualizar sala");
       }
 
+      console.log("=== GERENCIANDO HORÁRIOS ===");
       // Gerenciar schedules
       if (isEditing) {
+        console.log("Removendo horários antigos para sala:", roomId);
         // Ao editar, primeiro remove os schedules antigos
         const { error: deleteSchedulesError } = await supabase
           .from("room_schedules")
           .delete()
           .eq("room_id", roomId);
 
+        console.log("Resultado da remoção de horários:", { deleteSchedulesError });
         if (deleteSchedulesError) {
+          console.error("Erro ao remover horários antigos:", deleteSchedulesError);
           throw new Error(deleteSchedulesError.message || "Erro ao remover horários antigos");
         }
       }
@@ -314,27 +385,38 @@ const RoomForm: React.FC = () => {
           branch_id: branchId,
         }));
 
+        console.log("Inserindo novos horários:", schedulesToInsert);
         const { error: errorInsertSchedules } = await supabase
           .from("room_schedules")
           .insert(schedulesToInsert);
 
+        console.log("Resultado da inserção de horários:", { errorInsertSchedules });
         if (errorInsertSchedules) {
+          console.error("Erro ao inserir horários:", errorInsertSchedules);
           throw new Error(errorInsertSchedules.message || "Erro ao inserir horários");
         }
+      } else {
+        console.log("Nenhum horário para inserir");
       }
 
+      console.log("=== GERENCIANDO FOTOS ===");
       if (files.length > 0) {
+        console.log("Fazendo upload de", files.length, "arquivos");
         for (const file of files) {
+          console.log("Processando arquivo:", file.name);
           const fileExt = file.name.split(".").pop();
           const fileName = `${uuidv4()}.${fileExt}`;
           const filePath = `${roomId}/${fileName}`;
 
+          console.log("Fazendo upload para:", filePath);
           const { error: uploadError } = await supabase
             .storage
             .from("room-photos")
             .upload(filePath, file);
 
+          console.log("Resultado do upload:", { uploadError });
           if (uploadError) {
+            console.error("Erro no upload:", uploadError);
             throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
           }
 
@@ -343,6 +425,7 @@ const RoomForm: React.FC = () => {
             .from("room-photos")
             .getPublicUrl(filePath);
 
+          console.log("URL pública gerada:", publicURLData.publicUrl);
           const { error: photoInsertError } = await supabase
             .from("room_photos")
             .insert({
@@ -351,25 +434,34 @@ const RoomForm: React.FC = () => {
               branch_id: branchId,
             });
 
+          console.log("Resultado da inserção da foto:", { photoInsertError });
           if (photoInsertError) {
+            console.error("Erro ao salvar foto:", photoInsertError);
             throw new Error(photoInsertError.message || "Erro ao salvar imagem da sala");
           }
         }
+      } else {
+        console.log("Nenhum arquivo para upload");
       }
 
+      console.log("=== SUCESSO ===");
       toast({
         title: isEditing ? "Sala atualizada com sucesso" : "Sala criada com sucesso",
       });
 
+      console.log("Navegando para /admin/rooms");
       navigate("/admin/rooms");
 
     } catch (error: any) {
+      console.error("=== ERRO NO SUBMIT ===", error);
+      console.error("Stack trace:", error.stack);
       toast({
         variant: "destructive",
         title: isEditing ? "Erro ao atualizar sala" : "Erro ao criar sala",
         description: error.message || "Erro inesperado",
       });
     } finally {
+      console.log("=== FIM DO SUBMIT ===");
       setIsSubmitting(false);
     }
   };

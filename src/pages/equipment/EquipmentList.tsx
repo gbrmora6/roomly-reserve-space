@@ -7,9 +7,9 @@ import { FilterBar } from "@/components/shared/FilterBar";
 import { ListingGrid } from "@/components/shared/ListingGrid";
 import { Database } from "@/integrations/supabase/types";
 import { ReserveEquipmentModal } from "@/components/equipment/ReserveEquipmentModal";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { useFilteredEquipment } from "@/hooks/useFilteredEquipment";
+import { useCityValidation } from "@/hooks/useCityValidation";
+import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
 import { 
   Wrench, 
   Clock, 
@@ -17,22 +17,11 @@ import {
   Search
 } from "lucide-react";
 
-// Use the correct enum type for open_days
-interface Equipment {
-  id: string;
-  name: string;
-  description: string | null;
-  quantity: number;
-  price_per_hour: number;
+type EquipmentWithAvailability = Database["public"]["Tables"]["equipment"]["Row"] & {
+  equipment_photos: { id: string; url: string }[];
+  branches?: { id: string; name: string; city: string };
   available: number;
-  open_time?: string;
-  close_time?: string;
-  open_days?: Database["public"]["Enums"]["weekday"][];
-}
-
-interface EquipmentWithAvailability extends Equipment {
-  available: number;
-}
+};
 
 const EquipmentList: React.FC = () => {
   const { user } = useAuth();
@@ -40,6 +29,13 @@ const EquipmentList: React.FC = () => {
   const [selectedCity, setSelectedCity] = useState("all");
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+  const [showCityAlert, setShowCityAlert] = useState(true);
+
+  const { isCityRequired, validateCitySelection } = useCityValidation({
+    selectedCity,
+    pageName: "equipamentos"
+  });
+
   
   // Estado dos filtros incluindo cidade
   const [filters, setFilters] = useState({
@@ -51,249 +47,21 @@ const EquipmentList: React.FC = () => {
   
   const { formatAddress } = useCompanyAddress();
 
-  // Query para buscar equipamentos com filtros aplicados - seguindo a mesma lógica das salas
-  const { data: equipment, isLoading, error, refetch } = useQuery({
-    queryKey: ["equipment", selectedCity, filters],
-    queryFn: async () => {
-      console.log("Buscando equipamentos com filtros:", { selectedCity, filters });
-
-      // Se tem filtros de data e horário, buscar equipamentos disponíveis usando get_equipment_availability
-      if (filters.date && filters.startTime && filters.endTime) {
-        const dateStr = format(filters.date, 'yyyy-MM-dd');
-        const startHour = parseInt(filters.startTime.split(':')[0]);
-        const endHour = parseInt(filters.endTime.split(':')[0]);
-        
-        console.log("Filtrando equipamentos para data:", dateStr);
-        console.log("Horário de início:", filters.startTime);
-        console.log("Horário de término:", filters.endTime);
-
-        try {
-          // Buscar filiais baseado no filtro de cidade
-          let branchQuery = supabase.from('branches').select('id');
-          if (selectedCity !== "all") {
-            branchQuery = branchQuery.eq('city', selectedCity);
-          }
-          
-          const { data: branches, error: branchError } = await branchQuery;
-          if (branchError) {
-            console.error("Erro ao buscar filiais:", branchError);
-            throw branchError;
-          }
-          
-          const branchIds = branches.map(branch => branch.id);
-          console.log("IDs das filiais filtradas:", branchIds);
-
-          // Buscar todos os equipamentos ativos das filiais filtradas
-          let equipmentQuery = supabase
-            .from('equipment')
-            .select(`
-              *,
-              equipment_photos (
-                id,
-                url
-              )
-            `)
-            .eq('is_active', true);
-          
-          if (branchIds.length > 0) {
-            equipmentQuery = equipmentQuery.in('branch_id', branchIds);
-          }
-
-          const { data: allEquipment, error: equipmentError } = await equipmentQuery;
-
-          if (equipmentError) {
-            console.error("Erro ao buscar equipamentos:", equipmentError);
-            throw equipmentError;
-          }
-
-          // Verificar disponibilidade de cada equipamento usando a função get_equipment_availability
-          const availableEquipment = [];
-          
-          for (const equip of allEquipment) {
-            // Buscar disponibilidade do equipamento para a data selecionada
-            const { data: availability, error: availabilityError } = await supabase
-              .rpc('get_equipment_availability', {
-                p_equipment_id: equip.id,
-                p_date: dateStr,
-                p_requested_quantity: 1
-              });
-
-            if (availabilityError) {
-              console.error(`Erro ao verificar disponibilidade do equipamento ${equip.name}:`, availabilityError);
-              continue;
-            }
-
-            // Verificar se todo o período solicitado está disponível de forma contínua
-            if (availability && availability.length > 0) {
-              const requestedHours = [];
-              for (let hour = startHour; hour < endHour; hour++) {
-                requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
-              }
-
-              // Primeiro, verificar se o período está dentro do horário de funcionamento
-              const allAvailabilityHours = availability.map(slot => slot.hour);
-              const allRequestedHoursInOperatingTime = requestedHours.every(hour => allAvailabilityHours.includes(hour));
-              
-              if (!allRequestedHoursInOperatingTime) {
-                console.log(`Equipamento ${equip.name} não funciona em todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                continue;
-              }
-
-              // Se está dentro do horário de funcionamento, verificar disponibilidade
-              const availableSlots = availability.filter(slot => slot.is_available);
-              const availableHours = availableSlots.map(slot => slot.hour);
-              const allHoursAvailable = requestedHours.every(hour => availableHours.includes(hour));
-              
-              if (allHoursAvailable) {
-                console.log(`Equipamento ${equip.name} disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-                availableEquipment.push({
-                  ...equip,
-                  available: Math.min(...availableSlots.map(slot => slot.available_quantity))
-                });
-              } else {
-                console.log(`Equipamento ${equip.name} não disponível para todo o período solicitado (${filters.startTime} - ${filters.endTime})`);
-              }
-            } else {
-              console.log(`Equipamento ${equip.name} fechado na data ${dateStr}`);
-            }
-          }
-
-          console.log("Equipamentos disponíveis:", availableEquipment.length);
-          return availableEquipment as EquipmentWithAvailability[];
-        } catch (error) {
-          console.error("Erro na consulta de filtro de equipamentos:", error);
-          throw error;
-        }
-      }
-
-      // Se há filtro de data (sem horário), verificar disponibilidade nos dias de funcionamento
-      if (filters.date) {
-        const dateStr = format(filters.date, 'yyyy-MM-dd');
-        const dayOfWeek = filters.date.getDay(); // 0=domingo, 1=segunda, etc.
-        
-        console.log("Filtrando equipamentos para data:", dateStr, "Dia da semana:", dayOfWeek);
-
-        try {
-          // Buscar filiais baseado no filtro de cidade
-          let branchQuery = supabase.from('branches').select('id');
-          if (selectedCity !== "all") {
-            branchQuery = branchQuery.eq('city', selectedCity);
-          }
-          
-          const { data: branches, error: branchError } = await branchQuery;
-          if (branchError) {
-            console.error("Erro ao buscar filiais:", branchError);
-            throw branchError;
-          }
-          
-          const branchIds = branches.map(branch => branch.id);
-          console.log("IDs das filiais filtradas:", branchIds);
-
-          // Buscar todos os equipamentos ativos das filiais filtradas
-          let equipmentQuery = supabase
-            .from('equipment')
-            .select(`
-              *,
-              equipment_photos (
-                id,
-                url
-              ),
-              equipment_schedules (
-                weekday,
-                start_time,
-                end_time
-              )
-            `)
-            .eq('is_active', true);
-          
-          if (branchIds.length > 0) {
-            equipmentQuery = equipmentQuery.in('branch_id', branchIds);
-          }
-
-          const { data: allEquipment, error: equipmentError } = await equipmentQuery;
-
-          if (equipmentError) {
-            console.error("Erro ao buscar equipamentos:", equipmentError);
-            throw equipmentError;
-          }
-
-          // Filtrar equipamentos que funcionam no dia da semana selecionado
-          const availableEquipment = allEquipment.filter(equip => {
-            // Verificar se o equipamento tem equipment_schedules para este dia
-            if (equip.equipment_schedules && equip.equipment_schedules.length > 0) {
-              const weekdayMap: Record<number, string> = {
-                0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
-                4: 'thursday', 5: 'friday', 6: 'saturday'
-              };
-              const weekdayName = weekdayMap[dayOfWeek];
-              
-              const hasScheduleForDay = equip.equipment_schedules.some(
-                schedule => schedule.weekday === weekdayName
-              );
-              
-              if (hasScheduleForDay) {
-                console.log(`Equipamento ${equip.name} tem horário específico para ${weekdayName}`);
-                return true;
-              }
-            }
-            
-            // Se não tem equipment_schedules específico para o dia, o equipamento não funciona
-            console.log(`Equipamento ${equip.name} não tem horário configurado para este dia`);
-            
-            console.log(`Equipamento ${equip.name} não funciona no dia selecionado`);
-            return false;
-          }).map(equip => ({ ...equip, available: equip.quantity }));
-
-          console.log("Equipamentos disponíveis no dia selecionado:", availableEquipment.length);
-          return availableEquipment as EquipmentWithAvailability[];
-        } catch (error) {
-          console.error("Erro na consulta de filtro por data:", error);
-          throw error;
-        }
-      }
-
-      // Buscar todos os equipamentos ativos (sem filtros específicos)
-      let query = supabase
-        .from("equipment")
-        .select(`
-          *,
-          equipment_photos (
-            id,
-            url
-          )
-        `)
-        .eq("is_active", true);
-
-      // Aplicar filtro de cidade se selecionado
-      if (selectedCity !== "all") {
-        // Buscar IDs das filiais da cidade selecionada
-        const { data: branches, error: branchError } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('city', selectedCity);
-        
-        if (branchError) {
-          console.error("Erro ao buscar filiais:", branchError);
-          throw branchError;
-        }
-        
-        const branchIds = branches.map(branch => branch.id);
-        if (branchIds.length > 0) {
-          query = query.in('branch_id', branchIds);
-        }
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return (data as any[]).map(equip => ({ ...equip, available: equip.quantity })) as EquipmentWithAvailability[];
-    },
+  const {
+    data: equipment,
+    isLoading,
+    error,
+  } = useFilteredEquipment({
+    searchTerm,
+    selectedCity,
+    selectedDate: filters.date,
+    startTime: filters.startTime,
+    endTime: filters.endTime,
   });
 
   // Handler para aplicar filtros
   const handleFilter = () => {
     console.log("Aplicando filtros:", filters);
-    refetch();
   };
 
   // Handler para limpar filtros
@@ -337,6 +105,13 @@ const EquipmentList: React.FC = () => {
           title="Equipamentos Disponíveis"
           description="Encontre e reserve equipamentos para suas necessidades"
         />
+        
+        {isCityRequired && showCityAlert && (
+          <CityRequiredAlert 
+            pageName="equipamentos" 
+            onDismiss={() => setShowCityAlert(false)}
+          />
+        )}
 
         <FilterBar
           searchTerm={searchTerm}
@@ -361,14 +136,14 @@ const EquipmentList: React.FC = () => {
           error={error}
           onItemAction={(id) => {
             if (user) {
+              // Validar se a cidade foi selecionada antes de permitir a reserva
+              if (!validateCitySelection()) {
+                return;
+              }
+              
               const equipment = filteredEquipments?.find(e => e.id === id);
               if (equipment) {
-                // Converter o tipo para o formato correto
-                const equipmentForModal: Equipment = {
-                  ...equipment,
-                  open_days: equipment.open_days as Database["public"]["Enums"]["weekday"][]
-                };
-                setSelectedEquipment(equipmentForModal);
+                setSelectedEquipment(equipment);
                 setIsReserveModalOpen(true);
               }
             }

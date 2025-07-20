@@ -10,8 +10,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ListingGrid } from "@/components/shared/ListingGrid";
 import { CityFilter } from "@/components/shared/CityFilter";
+import { DateFilter } from "@/components/filters/DateFilter";
+import { TimeRangeFilter } from "@/components/filters/TimeRangeFilter";
+import { useFilteredRooms } from "@/hooks/useFilteredRooms";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Database } from "@/integrations/supabase/types";
+import { useCityValidation } from "@/hooks/useCityValidation";
+import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
 import { 
   Wifi, 
   Monitor, 
@@ -21,12 +27,25 @@ import {
   Search
 } from "lucide-react";
 
+
+
+
 const RoomList: React.FC = () => {
   const { user } = useAuth();
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [startTime, setStartTime] = useState<string>("all");
+  const [endTime, setEndTime] = useState<string>("all");
+  const [showCityAlert, setShowCityAlert] = useState(true);
+
+  const { isCityRequired, validateCitySelection } = useCityValidation({
+    selectedCity,
+    pageName: "salas"
+  });
+
   
   // Estado para armazenar endereço da empresa
   const [companyAddress, setCompanyAddress] = useState({
@@ -57,52 +76,23 @@ const RoomList: React.FC = () => {
     fetchCompanyProfile();
   }, []);
 
-  // Query para buscar salas ativas
-  const { data: rooms, isLoading, error } = useQuery({
-    queryKey: ["rooms", selectedCity],
-    queryFn: async () => {
-      console.log("Buscando salas ativas...");
-
-      let roomQuery = supabase
-        .from('rooms')
-        .select(`
-          *,
-          room_photos (
-            id,
-            url
-          )
-        `)
-        .eq('is_active', true);
-
-      // Aplicar filtro de cidade se selecionado
-      if (selectedCity !== "all") {
-        // Buscar IDs das filiais da cidade selecionada
-        const { data: branches, error: branchError } = await supabase
-          .from('branches')
-          .select('id')
-          .eq('city', selectedCity);
-        
-        if (branchError) {
-          console.error("Erro ao buscar filiais:", branchError);
-          throw branchError;
-        }
-        
-        const branchIds = branches.map(branch => branch.id);
-        if (branchIds.length > 0) {
-          roomQuery = roomQuery.in('branch_id', branchIds);
-        }
-      }
-        
-      const { data, error } = await roomQuery;
-      if (error) throw error;
-      
-      return data as unknown as Room[];
-    },
+  // Query para buscar salas filtradas
+  const { data: rooms, isLoading, error } = useFilteredRooms({
+    searchTerm,
+    selectedCity,
+    selectedDate,
+    startTime,
+    endTime,
   });
 
   // Handler para reservar sala
   const handleReserve = (id: string) => {
     if (user) {
+      // Validar se a cidade foi selecionada antes de permitir a reserva
+      if (!validateCitySelection()) {
+        return;
+      }
+      
       const room = rooms?.find(r => r.id === id);
       if (room) {
         setSelectedRoom(room);
@@ -118,11 +108,8 @@ const RoomList: React.FC = () => {
     return `${companyAddress.street}, ${companyAddress.number} - ${companyAddress.neighborhood}, ${companyAddress.city}`;
   };
 
-  // Filtrar salas por termo de busca
-  const filteredRooms = rooms?.filter(room =>
-    room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (room.description && room.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // As salas já vêm filtradas do hook useFilteredRooms
+  const filteredRooms = rooms;
 
   // Converter salas para o formato do ItemCard
   const roomsForGrid = filteredRooms?.map(room => ({
@@ -147,15 +134,22 @@ const RoomList: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
         <PageHeader
           title="Salas Disponíveis"
           description="Encontre e reserve a sala perfeita para suas necessidades"
         />
-
+        
+        {isCityRequired && showCityAlert && (
+          <CityRequiredAlert 
+            pageName="salas" 
+            onDismiss={() => setShowCityAlert(false)}
+          />
+        )}
+        
         {/* Filtros simplificados */}
-        <Card className="mb-8 glass-intense border-primary/20 shadow-3d">
-          <CardContent className="p-6">
+        <Card className="mb-6 md:mb-8 glass-intense border-primary/20 shadow-3d">
+          <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
               {/* Barra de busca */}
               <div className="relative">
@@ -164,19 +158,43 @@ const RoomList: React.FC = () => {
                   placeholder="Buscar salas por nome..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-11 text-base glass-intense border-primary/20 focus:border-electric-blue/50 focus:shadow-glow transition-all duration-200"
+                  className="pl-10 h-10 md:h-11 text-sm md:text-base glass-intense border-primary/20 focus:border-electric-blue/50 focus:shadow-glow transition-all duration-200"
                 />
               </div>
               
-              {/* Filtro de cidade */}
-              <div className="flex items-center gap-4">
-                <label className="text-sm font-medium">Cidade:</label>
-                <div className="w-64">
-                  <CityFilter
-                    selectedCity={selectedCity}
-                    onCityChange={setSelectedCity}
-                    placeholder="Todas as cidades"
-                  />
+              {/* Filtros */}
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                  <label className="text-sm font-medium whitespace-nowrap">Cidade:</label>
+                  <div className="w-full sm:w-48">
+                    <CityFilter
+                      selectedCity={selectedCity}
+                      onCityChange={setSelectedCity}
+                      placeholder="Todas as cidades"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                  <label className="text-sm font-medium whitespace-nowrap">Data:</label>
+                  <div className="w-full sm:w-auto">
+                    <DateFilter
+                      selectedDate={selectedDate}
+                      onDateChange={setSelectedDate}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                  <label className="text-sm font-medium whitespace-nowrap">Horário:</label>
+                  <div className="w-full sm:w-auto">
+                    <TimeRangeFilter
+                      startTime={startTime}
+                      endTime={endTime}
+                      onStartTimeChange={setStartTime}
+                      onEndTimeChange={setEndTime}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

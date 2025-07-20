@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PaymentStatusManager } from "@/components/admin/PaymentStatusManager";
+import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
+import { RefundButton } from "@/components/admin/RefundButton";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -34,8 +36,12 @@ interface Equipment {
 }
 
 interface BookingEquipment {
+  id: string;
   quantity: number;
   equipment: Equipment;
+  invoice_url: string | null;
+  invoice_uploaded_at: string | null;
+  invoice_uploaded_by: string | null;
 }
 
 interface Booking {
@@ -48,6 +54,9 @@ interface Booking {
   created_at: string;
   updated_at: string;
   total_price: number;
+  invoice_url: string | null;
+  invoice_uploaded_at: string | null;
+  invoice_uploaded_by: string | null;
   user: User | null;
   room: {
     name: string;
@@ -82,7 +91,7 @@ const AdminEquipmentBookings: React.FC = () => {
       if (!branchId) return [];
       console.log(`Fetching ${activeTab} equipment bookings`);
       try {
-        // Query the booking_equipment table with join to equipment and filter por branch_id
+        // Query the booking_equipment table with join to equipment
         let query = supabase
           .from("booking_equipment")
           .select(`
@@ -97,6 +106,9 @@ const AdminEquipmentBookings: React.FC = () => {
             updated_at,
             total_price,
             user_id,
+            invoice_url,
+            invoice_uploaded_at,
+            invoice_uploaded_by,
             equipment:equipment(
               name,
               price_per_hour,
@@ -114,22 +126,18 @@ const AdminEquipmentBookings: React.FC = () => {
         
         console.log("Equipment booking data retrieved:", equipmentBookingsData?.length || 0, "records");
         
-        // Fetch user profiles separately for each booking
-        const transformedBookings: Booking[] = await Promise.all(
-          (equipmentBookingsData || []).map(async (item) => {
-            // Fetch user profile
-            const { data: userProfile, error: userError } = await supabase
-              .from("profiles")
-              .select("first_name, last_name")
-              .eq("id", item.user_id)
-              .single();
-            
-            if (userError) {
-              console.error("Error fetching user profile for", item.user_id, ":", userError);
-            }
-            
-            // Garantir que temos um objeto user válido mesmo se a busca falhar
-            const user = userProfile || { first_name: '', last_name: '' };
+        // Fetch user profiles separately
+        let transformedBookings: Booking[] = [];
+        
+        if (equipmentBookingsData && equipmentBookingsData.length > 0) {
+          const userIds = [...new Set(equipmentBookingsData.map(item => item.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", userIds);
+
+          transformedBookings = equipmentBookingsData.map((item: any) => {
+            const user = profiles?.find(profile => profile.id === item.user_id) || { first_name: '', last_name: '' };
             
             return {
               id: item.id,
@@ -141,18 +149,25 @@ const AdminEquipmentBookings: React.FC = () => {
               created_at: item.created_at || '',
               updated_at: item.updated_at || '',
               total_price: item.total_price || 0,
+              invoice_url: item.invoice_url,
+              invoice_uploaded_at: item.invoice_uploaded_at,
+              invoice_uploaded_by: item.invoice_uploaded_by,
               user,
               room: null,
               booking_equipment: [{
+                id: item.id,
                 quantity: item.quantity,
+                invoice_url: item.invoice_url,
+                invoice_uploaded_at: item.invoice_uploaded_at,
+                invoice_uploaded_by: item.invoice_uploaded_by,
                 equipment: {
-                  name: (item.equipment as any)?.name || "Equipamento não encontrado",
-                  price_per_hour: (item.equipment as any)?.price_per_hour || 0
+                  name: item.equipment?.name || "Equipamento não encontrado",
+                  price_per_hour: item.equipment?.price_per_hour || 0
                 }
               }]
             };
-          })
-        );
+          });
+        }
         
         console.log("Transformed bookings:", transformedBookings.length);
         return transformedBookings;
@@ -175,11 +190,11 @@ const AdminEquipmentBookings: React.FC = () => {
     let canceladas = 0;
 
     bookings.forEach(booking => {
-      if (booking.status === "confirmed" || booking.status === "pago") {
+      if (booking.status === "paid") {
         pagas++;
-      } else if (booking.status === "pending" || booking.status === "falta pagar") {
+      } else if (booking.status === "in_process" || booking.status === "pre_authorized") {
         pendentes++;
-      } else if (booking.status === "cancelled" || booking.status === "cancelled_unpaid" || booking.status === "cancelado por falta de pagamento") {
+      } else if (booking.status === "recused" || booking.status === "partial_refunded") {
         canceladas++;
       }
     });
@@ -294,9 +309,14 @@ const AdminEquipmentBookings: React.FC = () => {
 
   const translateStatus = (status: BookingStatus): string => {
     switch (status) {
+      case "in_process": return "Em Processamento";
+      case "paid": return "Paga";
+      case "partial_refunded": return "Parcialmente Devolvida";
+      case "pre_authorized": return "Pré-autorizada";
+      case "recused": return "Recusada";
+      // Status legados para compatibilidade
       case "pending": return "Pendente";
       case "confirmed": return "Confirmada";
-      case "cancelled": return "Cancelada";
       default: return status;
     }
   };
@@ -370,11 +390,11 @@ const AdminEquipmentBookings: React.FC = () => {
       {/* Tabs e tabela */}
       <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
         <TabsList>
-          <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
-          <TabsTrigger value="pending">Pendentes</TabsTrigger>
-          <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="all">Todas</TabsTrigger>
+            <TabsTrigger value="paid">Pagas</TabsTrigger>
+            <TabsTrigger value="in_process">Em Processo</TabsTrigger>
+            <TabsTrigger value="recused">Canceladas</TabsTrigger>
+          </TabsList>
         <TabsContent value={activeTab} className="mt-6">
           {isLoading ? (
             <div className="space-y-3">
@@ -449,7 +469,71 @@ const AdminEquipmentBookings: React.FC = () => {
                                 <Eye className="h-4 w-4 mr-1" />
                                 Ver
                               </Button>
-                              {/* Para equipamentos, precisaríamos conectar com orders também */}
+                              {/* Botões específicos para reservas de equipamentos */}
+                              {booking.status === "pago" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from("booking_equipment")
+                                        .update({ status: "recused" })
+                                        .eq("id", booking.id);
+                                      
+                                      if (error) throw error;
+                                      
+                                      toast({
+                                        title: "Estorno realizado",
+                                        description: "A reserva foi cancelada e o estorno foi processado.",
+                                      });
+                                      
+                                      refetch();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Erro ao processar estorno",
+                                        description: error.message || "Erro desconhecido",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Estornar
+                                </Button>
+                              )}
+                              {booking.status === "in_process" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from("booking_equipment")
+                                        .update({ status: "paid" })
+                                        .eq("id", booking.id);
+                                      
+                                      if (error) throw error;
+                                      
+                                      toast({
+                                        title: "Pagamento confirmado",
+                                        description: "O pagamento foi confirmado com sucesso.",
+                                      });
+                                      
+                                      refetch();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Erro ao confirmar pagamento",
+                                        description: error.message || "Erro desconhecido",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  Confirmar Pagamento
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -506,6 +590,17 @@ const AdminEquipmentBookings: React.FC = () => {
                   <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
                 )}
               </div>
+              {selectedBooking.booking_equipment && selectedBooking.booking_equipment.length > 0 && selectedBooking.booking_equipment[0].invoice_url !== undefined && (
+                <div>
+                  <h3 className="font-semibold mb-2">Nota Fiscal</h3>
+                  <InvoiceUpload
+                    recordId={selectedBooking.booking_equipment[0].id}
+                    recordType="equipment_booking"
+                    currentInvoiceUrl={selectedBooking.booking_equipment[0].invoice_url}
+                    onSuccess={() => refetch()}
+                  />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

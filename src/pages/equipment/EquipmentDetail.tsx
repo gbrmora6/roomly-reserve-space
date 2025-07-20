@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Package, Plus, Minus } from "lucide-react";
@@ -27,6 +27,8 @@ const EquipmentDetail = () => {
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [availableHours, setAvailableHours] = useState<string[]>([]);
+  const [blockedHours, setBlockedHours] = useState<string[]>([]);
 
   const { data: equipment, isLoading } = useQuery({
     queryKey: ["equipment-detail", id],
@@ -124,8 +126,67 @@ const EquipmentDetail = () => {
     );
   }
 
-  const availableHours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
-  const blockedHours: string[] = [];
+  // Fetch available hours when date changes
+  useEffect(() => {
+    const fetchAvailableHours = async () => {
+      if (!selectedDate || !equipment) {
+        setAvailableHours([]);
+        setBlockedHours([]);
+        return;
+      }
+
+      try {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        
+        console.log("Buscando disponibilidade para equipamento:", equipment.id, "data:", dateStr);
+        
+        const { data: availabilityData, error } = await supabase
+          .rpc("get_equipment_availability", {
+            p_equipment_id: equipment.id,
+            p_date: dateStr,
+            p_requested_quantity: quantity
+          });
+
+        if (error) {
+          console.error("Error fetching equipment availability:", error);
+          return;
+        }
+
+        console.log("Dados de disponibilidade recebidos:", availabilityData);
+
+        if (!availabilityData || availabilityData.length === 0) {
+          console.log(`Equipamento ${equipment.name} fechado na data ${dateStr}`);
+          setAvailableHours([]);
+          setBlockedHours([]);
+          return;
+        }
+
+        // Separar horários disponíveis e bloqueados
+        const available: string[] = [];
+        const blocked: string[] = [];
+        
+        availabilityData.forEach((slot: any) => {
+          if (slot.is_available) {
+            available.push(slot.hour);
+          } else {
+            blocked.push(slot.hour);
+          }
+        });
+        
+        console.log("Horários disponíveis:", available);
+        console.log("Horários bloqueados:", blocked);
+
+        setAvailableHours(available);
+        setBlockedHours(blocked);
+      } catch (error) {
+        console.error("Error in fetchAvailableHours:", error);
+        setAvailableHours([]);
+        setBlockedHours([]);
+      }
+    };
+
+    fetchAvailableHours();
+  }, [selectedDate, equipment, quantity]);
 
   return (
     <MainLayout>

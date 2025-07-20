@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { PaymentStatusManager } from "@/components/admin/PaymentStatusManager";
+import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
 
@@ -30,6 +30,9 @@ interface BookingWithDetails {
   status: BookingStatus;
   created_at: string;
   total_price: number;
+  invoice_url: string | null;
+  invoice_uploaded_at: string | null;
+  invoice_uploaded_by: string | null;
   user?: {
     first_name: string | null;
     last_name: string | null;
@@ -38,14 +41,6 @@ interface BookingWithDetails {
     name: string;
     price_per_hour: number;
   } | null;
-  payment_method?: string;
-  payment_data?: any;
-  orders?: {
-    id: string;
-    status: string;
-    payment_method: string;
-    payment_details: any[];
-  }[];
 }
 
 const AdminBookings = () => {
@@ -75,6 +70,9 @@ const AdminBookings = () => {
           status,
           created_at,
           total_price,
+          invoice_url,
+          invoice_uploaded_at,
+          invoice_uploaded_by,
           room:rooms(name, price_per_hour)
         `)
         .eq("branch_id", branchId)
@@ -87,7 +85,7 @@ const AdminBookings = () => {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch user profiles and orders separately
+      // Fetch user profiles separately
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(booking => booking.user_id))];
         const { data: profiles } = await supabase
@@ -95,22 +93,9 @@ const AdminBookings = () => {
           .select("id, first_name, last_name")
           .in("id", userIds);
 
-        // Buscar pedidos relacionados
-        const bookingIds = data.map(b => b.id);
-        const { data: orders } = await supabase
-          .from("orders")
-          .select(`
-            id,
-            status,
-            payment_method,
-            payment_details(*)
-          `)
-          .in("id", bookingIds); // Assumindo que há uma relação entre orders e bookings
-
         return data.map(booking => ({
           ...booking,
-          user: profiles?.find(profile => profile.id === booking.user_id) || null,
-          orders: orders?.filter(order => order.id === booking.id) || []
+          user: profiles?.find(profile => profile.id === booking.user_id) || null
         })) as BookingWithDetails[];
       }
 
@@ -130,11 +115,11 @@ const AdminBookings = () => {
     let canceladas = 0;
 
     bookings.forEach(booking => {
-      if (booking.status === "confirmed" || booking.status === "pago") {
+      if (booking.status === "paid") {
         pagas++;
-      } else if (booking.status === "pending" || booking.status === "falta pagar") {
+      } else if (booking.status === "in_process" || booking.status === "pre_authorized") {
         pendentes++;
-      } else if (booking.status === "cancelled" || booking.status === "cancelled_unpaid" || booking.status === "cancelado por falta de pagamento") {
+      } else if (booking.status === "recused" || booking.status === "partial_refunded") {
         canceladas++;
       }
     });
@@ -296,9 +281,9 @@ const AdminBookings = () => {
       <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
-          <TabsTrigger value="pending">Pendentes</TabsTrigger>
-          <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+          <TabsTrigger value="paid">Pagas</TabsTrigger>
+          <TabsTrigger value="in_process">Em Processo</TabsTrigger>
+          <TabsTrigger value="recused">Canceladas</TabsTrigger>
         </TabsList>
         <TabsContent value={activeTab} className="mt-6">
           {isLoading ? (
@@ -370,14 +355,70 @@ const AdminBookings = () => {
                                 <Eye className="h-4 w-4 mr-1" />
                                 Ver
                               </Button>
-                              {booking.orders && booking.orders.length > 0 && (
-                                <PaymentStatusManager
-                                  orderId={booking.orders[0].id}
-                                  status={booking.orders[0].status}
-                                  paymentMethod={booking.orders[0].payment_method}
-                                  onStatusUpdate={refetch}
-                                  order={booking.orders[0]}
-                                />
+                              {/* Botões específicos para reservas de salas */}
+                              {booking.status === "paid" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from("bookings")
+                                        .update({ status: "partial_refunded" })
+                                        .eq("id", booking.id);
+                                      
+                                      if (error) throw error;
+                                      
+                                      toast({
+                                        title: "Estorno realizado",
+                                        description: "A reserva foi cancelada e o estorno foi processado.",
+                                      });
+                                      
+                                      refetch();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Erro ao processar estorno",
+                                        description: error.message || "Erro desconhecido",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Estornar
+                                </Button>
+                              )}
+                              {booking.status === "in_process" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from("bookings")
+                                        .update({ status: "paid" })
+                                        .eq("id", booking.id);
+                                      
+                                      if (error) throw error;
+                                      
+                                      toast({
+                                        title: "Reserva confirmada",
+                                        description: "A reserva foi confirmada com sucesso.",
+                                      });
+                                      
+                                      refetch();
+                                    } catch (error: any) {
+                                      toast({
+                                        title: "Erro ao confirmar reserva",
+                                        description: error.message || "Erro desconhecido",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  Confirmar
+                                </Button>
                               )}
                             </div>
                           </TableCell>
@@ -419,6 +460,15 @@ const AdminBookings = () => {
                 <p><strong>Data:</strong> {format(new Date(selectedBooking.start_time), "dd/MM/yyyy")}</p>
                 <p><strong>Início:</strong> {format(new Date(selectedBooking.start_time), "HH:mm")}</p>
                 <p><strong>Fim:</strong> {format(new Date(selectedBooking.end_time), "HH:mm")}</p>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Nota Fiscal</h3>
+                <InvoiceUpload
+                  recordId={selectedBooking.id}
+                  recordType="booking"
+                  currentInvoiceUrl={selectedBooking.invoice_url}
+                  onSuccess={() => refetch()}
+                />
               </div>
             </div>
           )}
