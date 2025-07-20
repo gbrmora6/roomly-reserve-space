@@ -45,8 +45,7 @@ export const BookingExport = ({ bookings }: BookingExportProps) => {
     case "pre_authorized": return "Pré-autorizada";
     case "recused": return "Recusada";
     // Status legados para compatibilidade
-    case "pending": return "Pendente";
-    case "confirmed": return "Confirmada";
+    case "cancelled": return "Cancelada";
     default: return status;
     }
   };

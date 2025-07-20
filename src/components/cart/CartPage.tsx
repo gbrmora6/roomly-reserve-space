@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCoupon } from "@/hooks/useCoupon";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useQuery } from "@tanstack/react-query";
@@ -16,10 +17,11 @@ import CartTimer from "./CartTimer";
 import ProductSuggestions from "./ProductSuggestions";
 import { CartItemImage } from "./CartItemImage";
 import { CartItemNotes } from "./CartItemNotes";
-import CouponInput from "./CouponInput";
+import { CouponInput } from "./CouponInput";
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { cartItems, cartTotal, removeFromCart, updateCart, refetch } = useCart();
   const {
     appliedCoupon,
@@ -42,7 +44,7 @@ const CartPage: React.FC = () => {
       const roomIds = cartItems.filter(item => item.item_type === 'room').map(item => item.item_id);
       const equipmentIds = cartItems.filter(item => item.item_type === 'equipment').map(item => item.item_id);
       const productIds = cartItems.filter(item => item.item_type === 'product').map(item => item.item_id);
-      const branchIds = [...new Set(cartItems.map(item => item.branch_id))];
+      const branchIds = ["64a43fed-587b-415c-aeac-0abfd7867566"]; // Default branch
 
       const [roomsData, equipmentsData, productsData, branchesData] = await Promise.all([
         roomIds.length ? supabase.from('rooms').select(`
@@ -67,7 +69,7 @@ const CartPage: React.FC = () => {
             details = productsData.data?.find(prod => prod.id === item.item_id);
             break;
         }
-        const branch = branchesData.data?.find(branch => branch.id === item.branch_id);
+        const branch = branchesData.data?.[0]; // Use first branch
         return { ...item, details, branch };
       });
     },

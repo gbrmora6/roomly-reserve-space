@@ -345,8 +345,8 @@ const Checkout = () => {
           }
         } else if (paymentMethod === "pix") {
           // Para PIX, verificar se temos os dados necessários
-          if (!data.pix?.qr_code_image && !data.pix?.qr_code) {
-            throw new Error("Erro: QR Code PIX não foi gerado corretamente");
+          if (!data.paymentData?.data?.pix?.textPayment) {
+            throw new Error("Erro: Dados PIX não foram gerados corretamente");
           }
           
           if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
@@ -361,11 +361,11 @@ const Checkout = () => {
           
           // Preparar dados do PIX para a página de instruções - USAR CAMPOS CORRETOS
           const pixData = {
-            qr_code_image: data.pix.qr_code_image,
-            qr_code: data.pix.qr_code,
-            qrCodeImage: data.pix.qr_code_image, // Campo adicional para compatibilidade
-            pixCode: data.pix.qr_code, // Campo adicional para compatibilidade
-            expires_at: data.pix.expires_at
+            qr_code_image: data.paymentData?.data?.pix?.qrCodeImage?.base64,
+            qr_code: data.paymentData?.data?.pix?.textPayment,
+            qrCodeImage: data.paymentData?.data?.pix?.qrCodeImage?.base64,
+            pixCode: data.paymentData?.data?.pix?.textPayment,
+            expires_at: data.paymentData?.data?.expires_in
           };
           
           // Redirecionar para página de instrução
