@@ -55,10 +55,10 @@ export default function SecurityPermissions() {
 
   const permissions: PermissionType[] = ['read', 'write', 'delete', 'admin', 'super_admin'];
 
-  const filteredPermissions = allPermissions.filter(permission => {
+  const filteredPermissions = (allPermissions as any[]).filter((permission: any) => {
     const searchMatch = searchTerm === "" || 
       permission.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      permission.resource_type.includes(searchTerm.toLowerCase());
+      permission.resource_type?.includes(searchTerm.toLowerCase());
     
     const resourceMatch = filterResource === "all" || permission.resource_type === filterResource;
     

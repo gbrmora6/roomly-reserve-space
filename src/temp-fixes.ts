@@ -9,7 +9,7 @@ export type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday"
 // 2. Extend the global window object for any libraries that might be missing
 declare global {
   interface Window {
-    C2PgenerateHash?: (cardDetails: {
+    C2PgenerateHash: (cardDetails: {
       number: string;
       name: string;
       expiry: string;

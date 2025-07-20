@@ -139,7 +139,7 @@ const AdminProducts = () => {
         if (error) throw error;
 
         // Log da atualização
-        await logUpdate('product', editingProductId, productData);
+        await (logUpdate as any)('product', editingProductId, productData, data);
         return data;
       } else {
         // Create new product
@@ -151,7 +151,7 @@ const AdminProducts = () => {
         if (error) throw error;
 
         // Log da criação
-        await logCreate('product', data.id, { ...productData, branch_id: branchId });
+        await (logCreate as any)('product', data.id, { ...productData, branch_id: branchId }, data);
         return data;
       }
     },

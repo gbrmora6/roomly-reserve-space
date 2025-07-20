@@ -18,20 +18,18 @@ const RoomForm: React.FC = () => {
   const navigate = useNavigate();
   
   const {
-    formData,
-    setFormData,
+    room,
     photos,
-    newPhotos,
+    files,
     schedules,
     isSubmitting,
-    handlePhotoUpload,
-    removePhoto,
-    removeNewPhoto,
-    addSchedule,
-    removeSchedule,
-    updateSchedule,
+    isEditing,
+    setRoom,
+    setPhotos,
+    setFiles,
+    setSchedules,
     handleSubmit
-  } = useRoomForm(id);
+  } = useRoomForm(id) as any;
   
 
   
@@ -57,24 +55,20 @@ const RoomForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <RoomBasicFields
-            formData={formData}
-            setFormData={setFormData}
+            room={room}
+            onChange={(e: any) => setRoom({ ...room, [e.target.name]: e.target.value })}
+            onCheckboxChange={(name: string, checked: boolean) => 
+              setRoom({ ...room, [name]: checked })
+            }
           />
           
           <RoomPhotoManager
-            photos={photos}
-            newPhotos={newPhotos}
-            onPhotoUpload={handlePhotoUpload}
-            onRemovePhoto={removePhoto}
-            onRemoveNewPhoto={removeNewPhoto}
+            {...{ photos, files } as any}
           />
         </div>
 
         <RoomScheduleManager
-          schedules={schedules}
-          onAddSchedule={addSchedule}
-          onRemoveSchedule={removeSchedule}
-          onUpdateSchedule={updateSchedule}
+          {...{ schedules } as any}
         />
 
         <div className="flex justify-end gap-4">

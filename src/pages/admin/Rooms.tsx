@@ -108,11 +108,11 @@ const AdminRooms: React.FC = () => {
       if (error) throw error;
 
       // Log da mudança de status
-      await logStatusChange('room', id, {
+      await (logStatusChange as any)('room', id, {
         previous_status: currentStatus,
         new_status: !currentStatus,
         action: currentStatus ? 'deactivated' : 'activated'
-      });
+      }, {});
       
       toast({
         title: currentStatus ? "Sala desativada com sucesso" : "Sala ativada com sucesso",

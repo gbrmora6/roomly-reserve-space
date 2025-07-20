@@ -25,3 +25,20 @@ export interface EquipmentAvailabilityResult {
 export type BookingStatusOverride = 'pending' | 'confirmed' | 'cancelled' | 'cancelled_unpaid' | 'in_process' | 'paid' | 'partial_refunded' | 'pre_authorized' | 'recused';
 
 export type WeekdayOverride = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+// Equipment interface
+export interface Equipment {
+  id: string;
+  name: string;
+  description?: string;
+  price_per_hour: number;
+  quantity: number;
+  is_active: boolean;
+  branch_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Type assertion helpers
+export const assertBookingStatus = (status: any): BookingStatusOverride => status as BookingStatusOverride;
+export const assertWeekday = (day: any): WeekdayOverride => day as WeekdayOverride;

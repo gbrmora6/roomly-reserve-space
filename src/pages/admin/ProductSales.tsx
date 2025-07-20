@@ -104,10 +104,13 @@ export default function ProductSales() {
           ) : (
             <ProductSalesTable
               orders={paginatedOrders}
-              isSuperAdmin={isSuperAdmin}
               onViewDetails={handleViewDetails}
               onMarkAsPaid={handleMarkAsPaid}
               onCancelOrder={handleCancelOrder}
+              currentPage={page}
+              totalPages={totalPages}
+              setCurrentPage={setPage}
+              translateStatus={(status: string) => status}
             />
           )}
         </TabsContent>
@@ -118,6 +121,7 @@ export default function ProductSales() {
         order={selectedOrder}
         isOpen={showDetails}
         onClose={handleCloseDetails}
+        translateStatus={(status: string) => status}
       />
     </div>
   );

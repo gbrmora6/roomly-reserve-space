@@ -27,7 +27,7 @@ const EquipmentList: React.FC = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<any | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [showCityAlert, setShowCityAlert] = useState(true);
 
