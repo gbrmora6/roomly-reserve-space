@@ -13,10 +13,22 @@ export const useProfileCompletion = () => {
 
   useEffect(() => {
     const checkProfileCompletion = async () => {
+      console.log("=== VERIFICANDO PERFIL ===");
+      console.log("Usuário:", !!user);
+      console.log("Localização atual:", location.pathname);
+
       if (!user) {
+        console.log("Sem usuário, finalizando verificação");
+        setIsProfileComplete(null);
         setIsLoading(false);
         return;
       }
+
+      // Páginas onde permitimos acesso mesmo com perfil incompleto
+      const allowedPaths = ['/my-account', '/checkout', '/cart'];
+      const isOnAllowedPath = allowedPaths.some(path => location.pathname.includes(path));
+      
+      console.log("Está em página permitida:", isOnAllowedPath);
 
       try {
         const { data: profile, error } = await supabase
@@ -51,14 +63,20 @@ export const useProfileCompletion = () => {
           return value && value.toString().trim().length > 0;
         });
 
+        console.log("Perfil completo:", isComplete);
+        console.log("Campos faltando:", requiredFields.filter(field => {
+          const value = profile[field as keyof typeof profile];
+          return !value || value.toString().trim().length === 0;
+        }));
+
         setIsProfileComplete(isComplete);
         
-        // Não redirecionar se estiver na página de checkout, carrinho ou conta
-        const allowedPaths = ['/my-account', '/checkout', '/cart'];
-        const isOnAllowedPath = allowedPaths.some(path => location.pathname.includes(path));
-        
-        // Se o perfil não está completo e não estamos numa página permitida, redirecionar
-        if (!isComplete && !isOnAllowedPath) {
+        // IMPORTANTE: Só redirecionar se:
+        // 1. O perfil não está completo
+        // 2. NÃO estamos numa página permitida
+        // 3. NÃO estamos já indo para /my-account
+        if (!isComplete && !isOnAllowedPath && location.pathname !== '/my-account') {
+          console.log("Redirecionando para completar perfil");
           navigate('/my-account', { 
             replace: true,
             state: { 
@@ -66,6 +84,8 @@ export const useProfileCompletion = () => {
               isFirstLogin: true 
             }
           });
+        } else {
+          console.log("Não redirecionando - condições não atendidas");
         }
         
       } catch (error) {

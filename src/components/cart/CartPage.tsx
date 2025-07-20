@@ -98,6 +98,7 @@ const CartPage: React.FC = () => {
     console.log("Usuário logado:", !!user);
     console.log("Itens no carrinho:", cartItems.length);
     console.log("Total do carrinho:", cartTotal);
+    console.log("Localização atual:", window.location.pathname);
     
     if (!user) {
       console.log("Usuário não logado, redirecionando para login");
@@ -115,18 +116,17 @@ const CartPage: React.FC = () => {
       return;
     }
 
-    console.log("Navegando para checkout...");
-    try {
-      navigate("/checkout");
-      console.log("Navegação para checkout bem-sucedida");
-    } catch (error) {
-      console.error("Erro ao navegar para checkout:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao acessar página de checkout. Tente novamente.",
-      });
-    }
+    console.log("Tentando navegar para checkout...");
+    
+    // Usar replace: true para evitar que o ProfileCompletionGuard interfira
+    navigate("/checkout", { replace: true });
+    
+    console.log("Comando de navegação executado");
+    
+    // Verificar se a navegação realmente aconteceu após um pequeno delay
+    setTimeout(() => {
+      console.log("Localização após navegação:", window.location.pathname);
+    }, 100);
   };
 
   const renderCartItem = (item: any) => {
