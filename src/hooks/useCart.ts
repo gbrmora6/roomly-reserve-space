@@ -58,6 +58,44 @@ export const useCart = () => {
     }
 
     try {
+      let itemPrice = 0;
+      
+      // Buscar preço correto baseado no tipo do item
+      if (itemType === 'product') {
+        const { data: product, error } = await supabase
+          .from('products')
+          .select('price')
+          .eq('id', itemId)
+          .single();
+          
+        if (error || !product) {
+          throw new Error('Produto não encontrado');
+        }
+        itemPrice = product.price;
+      } else if (itemType === 'room') {
+        const { data: room, error } = await supabase
+          .from('rooms')
+          .select('price_per_hour')
+          .eq('id', itemId)
+          .single();
+          
+        if (error || !room) {
+          throw new Error('Sala não encontrada');
+        }
+        itemPrice = room.price_per_hour;
+      } else if (itemType === 'equipment') {
+        const { data: equipment, error } = await supabase
+          .from('equipment')
+          .select('price_per_hour')
+          .eq('id', itemId)
+          .single();
+          
+        if (error || !equipment) {
+          throw new Error('Equipamento não encontrado');
+        }
+        itemPrice = equipment.price_per_hour;
+      }
+
       const { error } = await supabase
         .from('cart_items')
         .insert({
@@ -65,9 +103,9 @@ export const useCart = () => {
           item_type: itemType,
           item_id: itemId,
           quantity: quantity,
-          price: 0, // Will be calculated by trigger
+          price: itemPrice,
           metadata: metadata,
-          branch_id: user.user_metadata?.branch_id || ''
+          branch_id: user.user_metadata?.branch_id || '64a43fed-587b-415c-aeac-0abfd7867566'
         });
 
       if (error) throw error;

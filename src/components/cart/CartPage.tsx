@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,7 +94,19 @@ const CartPage: React.FC = () => {
   };
 
   const handleCheckout = () => {
+    console.log("=== INICIANDO CHECKOUT ===");
+    console.log("Usuário logado:", !!user);
+    console.log("Itens no carrinho:", cartItems.length);
+    console.log("Total do carrinho:", cartTotal);
+    
+    if (!user) {
+      console.log("Usuário não logado, redirecionando para login");
+      navigate("/login", { state: { returnTo: "/cart" } });
+      return;
+    }
+
     if (cartItems.length === 0) {
+      console.log("Carrinho vazio");
       toast({
         variant: "destructive",
         title: "Carrinho vazio",
@@ -103,7 +114,19 @@ const CartPage: React.FC = () => {
       });
       return;
     }
-    navigate("/checkout");
+
+    console.log("Navegando para checkout...");
+    try {
+      navigate("/checkout");
+      console.log("Navegação para checkout bem-sucedida");
+    } catch (error) {
+      console.error("Erro ao navegar para checkout:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao acessar página de checkout. Tente novamente.",
+      });
+    }
   };
 
   const renderCartItem = (item: any) => {
