@@ -95,7 +95,7 @@ serve(async (req) => {
       const { error: updateError } = await supabase
         .from("orders")
         .update({ 
-          status: "cancelled",
+          status: "recused",
           updated_at: new Date().toISOString()
         })
         .eq("click2pay_tid", transacaoId);

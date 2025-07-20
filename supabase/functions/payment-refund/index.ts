@@ -151,7 +151,7 @@ serve(async (req) => {
         refund_status: finalStatus,
         refund_amount: refundAmount,
         refund_date: new Date().toISOString(),
-        status: refundResult.success ? 'cancelled' : order.status,
+        status: refundResult.success ? 'recused' : order.status,
         updated_at: new Date().toISOString()
       })
       .eq('id', orderId);

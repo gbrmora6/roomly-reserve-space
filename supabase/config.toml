@@ -1,5 +1,8 @@
 
-project_id = "fgiidcdsvmqxdkclgety"
+project_id = "ixqtnqvdwhqnpjwjqzpx"
+
+[functions.checkout-boleto]
+verify_jwt = false
 
 [functions.click2pay-integration]
 verify_jwt = false
