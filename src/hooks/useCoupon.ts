@@ -37,13 +37,16 @@ export const useCoupon = () => {
     }
 
     try {
-      const { data, error } = await supabase.rpc('validate_coupon', {
+      const response = await (supabase as any).rpc('validate_coupon', {
         p_code: couponCode.toUpperCase(),
         p_user_id: user.id,
         p_total_amount: cartTotal,
         p_item_count: cartItemCount,
         p_applicable_type: 'all'
       });
+      
+      const data = response.data as any[] | null;
+      const error = response.error;
 
       if (error) {
         console.error('Erro ao validar cupom:', error);

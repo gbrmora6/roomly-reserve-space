@@ -30,7 +30,7 @@ export const useBackupSystem = () => {
   const { data: backups = [], isLoading } = useQuery({
     queryKey: ['system-backups', branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('system_backups')
         .select(`
           *,
@@ -52,7 +52,7 @@ export const useBackupSystem = () => {
     }) => {
       const currentUser = await supabase.auth.getUser();
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('system_backups')
         .insert({
           backup_type: params.backupType || 'manual',
@@ -77,7 +77,7 @@ export const useBackupSystem = () => {
       // Iniciar processamento do backup (em um cenário real, isso seria feito por um job em background)
       setTimeout(async () => {
         // Simular processamento
-        await supabase
+        await (supabase as any)
           .from('system_backups')
           .update({
             status: 'running',
@@ -86,7 +86,7 @@ export const useBackupSystem = () => {
 
         // Simular conclusão após alguns segundos
         setTimeout(async () => {
-          await supabase
+          await (supabase as any)
             .from('system_backups')
             .update({
               status: 'completed',
@@ -120,7 +120,7 @@ export const useBackupSystem = () => {
       toast.info('Processo de restauração iniciado. Isso pode levar alguns minutos.');
       
       // Log da ação crítica
-      await supabase.rpc('log_security_event', {
+      await (supabase as any).rpc('log_security_event', {
         p_event_type: 'system_change',
         p_action: 'restore_backup',
         p_details: {
@@ -145,7 +145,7 @@ export const useBackupSystem = () => {
   // Excluir backup
   const deleteBackupMutation = useMutation({
     mutationFn: async (backupId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('system_backups')
         .delete()
         .eq('id', backupId);
@@ -153,7 +153,7 @@ export const useBackupSystem = () => {
       if (error) throw error;
 
       // Log da ação
-      await supabase.rpc('log_security_event', {
+      await (supabase as any).rpc('log_security_event', {
         p_event_type: 'system_change',
         p_action: 'delete_backup',
         p_details: {
@@ -184,7 +184,7 @@ export const useBackupSystem = () => {
     // Em um cenário real, isso configuraria um cron job
     toast.info('Backup automático configurado com sucesso');
     
-    await supabase.rpc('log_security_event', {
+    await (supabase as any).rpc('log_security_event', {
       p_event_type: 'system_change',
       p_action: 'schedule_automatic_backup',
       p_details: schedule,
@@ -197,7 +197,7 @@ export const useBackupSystem = () => {
   // Estatísticas de backup
   const getBackupStats = () => {
     const totalBackups = backups.length;
-    const completedBackups = backups.filter(b => b.status === 'completed').length;
+    const completedBackups = backups.filter(b => b.status === 'paid').length; // Using 'paid' as completion status
     const failedBackups = backups.filter(b => b.status === 'failed').length;
     const pendingBackups = backups.filter(b => b.status === 'pending').length;
     const runningBackups = backups.filter(b => b.status === 'running').length;

@@ -37,7 +37,7 @@ export const useCart = () => {
       // Primeiro, executar limpeza de itens expirados de forma robusta
       try {
         console.log("Executando limpeza de itens expirados...");
-        await supabase.rpc("clean_expired_cart_items");
+        await (supabase as any).rpc("clean_expired_cart_items");
         console.log("Limpeza automática concluída com sucesso");
       } catch (error) {
         console.log("Nota: Erro na limpeza automática (continuando):", error);
@@ -45,7 +45,7 @@ export const useCart = () => {
       }
       
       // Chama a function do Supabase para buscar o carrinho
-      const { data, error } = await supabase.rpc("get_cart", {
+      const { data, error } = await (supabase as any).rpc("get_cart", {
         p_user_id: user.id
       });
 
@@ -102,7 +102,7 @@ export const useCart = () => {
       const validMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
       // Chama a function do Supabase para adicionar ao carrinho
-      const { data, error } = await supabase.rpc("add_to_cart", {
+      const { data, error } = await (supabase as any).rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: itemType,
         p_item_id: itemId,
@@ -146,7 +146,7 @@ export const useCart = () => {
       console.log("Detalhes do item a ser removido:", item);
       
       // Chama a function do Supabase para remover do carrinho
-      const { data, error } = await supabase.rpc("remove_from_cart", {
+      const { data, error } = await (supabase as any).rpc("remove_from_cart", {
         p_id: itemId
       });
 
@@ -188,7 +188,7 @@ export const useCart = () => {
       console.log("Atualizando item do carrinho:", { itemId, quantity });
       
       // Chama a function do Supabase para atualizar o carrinho
-      const { data, error } = await supabase.rpc("update_cart", {
+      const { data, error } = await (supabase as any).rpc("update_cart", {
         p_id: itemId,
         p_quantity: quantity
       });
@@ -221,7 +221,7 @@ export const useCart = () => {
       console.log("Limpando carrinho para usuário:", user.id);
 
       // Chama a function do Supabase para limpar o carrinho
-      const { data, error } = await supabase.rpc("clear_cart", {
+      const { data, error } = await (supabase as any).rpc("clear_cart", {
         p_user_id: user.id
       });
 

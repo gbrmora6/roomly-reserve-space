@@ -116,14 +116,14 @@ export function useAuthOperations() {
 
       // Criar perfil do usuário na tabela profiles
       if (data.user) {
-        const { error: profileError } = await supabase.rpc('create_user_profile', {
-          user_id: data.user.id,
-          user_email: email,
-          first_name: firstName,
-          last_name: lastName,
-          user_role: 'client',
-          user_branch_id: '64a43fed-587b-415c-aeac-0abfd7867566' // UUID da Filial Padrão
-        });
+      const { error: profileError } = await (supabase as any).rpc('create_user_profile', {
+        user_id: data.user.id,
+        user_email: email,
+        first_name: firstName,
+        last_name: lastName,
+        user_role: 'client',
+        user_branch_id: '64a43fed-587b-415c-aeac-0abfd7867566' // UUID da Filial Padrão
+      });
 
         if (profileError) {
           console.error('Erro ao criar perfil:', profileError);

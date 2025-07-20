@@ -97,10 +97,18 @@ export const useCheckout = () => {
 
   const registerCouponUsage = async (couponId: string) => {
     try {
+      // Get user's branch_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('branch_id')
+        .eq('id', user?.id)
+        .single();
+
       await supabase.from("coupon_usage").insert({
         coupon_id: couponId,
         user_id: user?.id,
-        used_at: new Date().toISOString()
+        branch_id: profile?.branch_id || null,
+        discount_applied: discountAmount
       });
     } catch (error) {
       console.error("Erro ao registrar uso do cupom:", error);
