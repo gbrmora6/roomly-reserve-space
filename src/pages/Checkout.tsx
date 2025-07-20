@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/hooks/useCart";
 import { useCoupon } from "@/hooks/useCoupon";
@@ -227,7 +226,7 @@ const Checkout = () => {
             taxid: (processedPaymentData.cpfCnpj || '').replace(/\D/g, ''),
             phonenumber: (processedPaymentData.telefone || '').replace(/\D/g, ''),
             email: processedPaymentData.email || '',
-            birth_date: "1990-01-01" // Data padrão - pode ser ajustada
+            birth_date: "1990-01-01"
           },
           totalAmount: finalTotal,
           orderId: `order_${Date.now()}_${user.id.substring(0, 8)}`,
@@ -267,12 +266,7 @@ const Checkout = () => {
       console.log("Resposta completa da função:", { data, error });
 
       if (error) {
-        console.error("Erro detalhado na chamada da função:", {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          context: error.context
-        });
+        console.error("Erro detalhado na chamada da função:", error);
         throw new Error(`Erro de conexão: ${error.message}`);
       }
 
@@ -283,9 +277,8 @@ const Checkout = () => {
 
       console.log("Resposta da API Click2Pay:", data);
 
-      // Processar resposta baseado no método de pagamento
+      // Processar resposta baseado no método de pagamento - USAR DADOS CORRETOS
       if (paymentMethod === "boleto") {
-        // Verificar se o boleto foi criado corretamente
         if (!data.success || !data.boleto) {
           throw new Error(data.error || "Erro ao gerar boleto");
         }
@@ -296,14 +289,12 @@ const Checkout = () => {
             await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount);
           } catch (couponError) {
             console.error("Erro ao registrar uso do cupom:", couponError);
-            // Não bloquear o fluxo por erro no cupom
           }
         }
         
-        // Limpar carrinho
         clearCart();
         
-        // Redirecionar para página de instruções do boleto
+        // Redirecionar para página de instruções com dados corretos (problema 2)
         navigate("/payment-instructions", { 
           state: { 
             paymentMethod: "boleto", 
@@ -313,40 +304,42 @@ const Checkout = () => {
               url: data.boleto.url,
               urlBoleto: data.boleto.urlBoleto || data.boleto.url,
               vencimento: data.boleto.vencimento || data.boleto.due_date,
-              tid: data.boleto.tid,
-              due_date: data.boleto.due_date,
-              amount: data.boleto.amount
+              boleto_barcode: data.boleto.barcode, // Campo adicional
+              boleto_url: data.boleto.url, // Campo adicional
+              boleto_due_date: data.boleto.due_date // Campo adicional
             },
-            orderId: data.boleto.tid
+            orderId: data.boleto.tid,
+            tid: data.boleto.tid
           } 
         });
       } else {
-        // Lógica original para outros métodos de pagamento
-        // Verificar se a transação foi criada corretamente
+        // Lógica para outros métodos de pagamento
         if (!data.orderId) {
           throw new Error("Erro: Ordem não foi criada corretamente");
         }
 
-        // Redirecionar baseado no método de pagamento e status
+        // Redirecionar baseado no método de pagamento
         if (paymentMethod === "cartao") {
           if (data.status === "paid" || data.status === "approved") {
-            // Registrar uso do cupom se houver um aplicado
             if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
               try {
                 await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
               } catch (couponError) {
                 console.error("Erro ao registrar uso do cupom:", couponError);
-                // Não bloquear o fluxo por erro no cupom
               }
             }
             
-            // Limpar carrinho apenas se pagamento foi aprovado
             clearCart();
             toast({
               title: "Pagamento aprovado!",
               description: "Seu pagamento foi processado com sucesso.",
             });
-            navigate("/payment-success");
+            navigate("/payment-success", { 
+              state: { 
+                orderId: data.orderId, 
+                tid: data.tid 
+              } 
+            });
           } else {
             throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
           }
@@ -356,25 +349,23 @@ const Checkout = () => {
             throw new Error("Erro: QR Code PIX não foi gerado corretamente");
           }
           
-          // Registrar uso do cupom se houver um aplicado
           if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
             try {
               await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
             } catch (couponError) {
               console.error("Erro ao registrar uso do cupom:", couponError);
-              // Não bloquear o fluxo por erro no cupom
             }
           }
           
-          // Limpar carrinho
           clearCart();
           
-          // Preparar dados do PIX para a página de instruções
+          // Preparar dados do PIX para a página de instruções - USAR CAMPOS CORRETOS
           const pixData = {
-            qrCodeImage: data.pix.qr_code_image,
-            pixCode: data.pix.qr_code,
-            reference: data.reference,
-            orderId: data.orderId
+            qr_code_image: data.pix.qr_code_image,
+            qr_code: data.pix.qr_code,
+            qrCodeImage: data.pix.qr_code_image, // Campo adicional para compatibilidade
+            pixCode: data.pix.qr_code, // Campo adicional para compatibilidade
+            expires_at: data.pix.expires_at
           };
           
           // Redirecionar para página de instrução
@@ -382,7 +373,8 @@ const Checkout = () => {
             state: { 
               paymentMethod: "pix", 
               paymentData: pixData,
-              orderId: data.orderId 
+              orderId: data.orderId,
+              tid: data.tid
             } 
           });
         }
