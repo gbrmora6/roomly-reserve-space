@@ -39,13 +39,13 @@ export const useSecurityAudit = () => {
       if (!branchId) return [];
 
       const { data, error } = await supabase
-        .from('security_audit')
+        .from('security_audit' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1000);
 
       if (error) throw error;
-      return data as SecurityAuditEvent[];
+      return (data as any) as SecurityAuditEvent[];
     },
     enabled: !!branchId,
   });
@@ -57,14 +57,14 @@ export const useSecurityAudit = () => {
       if (!branchId) return [];
 
       const { data, error } = await supabase
-        .from('security_audit')
+        .from('security_audit' as any)
         .select('*')
         .eq('requires_review', true)
         .is('reviewed_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as SecurityAuditEvent[];
+      return (data as any) as SecurityAuditEvent[];
     },
     enabled: !!branchId,
   });
@@ -76,7 +76,7 @@ export const useSecurityAudit = () => {
       reviewNotes?: string;
     }) => {
       const { error } = await supabase
-        .from('security_audit')
+        .from('security_audit' as any)
         .update({
           reviewed_by: (await supabase.auth.getUser()).data.user?.id,
           reviewed_at: new Date().toISOString(),
@@ -107,7 +107,7 @@ export const useSecurityAudit = () => {
     resourceId?: string;
     riskScore?: number;
   }) => {
-    await supabase.rpc('log_security_event', {
+    await (supabase as any).rpc('log_security_event', {
       p_event_type: params.eventType,
       p_action: params.action,
       p_details: params.details,

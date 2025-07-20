@@ -123,7 +123,7 @@ export function useEquipmentDateAndTime({
         console.log("Buscando disponibilidade para equipamento:", equipment.id, "data:", dateStr);
         
         // Usar a função do banco que considera schedules e carrinho - igual ao de salas
-        const { data: availabilityData, error } = await supabase
+        const { data: availabilityData, error } = await (supabase as any)
           .rpc("get_equipment_availability", {
             p_equipment_id: equipment.id,
             p_date: dateStr,

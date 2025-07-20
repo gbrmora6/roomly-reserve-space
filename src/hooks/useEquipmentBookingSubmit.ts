@@ -55,7 +55,7 @@ export function useEquipmentBookingSubmit({
       console.log("Adicionando equipamento ao carrinho via RPC add_to_cart");
 
       // Use add_to_cart function that handles all validation and creates temporary reservation
-      const { data: cartItem, error } = await supabase.rpc("add_to_cart", {
+      const { data: cartItem, error } = await (supabase as any).rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: "equipment",
         p_item_id: equipmentId,

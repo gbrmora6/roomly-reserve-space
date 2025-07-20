@@ -89,7 +89,7 @@ export function useProductSales() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as ProductOrder[];
+      return (data as any) as ProductOrder[];
     }
   });
 

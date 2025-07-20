@@ -37,7 +37,7 @@ export function useRoomReservation(room: Room, onClose: () => void) {
       console.log("Adicionando reserva ao carrinho via RPC add_to_cart");
 
       // Usar a função add_to_cart que já faz toda a validação e criação da reserva temporária
-      const { data: cartItem, error } = await supabase.rpc("add_to_cart", {
+      const { data: cartItem, error } = await (supabase as any).rpc("add_to_cart", {
         p_user_id: user.id,
         p_item_type: "room",
         p_item_id: room.id,

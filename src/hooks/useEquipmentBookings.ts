@@ -72,7 +72,7 @@ export const useEquipmentBookings = () => {
         .order("created_at", { ascending: false });
 
       if (activeTab !== "all") {
-        query = query.eq("status", activeTab);
+        query = query.eq("status", activeTab as any);
       }
 
       const { data, error } = await query;
@@ -90,13 +90,13 @@ export const useEquipmentBookings = () => {
           .select("id, first_name, last_name")
           .in("id", userIds);
 
-        return data.map(booking => ({
+        return (data as any[]).map(booking => ({
           ...booking,
           user: profiles?.find(profile => profile.id === booking.user_id) || null
         })) as EquipmentBooking[];
       }
 
-      return data as EquipmentBooking[] || [];
+      return (data as any) as EquipmentBooking[] || [];
     },
     enabled: !!branchId,
   });

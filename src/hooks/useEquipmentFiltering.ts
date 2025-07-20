@@ -92,7 +92,7 @@ export const useEquipmentFiltering = (selectedCity: string = "all") => {
       
       for (const equipment of allEquipment) {
         // Buscar disponibilidade do equipamento para a data selecionada
-        const { data: availability, error: availabilityError } = await supabase
+        const { data: availability, error: availabilityError } = await (supabase as any)
           .rpc('get_equipment_availability', {
             p_equipment_id: equipment.id,
             p_date: dateStr,
@@ -111,7 +111,7 @@ export const useEquipmentFiltering = (selectedCity: string = "all") => {
             requestedHours.push(`${hour.toString().padStart(2, '0')}:00`);
           }
 
-          const availableSlots = availability.filter(slot => slot.is_available);
+          const availableSlots = (availability as any[]).filter(slot => slot.is_available);
           const availableHours = availableSlots.map(slot => slot.hour);
 
           // Verificar se todos os horários solicitados estão disponíveis

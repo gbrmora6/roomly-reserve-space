@@ -48,7 +48,7 @@ const checkRoomSchedule = async (
       .from("room_schedules")
       .select("start_time, end_time")
       .eq("room_id", roomId)
-      .eq("weekday", weekday);
+      .eq("weekday", weekday as any);
 
     if (error) {
       console.error("❌ Error checking room schedule:", error);
@@ -208,7 +208,7 @@ export const useFilteredRooms = ({
                 .from("room_schedules")
                 .select("start_time, end_time")
                 .eq("room_id", room.id)
-                .eq("weekday", weekday);
+                .eq("weekday", weekday as any);
 
               if (schedules && schedules.length > 0) {
                 const schedule = schedules[0];
@@ -239,7 +239,7 @@ export const useFilteredRooms = ({
               .from("room_schedules")
               .select("id")
               .eq("room_id", room.id)
-              .eq("weekday", weekday);
+              .eq("weekday", weekday as any);
 
             if (error) {
               console.error("Error checking room schedule:", error);
@@ -281,7 +281,7 @@ const checkTimeRangeAvailability = async (
       .from("room_schedules")
       .select("start_time, end_time")
       .eq("room_id", roomId)
-      .eq("weekday", weekday);
+      .eq("weekday", weekday as any);
 
     if (!schedules || schedules.length === 0) {
       console.log(`❌ Sala não funciona em ${weekday}`);

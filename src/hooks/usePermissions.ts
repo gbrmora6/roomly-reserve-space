@@ -32,7 +32,7 @@ export const usePermissions = () => {
   const hasPermission = async (resource: ResourceType, permission: PermissionType): Promise<boolean> => {
     if (!user?.id || !branchId) return false;
 
-    const { data, error } = await supabase.rpc('has_permission', {
+    const { data, error } = await (supabase as any).rpc('has_permission', {
       p_user_id: user.id,
       p_resource: resource,
       p_permission: permission,
@@ -54,7 +54,7 @@ export const usePermissions = () => {
       if (!user?.id || !branchId) return [];
 
       const { data, error } = await supabase
-        .from('user_permissions')
+        .from('user_permissions' as any)
         .select('*')
         .eq('user_id', user.id)
         .eq('branch_id', branchId)
@@ -62,7 +62,7 @@ export const usePermissions = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as UserPermission[];
+      return (data as any) as UserPermission[];
     },
     enabled: !!user?.id && !!branchId,
   });
@@ -74,7 +74,7 @@ export const usePermissions = () => {
       if (!branchId) return [];
 
       const { data, error } = await supabase
-        .from('user_permissions')
+        .from('user_permissions' as any)
         .select(`
           *,
           profiles!user_permissions_user_id_fkey(first_name, last_name, email),
@@ -99,7 +99,7 @@ export const usePermissions = () => {
       notes?: string;
     }) => {
       const { error } = await supabase
-        .from('user_permissions')
+        .from('user_permissions' as any)
         .insert({
           user_id: params.userId,
           resource_type: params.resourceType,
@@ -113,7 +113,7 @@ export const usePermissions = () => {
       if (error) throw error;
 
       // Log da ação
-      await supabase.rpc('log_security_event', {
+        await (supabase as any).rpc('log_security_event', {
         p_event_type: 'permission_change',
         p_action: 'grant_permission',
         p_details: {
@@ -144,14 +144,14 @@ export const usePermissions = () => {
   const revokePermissionMutation = useMutation({
     mutationFn: async (permissionId: string) => {
       const { error } = await supabase
-        .from('user_permissions')
+        .from('user_permissions' as any)
         .update({ is_active: false })
         .eq('id', permissionId);
 
       if (error) throw error;
 
       // Log da ação
-      await supabase.rpc('log_security_event', {
+      await (supabase as any).rpc('log_security_event', {
         p_event_type: 'permission_change',
         p_action: 'revoke_permission',
         p_details: {

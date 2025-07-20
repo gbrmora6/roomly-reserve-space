@@ -44,7 +44,7 @@ const checkEquipmentSchedule = async (
       .from("equipment_schedules")
       .select("start_time, end_time")
       .eq("equipment_id", equipmentId)
-      .eq("weekday", weekday);
+      .eq("weekday", weekday as any);
 
     if (error) {
       console.error("Erro ao verificar horário do equipamento:", error);
@@ -193,7 +193,7 @@ export const useFilteredEquipment = ({
                 .from("equipment_schedules")
                 .select("start_time, end_time")
                 .eq("equipment_id", equip.id)
-                .eq("weekday", weekday);
+                .eq("weekday", weekday as any);
 
               if (schedules && schedules.length > 0) {
                 const schedule = schedules[0];
@@ -224,7 +224,7 @@ export const useFilteredEquipment = ({
               .from("equipment_schedules")
               .select("id")
               .eq("equipment_id", equip.id)
-              .eq("weekday", weekday);
+              .eq("weekday", weekday as any);
 
             if (error) {
               console.error("Error checking equipment schedule:", error);
@@ -266,7 +266,7 @@ const checkTimeRangeAvailability = async (
       .from("equipment_schedules")
       .select("start_time, end_time")
       .eq("equipment_id", equipmentId)
-      .eq("weekday", weekday);
+      .eq("weekday", weekday as any);
 
     if (!schedules || schedules.length === 0) {
       console.log(`❌ Equipamento não funciona em ${weekday}`);
@@ -286,8 +286,8 @@ const checkTimeRangeAvailability = async (
     }
 
     // Verificar conflitos com reservas existentes
-    const { data: bookings } = await supabase
-      .from("equipment_bookings")
+    const { data: bookings } = await (supabase as any)
+      .from("booking_equipment")
       .select("start_time, end_time, quantity")
       .eq("equipment_id", equipmentId)
       .gte("start_time", `${dateStr} 00:00:00`)
@@ -314,30 +314,30 @@ const checkTimeRangeAvailability = async (
       .from("cart_items")
       .select(`
         reserved_equipment_booking_id,
-        equipment_bookings!inner(
+        booking_equipment!inner(
           start_time,
           end_time,
           equipment_id,
           quantity
         )
       `)
-      .eq("equipment_bookings.equipment_id", equipmentId)
-      .gte("equipment_bookings.start_time", `${dateStr} 00:00:00`)
-      .lt("equipment_bookings.start_time", `${dateStr} 23:59:59`)
+      .eq("booking_equipment.equipment_id", equipmentId)
+      .gte("booking_equipment.start_time", `${dateStr} 00:00:00`)
+      .lt("booking_equipment.start_time", `${dateStr} 23:59:59`)
       .gt("expires_at", new Date().toISOString());
 
     if (cartItems && cartItems.length > 0) {
       for (const item of cartItems) {
-        const booking = item.equipment_bookings;
+        const booking = (item as any).booking_equipment;
         if (booking) {
-          const bookingStart = new Date(booking.start_time);
-          const bookingEnd = new Date(booking.end_time);
+          const bookingStart = new Date((booking as any).start_time);
+          const bookingEnd = new Date((booking as any).end_time);
           const requestedStart = new Date(`${dateStr} ${startTime}:00`);
           const requestedEnd = new Date(`${dateStr} ${endTime}:00`);
 
           // Verificar sobreposição
           if (requestedStart < bookingEnd && requestedEnd > bookingStart) {
-            console.log(`❌ Conflito com item no carrinho: ${booking.start_time} - ${booking.end_time}`);
+            console.log(`❌ Conflito com item no carrinho: ${(booking as any).start_time} - ${(booking as any).end_time}`);
             return false;
           }
         }

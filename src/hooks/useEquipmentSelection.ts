@@ -55,9 +55,9 @@ export function useEquipmentSelection(
         branch_id: profile.branch_id
       }));
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('booking_equipment')
-        .insert(equipmentToAdd);
+        .insert(equipmentToAdd.map(item => ({ ...item, status: 'in_process' as any })));
 
       if (error) throw error;
 
