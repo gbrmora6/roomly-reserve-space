@@ -14,7 +14,7 @@ const CreateSuperAdmin: React.FC = () => {
     setIsCreating(true);
     setError(null);
     try {
-      await createSuperAdmin();
+      await createSuperAdmin("admin@example.com", "AdminPassword123!");
       setCreated(true);
     } catch (err: any) {
       setError(err.message || "Ocorreu um erro ao criar o superadmin");

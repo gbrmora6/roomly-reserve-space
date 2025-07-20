@@ -34,8 +34,8 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const roomSchedules = useRoomSchedule(room.id);
 
   // Process availability data
-  const availableHours = roomAvailability?.filter(slot => slot.is_available).map(slot => slot.hour) || [];
-  const blockedHours = roomAvailability?.filter(slot => !slot.is_available).map(slot => slot.hour) || [];
+  const availableHours = Array.isArray(roomAvailability) ? roomAvailability.filter(slot => slot.is_available).map(slot => slot.hour) : [];
+  const blockedHours = Array.isArray(roomAvailability) ? roomAvailability.filter(slot => !slot.is_available).map(slot => slot.hour) : [];
 
   // Função para verificar se a sala funciona em um determinado dia da semana
   const isRoomOpenOnDay = (date: Date): boolean => {

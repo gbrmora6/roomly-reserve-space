@@ -314,9 +314,7 @@ const AdminEquipmentBookings: React.FC = () => {
       case "partial_refunded": return "Parcialmente Devolvida";
       case "pre_authorized": return "Pré-autorizada";
       case "recused": return "Recusada";
-      // Status legados para compatibilidade
-      case "pending": return "Pendente";
-      case "confirmed": return "Confirmada";
+      // Status legados removidos - usando apenas novos status
       default: return status;
     }
   };
@@ -470,7 +468,7 @@ const AdminEquipmentBookings: React.FC = () => {
                                 Ver
                               </Button>
                               {/* Botões específicos para reservas de equipamentos */}
-                              {booking.status === "pago" && (
+                              {booking.status === "paid" && (
                                 <Button
                                   size="sm"
                                   variant="outline"

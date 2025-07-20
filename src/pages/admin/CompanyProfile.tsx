@@ -39,9 +39,9 @@ const CompanyProfile: React.FC = () => {
     try {
       console.log('Buscando perfil da empresa para branch_id:', branchId);
       const { data, error } = await supabase
-        .from('company_profile')
+        .from('branches')
         .select('*')
-        .eq('branch_id', branchId)
+        .eq('id', branchId)
         .maybeSingle();
       
       console.log('Resultado da busca:', { data, error });
@@ -89,29 +89,29 @@ const CompanyProfile: React.FC = () => {
       const upsertData = { ...profile, branch_id: branchId };
       console.log('Tentando salvar dados:', upsertData);
       
-      // Primeiro, verificar se já existe um registro para esta filial
+      // Para agora, vamos usar a tabela branches existente
       const { data: existingData } = await supabase
-        .from('company_profile')
+        .from('branches')
         .select('id')
-        .eq('branch_id', branchId)
+        .eq('id', branchId)
         .single();
       
       let data, error;
       
       if (existingData) {
-        // Atualizar registro existente
+        // Atualizar registro existente na tabela branches
         const updateResult = await supabase
-          .from('company_profile')
+          .from('branches')
           .update(upsertData)
-          .eq('branch_id', branchId)
+          .eq('id', branchId)
           .select();
         data = updateResult.data;
         error = updateResult.error;
       } else {
-        // Inserir novo registro
+        // Inserir novo registro na tabela branches
         const insertResult = await supabase
-          .from('company_profile')
-          .insert(upsertData)
+          .from('branches')
+          .insert({ ...upsertData, id: branchId })
           .select();
         data = insertResult.data;
         error = insertResult.error;

@@ -286,7 +286,7 @@ const Checkout = () => {
         // Registrar uso do cupom se houver um aplicado
         if (hasActiveCoupon && appliedCoupon?.couponId) {
           try {
-            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount);
+            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount.toString());
           } catch (couponError) {
             console.error("Erro ao registrar uso do cupom:", couponError);
           }
@@ -323,7 +323,7 @@ const Checkout = () => {
           if (data.status === "paid" || data.status === "approved") {
             if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
               try {
-                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount.toString());
               } catch (couponError) {
                 console.error("Erro ao registrar uso do cupom:", couponError);
               }
@@ -351,7 +351,7 @@ const Checkout = () => {
           
           if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
             try {
-              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
+              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount.toString());
             } catch (couponError) {
               console.error("Erro ao registrar uso do cupom:", couponError);
             }

@@ -49,7 +49,7 @@ export const usePermissions = () => {
 
       if (error) throw error;
 
-      setPermissions(data || []);
+      setPermissions((data as unknown as UserPermissionWithDetails[]) || []);
     } catch (err: any) {
       console.error('Error fetching permissions:', err);
       setError(err.message);
@@ -80,7 +80,7 @@ export const usePermissions = () => {
 
       if (error) throw error;
 
-      setAllPermissions(data || []);
+      setAllPermissions((data as unknown as UserPermissionWithDetails[]) || []);
     } catch (err: any) {
       console.error('Error fetching all permissions:', err);
       setError(err.message);

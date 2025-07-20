@@ -127,7 +127,7 @@ const BranchesPage = () => {
 
   // Atualizar filial
   const updateBranch = useMutation({
-    mutationFn: async ({ id, name, city, street, number, neighborhood, complement, zip_code, state, phone, email, description }: { 
+    mutationFn: async ({ id, name, city, street, number, neighborhood, complement, zip_code, state, phone }: { 
       id: string; 
       name: string; 
       city: string;
