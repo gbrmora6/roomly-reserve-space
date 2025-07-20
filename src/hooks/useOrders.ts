@@ -15,7 +15,10 @@ export const useOrders = (userId: string | undefined) => {
         .select(`
           *, 
           order_items(*, product:products(name, price)),
-          payment_details(*)
+          payment_details(*),
+          invoice_url,
+          invoice_uploaded_at,
+          invoice_uploaded_by
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });

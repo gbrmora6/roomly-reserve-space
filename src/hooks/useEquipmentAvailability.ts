@@ -89,7 +89,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
         const { data: bookings, error: bookingsError } = await supabase
           .from('booking_equipment')
           .select('equipment_id, quantity, start_time, end_time, status')
-          .not('status', 'eq', 'cancelled')
+          .not('status', 'eq', 'recused')
           .gte('start_time', dayBounds.start)
           .lte('start_time', dayBounds.end);
 
@@ -106,7 +106,7 @@ export function useEquipmentAvailability(startTime: Date | null, endTime: Date |
           // Get bookings for this equipment
           const equipmentBookings = bookings?.filter(booking => 
             booking.equipment_id === equipment.id && 
-            booking.status !== 'cancelled'
+            booking.status !== 'recused'
           ) || [];
           
           // Group bookings by hour to track availability per hour

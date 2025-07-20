@@ -67,6 +67,9 @@ export type Database = {
           end_time: string
           equipment_id: string
           id: string
+          invoice_uploaded_at: string | null
+          invoice_uploaded_by: string | null
+          invoice_url: string | null
           quantity: number
           start_time: string
           status: Database["public"]["Enums"]["booking_status"] | null
@@ -81,6 +84,9 @@ export type Database = {
           end_time: string
           equipment_id: string
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           quantity?: number
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -95,6 +101,9 @@ export type Database = {
           end_time?: string
           equipment_id?: string
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           quantity?: number
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -117,6 +126,13 @@ export type Database = {
             referencedRelation: "equipment"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_equipment_invoice_uploaded_by_fkey"
+            columns: ["invoice_uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
@@ -125,6 +141,9 @@ export type Database = {
           created_at: string | null
           end_time: string
           id: string
+          invoice_uploaded_at: string | null
+          invoice_uploaded_by: string | null
+          invoice_url: string | null
           room_id: string
           start_time: string
           status: Database["public"]["Enums"]["booking_status"] | null
@@ -137,6 +156,9 @@ export type Database = {
           created_at?: string | null
           end_time: string
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           room_id: string
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -149,6 +171,9 @@ export type Database = {
           created_at?: string | null
           end_time?: string
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           room_id?: string
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -157,6 +182,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_invoice_uploaded_by_fkey"
+            columns: ["invoice_uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_room_id_fkey"
             columns: ["room_id"]
@@ -169,22 +201,43 @@ export type Database = {
       branches: {
         Row: {
           city: string
-          created_at: string
-          id: string
-          name: string
+          complement: string | null
+      created_at: string
+      id: string
+      name: string
+      neighborhood: string | null
+      number: string | null
+      phone: string | null
+      state: string | null
+      street: string | null
+      zip_code: string | null
         }
         Insert: {
-          city: string
-          created_at?: string
-          id?: string
-          name: string
-        }
+            city: string
+            complement?: string | null
+            created_at?: string
+            id?: string
+            name: string
+            neighborhood?: string | null
+            number?: string | null
+            phone?: string | null
+            state?: string | null
+            street?: string | null
+            zip_code?: string | null
+          }
         Update: {
-          city?: string
-          created_at?: string
-          id?: string
-          name?: string
-        }
+            city?: string
+            complement?: string | null
+            created_at?: string
+            id?: string
+            name?: string
+            neighborhood?: string | null
+            number?: string | null
+            phone?: string | null
+            state?: string | null
+            street?: string | null
+            zip_code?: string | null
+          }
         Relationships: []
       }
       cart_items: {
@@ -313,44 +366,7 @@ export type Database = {
           },
         ]
       }
-      company_profile: {
-        Row: {
-          branch_id: string
-          city: string | null
-          id: string
-          name: string | null
-          neighborhood: string | null
-          number: string | null
-          street: string | null
-        }
-        Insert: {
-          branch_id: string
-          city?: string | null
-          id?: string
-          name?: string | null
-          neighborhood?: string | null
-          number?: string | null
-          street?: string | null
-        }
-        Update: {
-          branch_id?: string
-          city?: string | null
-          id?: string
-          name?: string | null
-          neighborhood?: string | null
-          number?: string | null
-          street?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_profile_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       coupon_usage: {
         Row: {
           booking_id: string | null
@@ -581,6 +597,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "equipment_photos_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "equipment_photos_equipment_id_fkey"
             columns: ["equipment_id"]
             isOneToOne: false
@@ -637,64 +660,25 @@ export type Database = {
           },
         ]
       }
-      invoice_files: {
-        Row: {
-          booking_id: string | null
-          branch_id: string
-          created_at: string
-          equipment_booking_id: string | null
-          id: string
-          order_id: string | null
-          pdf_url: string | null
-          updated_at: string
-          uploaded_by: string
-          xml_url: string | null
-        }
-        Insert: {
-          booking_id?: string | null
-          branch_id: string
-          created_at?: string
-          equipment_booking_id?: string | null
-          id?: string
-          order_id?: string | null
-          pdf_url?: string | null
-          updated_at?: string
-          uploaded_by: string
-          xml_url?: string | null
-        }
-        Update: {
-          booking_id?: string | null
-          branch_id?: string
-          created_at?: string
-          equipment_booking_id?: string | null
-          id?: string
-          order_id?: string | null
-          pdf_url?: string | null
-          updated_at?: string
-          uploaded_by?: string
-          xml_url?: string | null
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
-          booking_id: string
+          booking_id: string | null
           branch_id: string
           content: string
           created_at: string | null
           id: string
-          sender_id: string
+          sender_id: string | null
         }
         Insert: {
-          booking_id: string
+          booking_id?: string | null
           branch_id: string
           content: string
           created_at?: string | null
           id?: string
-          sender_id: string
+          sender_id?: string
         }
         Update: {
-          booking_id?: string
+          booking_id?: string | null
           branch_id?: string
           content?: string
           created_at?: string | null
@@ -771,6 +755,9 @@ export type Database = {
           expires_at: string | null
           external_identifier: string | null
           id: string
+          invoice_uploaded_at: string | null
+          invoice_uploaded_by: string | null
+          invoice_url: string | null
           payment_data: Json | null
           payment_method: string | null
           refund_amount: number | null
@@ -788,6 +775,9 @@ export type Database = {
           expires_at?: string | null
           external_identifier?: string | null
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           payment_data?: Json | null
           payment_method?: string | null
           refund_amount?: number | null
@@ -805,6 +795,9 @@ export type Database = {
           expires_at?: string | null
           external_identifier?: string | null
           id?: string
+          invoice_uploaded_at?: string | null
+          invoice_uploaded_by?: string | null
+          invoice_url?: string | null
           payment_data?: Json | null
           payment_method?: string | null
           refund_amount?: number | null
@@ -819,6 +812,13 @@ export type Database = {
           {
             foreignKeyName: "fk_orders_profiles"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_invoice_uploaded_by_fkey"
+            columns: ["invoice_uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1217,402 +1217,16 @@ export type Database = {
         }
         Relationships: []
       }
-      security_audit: {
-        Row: {
-          action: string
-          branch_id: string | null
-          created_at: string
-          details: Json
-          event_type: string
-          id: string
-          ip_address: unknown | null
-          request_id: string | null
-          requires_review: boolean | null
-          resource_id: string | null
-          resource_type: string | null
-          review_notes: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          risk_score: number | null
-          session_id: string | null
-          severity: string
-          target_user_id: string | null
-          user_agent: string | null
-          user_email: string | null
-          user_id: string | null
-          user_role: string | null
-        }
-        Insert: {
-          action: string
-          branch_id?: string | null
-          created_at?: string
-          details: Json
-          event_type: string
-          id?: string
-          ip_address?: unknown | null
-          request_id?: string | null
-          requires_review?: boolean | null
-          resource_id?: string | null
-          resource_type?: string | null
-          review_notes?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          risk_score?: number | null
-          session_id?: string | null
-          severity?: string
-          target_user_id?: string | null
-          user_agent?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Update: {
-          action?: string
-          branch_id?: string | null
-          created_at?: string
-          details?: Json
-          event_type?: string
-          id?: string
-          ip_address?: unknown | null
-          request_id?: string | null
-          requires_review?: boolean | null
-          resource_id?: string | null
-          resource_type?: string | null
-          review_notes?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          risk_score?: number | null
-          session_id?: string | null
-          severity?: string
-          target_user_id?: string | null
-          user_agent?: string | null
-          user_email?: string | null
-          user_id?: string | null
-          user_role?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "security_audit_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "security_audit_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "security_audit_target_user_id_fkey"
-            columns: ["target_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "security_audit_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      system_backups: {
-        Row: {
-          backup_metadata: Json | null
-          backup_size: number | null
-          backup_type: string
-          branch_id: string | null
-          completed_at: string | null
-          compression_type: string | null
-          created_at: string
-          error_message: string | null
-          file_path: string | null
-          file_url: string | null
-          id: string
-          initiated_by: string | null
-          retention_until: string
-          started_at: string
-          status: string
-          tables_included: string[] | null
-        }
-        Insert: {
-          backup_metadata?: Json | null
-          backup_size?: number | null
-          backup_type: string
-          branch_id?: string | null
-          completed_at?: string | null
-          compression_type?: string | null
-          created_at?: string
-          error_message?: string | null
-          file_path?: string | null
-          file_url?: string | null
-          id?: string
-          initiated_by?: string | null
-          retention_until?: string
-          started_at?: string
-          status?: string
-          tables_included?: string[] | null
-        }
-        Update: {
-          backup_metadata?: Json | null
-          backup_size?: number | null
-          backup_type?: string
-          branch_id?: string | null
-          completed_at?: string | null
-          compression_type?: string | null
-          created_at?: string
-          error_message?: string | null
-          file_path?: string | null
-          file_url?: string | null
-          id?: string
-          initiated_by?: string | null
-          retention_until?: string
-          started_at?: string
-          status?: string
-          tables_included?: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "system_backups_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "system_backups_initiated_by_fkey"
-            columns: ["initiated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_permissions: {
-        Row: {
-          branch_id: string
-          created_at: string
-          expires_at: string | null
-          granted_at: string
-          granted_by: string | null
-          id: string
-          is_active: boolean
-          notes: string | null
-          permission_type: Database["public"]["Enums"]["permission_type"]
-          resource_type: Database["public"]["Enums"]["resource_type"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          branch_id: string
-          created_at?: string
-          expires_at?: string | null
-          granted_at?: string
-          granted_by?: string | null
-          id?: string
-          is_active?: boolean
-          notes?: string | null
-          permission_type: Database["public"]["Enums"]["permission_type"]
-          resource_type: Database["public"]["Enums"]["resource_type"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          branch_id?: string
-          created_at?: string
-          expires_at?: string | null
-          granted_at?: string
-          granted_by?: string | null
-          id?: string
-          is_active?: boolean
-          notes?: string | null
-          permission_type?: Database["public"]["Enums"]["permission_type"]
-          resource_type?: Database["public"]["Enums"]["resource_type"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_permissions_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_permissions_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_permissions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      add_to_cart: {
-        Args: {
-          p_user_id: string
-          p_item_type: string
-          p_item_id: string
-          p_quantity: number
-          p_metadata: Json
-        }
-        Returns: {
-          branch_id: string
-          created_at: string
-          expires_at: string | null
-          id: string
-          item_id: string
-          item_type: string
-          metadata: Json
-          price: number
-          quantity: number
-          reserved_booking_id: string | null
-          reserved_equipment_booking_id: string | null
-          user_id: string | null
-        }
-      }
-      clean_expired_cart_items: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      clear_cart: {
-        Args: { p_user_id: string }
-        Returns: boolean
-      }
-      confirm_cart_payment: {
-        Args: { p_user_id: string; p_order_id: string }
-        Returns: boolean
-      }
-      get_cart: {
-        Args: { p_user_id: string }
-        Returns: {
-          branch_id: string
-          created_at: string
-          expires_at: string | null
-          id: string
-          item_id: string
-          item_type: string
-          metadata: Json
-          price: number
-          quantity: number
-          reserved_booking_id: string | null
-          reserved_equipment_booking_id: string | null
-          user_id: string | null
-        }[]
-      }
-      get_equipment_availability: {
-        Args: {
-          p_equipment_id: string
-          p_date: string
-          p_requested_quantity?: number
-        }
-        Returns: {
-          hour: string
-          is_available: boolean
-          available_quantity: number
-          blocked_reason: string
-        }[]
-      }
-      get_room_availability: {
-        Args: { p_room_id: string; p_date: string }
-        Returns: {
-          hour: string
-          is_available: boolean
-          blocked_reason: string
-        }[]
-      }
-      has_permission: {
-        Args: {
-          p_user_id: string
-          p_resource: Database["public"]["Enums"]["resource_type"]
-          p_permission: Database["public"]["Enums"]["permission_type"]
-          p_branch_id?: string
-        }
-        Returns: boolean
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      log_security_event: {
-        Args: {
-          p_event_type: string
-          p_action: string
-          p_details: Json
-          p_severity?: string
-          p_resource_type?: string
-          p_resource_id?: string
-          p_risk_score?: number
-        }
-        Returns: string
-      }
-      remove_from_cart: {
-        Args: { p_id: string }
-        Returns: boolean
-      }
-      update_cart: {
-        Args: { p_id: string; p_quantity: number }
-        Returns: boolean
-      }
-      validate_coupon: {
-        Args: {
-          p_code: string
-          p_user_id: string
-          p_total_amount: number
-          p_item_count: number
-          p_applicable_type?: string
-        }
-        Returns: {
-          is_valid: boolean
-          coupon_id: string
-          discount_amount: number
-          error_message: string
-        }[]
-      }
+      [_ in never]: never
     }
     Enums: {
-      booking_status:
-        | "pending"
-        | "confirmed"
-        | "cancelled"
-        | "cancelled_unpaid"
-        | "pago"
-        | "falta pagar"
-        | "cancelado por falta de pagamento"
-      permission_type: "read" | "write" | "delete" | "admin" | "super_admin"
-      resource_type:
-        | "rooms"
-        | "equipment"
-        | "bookings"
-        | "clients"
-        | "products"
-        | "financial"
-        | "reports"
-        | "users"
-        | "branches"
-        | "coupons"
-        | "inventory"
-        | "notifications"
-        | "logs"
-        | "backups"
-      user_role: "admin" | "client" | "superadmin" | "super_admin"
+      booking_status: "in_process" | "paid" | "partial_refunded" | "cancelled" | "pre_authorized" | "recused"
+      user_role: "user" | "admin" | "super_admin"
       weekday:
         | "monday"
         | "tuesday"
@@ -1628,33 +1242,27 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[keyof Database]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1662,24 +1270,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1687,24 +1291,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1712,78 +1312,29 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      booking_status: [
-        "pending",
-        "confirmed",
-        "cancelled",
-        "cancelled_unpaid",
-        "pago",
-        "falta pagar",
-        "cancelado por falta de pagamento",
-      ],
-      permission_type: ["read", "write", "delete", "admin", "super_admin"],
-      resource_type: [
-        "rooms",
-        "equipment",
-        "bookings",
-        "clients",
-        "products",
-        "financial",
-        "reports",
-        "users",
-        "branches",
-        "coupons",
-        "inventory",
-        "notifications",
-        "logs",
-        "backups",
-      ],
-      user_role: ["admin", "client", "superadmin", "super_admin"],
-      weekday: [
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-      ],
-    },
-  },
-} as const

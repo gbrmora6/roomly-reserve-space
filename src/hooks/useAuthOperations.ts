@@ -99,20 +99,37 @@ export function useAuthOperations() {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, branchId: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: "admin",
+            role: "client",
             branch_id: branchId
           },
         },
       });
 
       if (error) throw error;
+
+      // Criar perfil do usuário na tabela profiles
+      if (data.user) {
+        const { error: profileError } = await supabase.rpc('create_user_profile', {
+          user_id: data.user.id,
+          user_email: email,
+          first_name: firstName,
+          last_name: lastName,
+          user_role: 'client',
+          user_branch_id: '64a43fed-587b-415c-aeac-0abfd7867566' // UUID da Filial Padrão
+        });
+
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+          // Não bloquear o registro se houver erro no perfil
+        }
+      }
 
       toast({
         title: "Conta criada com sucesso!",
@@ -163,38 +180,53 @@ export function useAuthOperations() {
   const signOut = async () => {
     try {
       devLog("Attempting to sign out");
+      
+      // Clear any cached security tokens first
+      try {
+        sessionStorage.clear();
+        devLog("Session storage cleared");
+      } catch (storageError) {
+        errorLog("Error clearing session storage", storageError);
+      }
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        errorLog("Logout error", error.message);
-        toast({
-          variant: "destructive",
-          title: "Erro ao fazer logout",
-          description: error.message,
-        });
-        throw error;
+        errorLog("Logout error from Supabase", error.message);
+        // Even if Supabase logout fails, we still navigate to login
+        // since we've already cleared local storage
+        devLog("Proceeding with logout despite Supabase error");
+      } else {
+        devLog("Supabase logout successful");
       }
       
-      devLog("Logout successful");
-      
-      // Clear any cached security tokens
-      sessionStorage.clear();
-      
-      // Aguarde um curto período para garantir que a sessão seja atualizada
+      // Always navigate to login and show success message
+      // regardless of Supabase error since local session is cleared
       setTimeout(() => {
         navigate("/login");
         toast({
           title: "Logout realizado com sucesso!",
         });
       }, 100);
+      
     } catch (error: any) {
       errorLog("Logout error (catch)", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao fazer logout",
-        description: error.message,
-      });
-      throw error;
+      
+      // Even in case of unexpected error, clear storage and navigate
+      try {
+        sessionStorage.clear();
+      } catch (storageError) {
+        errorLog("Error clearing session storage in catch", storageError);
+      }
+      
+      // Navigate to login even if there was an error
+      setTimeout(() => {
+        navigate("/login");
+        toast({
+          title: "Logout realizado!",
+          description: "Você foi desconectado.",
+        });
+      }, 100);
     }
   };
 

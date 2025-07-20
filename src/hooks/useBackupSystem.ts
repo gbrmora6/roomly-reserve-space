@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export interface SystemBackup {
   id: string;
   backup_type: 'scheduled' | 'manual' | 'pre_migration';
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'paid' | 'failed';
   backup_size?: number;
   file_path?: string;
   file_url?: string;

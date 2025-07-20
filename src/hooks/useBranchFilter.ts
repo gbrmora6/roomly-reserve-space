@@ -25,7 +25,7 @@ export function useBranchFilter(): BranchFilterReturn {
             .from("profiles")
             .select("branch_id, role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
           if (profile && !profileError) {
             setBranchId(profile.branch_id || "");

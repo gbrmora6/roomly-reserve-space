@@ -57,7 +57,7 @@ export function useBookingData(initialFilter: BookingFilter = { status: "all", b
                 .from("profiles")
                 .select("first_name, last_name")
                 .eq("id", booking.user_id)
-                .single();
+                .maybeSingle();
               return {
                 ...booking,
                 user: profileError || !profileData

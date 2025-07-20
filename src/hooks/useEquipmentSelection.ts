@@ -40,7 +40,7 @@ export function useEquipmentSelection(
         .from("profiles")
         .select("branch_id")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 

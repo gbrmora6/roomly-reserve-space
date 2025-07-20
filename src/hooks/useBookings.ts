@@ -63,7 +63,7 @@ export const useBookings = (userId: string | undefined) => {
       const table = type === "room" ? "bookings" : "booking_equipment";
       const { error } = await supabase
         .from(table)
-        .update({ status: "cancelled" })
+        .update({ status: "recused" })
         .eq("id", bookingId);
       if (error) throw error;
     },

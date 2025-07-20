@@ -3,6 +3,7 @@ import { addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { createDayBounds } from "@/utils/timezone";
+import { useEquipmentSchedule } from "@/hooks/useEquipmentSchedule";
 
 type WeekdayEnum = Database["public"]["Enums"]["weekday"];
 
@@ -50,6 +51,34 @@ export function useEquipmentDateAndTime({
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
   const startHourRef = useRef<HTMLDivElement>(null);
   const endHourRef = useRef<HTMLDivElement>(null);
+  const equipmentSchedules = useEquipmentSchedule(equipment.id);
+
+  // Função para verificar se o equipamento funciona em um determinado dia da semana
+  const isEquipmentOpenOnDay = (date: Date): boolean => {
+    const dayOfWeek = date.getDay(); // 0=domingo, 1=segunda, ..., 6=sábado
+    
+    // Primeiro, verificar se há schedules específicos para este dia
+    if (equipmentSchedules.length > 0) {
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[dayOfWeek];
+      
+      // Verificar se existe um schedule para este dia da semana
+      const hasScheduleForDay = equipmentSchedules.some(schedule => 
+        schedule.weekday.toLowerCase() === dayName
+      );
+      
+      return hasScheduleForDay;
+    }
+    
+    // Fallback: usar open_days se disponível
+    if (equipment.open_days && equipment.open_days.length > 0) {
+      const weekdayEnum = getWeekdayFromNumber(dayOfWeek);
+      return equipment.open_days.includes(weekdayEnum);
+    }
+    
+    // Se não há informações específicas, assumir que funciona de segunda a sexta (1-5)
+    return dayOfWeek >= 1 && dayOfWeek <= 5;
+  };
 
   // Function to check if a date should be disabled
   const isDateDisabled = (date: Date) => {
@@ -60,14 +89,8 @@ export function useEquipmentDateAndTime({
       return true;
     }
 
-    // Check if equipment is available on this weekday
-    if (equipment.open_days && equipment.open_days.length > 0) {
-      const weekdayNumber = date.getDay();
-      const weekdayEnum = getWeekdayFromNumber(weekdayNumber);
-      return !equipment.open_days.includes(weekdayEnum);
-    }
-
-    return false;
+    // Verificar se o equipamento funciona neste dia da semana
+    return !isEquipmentOpenOnDay(date);
   };
 
   // Handle date selection

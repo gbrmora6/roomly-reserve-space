@@ -5,12 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ProfileCompletionGuard from "@/components/auth/ProfileCompletionGuard";
+import FirstLoginHandler from "@/components/auth/FirstLoginHandler";
 
 // Public pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import PaymentInstructions from "./pages/PaymentInstructions";
@@ -47,8 +51,11 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import TodayReservations from "@/pages/admin/TodayReservations";
 import Coupons from "@/pages/admin/Coupons";
 import FinancialReports from "@/pages/admin/FinancialReports";
-import Notifications from "@/pages/admin/Notifications";
+
 import Inventory from "@/pages/admin/Inventory";
+import AdminLogs from "@/pages/admin/AdminLogs";
+import PaymentSettings from "@/pages/admin/PaymentSettings";
+import ExpirationSettings from "@/pages/admin/ExpirationSettings";
 
 const queryClient = new QueryClient();
 
@@ -56,13 +63,16 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <Toaster />
+        <FirstLoginHandler>
+          <QueryClientProvider client={queryClient}>
+            <Toaster />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
@@ -79,7 +89,9 @@ function App() {
               path="/cart"
               element={
                 <ProtectedRoute>
-                  <Cart />
+                  <ProfileCompletionGuard>
+                    <Cart />
+                  </ProfileCompletionGuard>
                 </ProtectedRoute>
               }
             />
@@ -87,7 +99,9 @@ function App() {
               path="/checkout"
               element={
                 <ProtectedRoute>
-                  <Checkout />
+                  <ProfileCompletionGuard>
+                    <Checkout />
+                  </ProfileCompletionGuard>
                 </ProtectedRoute>
               }
             />
@@ -103,7 +117,9 @@ function App() {
               path="/my-bookings"
               element={
                 <ProtectedRoute>
-                  <MyBookings />
+                  <ProfileCompletionGuard>
+                    <MyBookings />
+                  </ProfileCompletionGuard>
                 </ProtectedRoute>
               }
             />
@@ -111,7 +127,9 @@ function App() {
               path="/booking/:id"
               element={
                 <ProtectedRoute>
-                  <BookingDetails />
+                  <ProfileCompletionGuard>
+                    <BookingDetails />
+                  </ProfileCompletionGuard>
                 </ProtectedRoute>
               }
             />
@@ -142,8 +160,11 @@ function App() {
                       <Route path="coupons" element={<Coupons />} />
                       <Route path="branches" element={<BranchesPage />} />
                       <Route path="financial-reports" element={<FinancialReports />} />
-                      <Route path="notifications" element={<Notifications />} />
+
                       <Route path="inventory" element={<Inventory />} />
+                      <Route path="logs" element={<AdminLogs />} />
+                      <Route path="payment-settings" element={<PaymentSettings />} />
+                      <Route path="expiration-settings" element={<ExpirationSettings />} />
                     </Routes>
                   </AdminLayout>
                 </ProtectedRoute>
@@ -152,8 +173,9 @@ function App() {
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </QueryClientProvider>
+            </Routes>
+          </QueryClientProvider>
+        </FirstLoginHandler>
       </AuthProvider>
     </Router>
   );
