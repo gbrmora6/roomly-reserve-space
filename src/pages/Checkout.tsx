@@ -55,7 +55,7 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { cartItems, cartTotal, clearCart } = useCart();
+  const { cartItems, cartTotal, clearCart, isLoading: cartLoading } = useCart();
   const {
     appliedCoupon,
     getDiscountedTotal,
@@ -141,6 +141,16 @@ const Checkout = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Aguardar carregamento do carrinho antes de verificar se está vazio
+  if (cartLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+        <p className="text-muted-foreground text-sm">Carregando carrinho...</p>
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {
