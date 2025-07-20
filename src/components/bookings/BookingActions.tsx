@@ -46,17 +46,17 @@ export const BookingActions = ({
             <span>Ver Detalhes</span>
           </DropdownMenuItem>
           
-          {status === "pending" && (
+          {status === "in_process" && (
             <DropdownMenuItem
-              onClick={() => onUpdateStatus(bookingId, "confirmed")}
+              onClick={() => onUpdateStatus(bookingId, "paid")}
             >
               <Check className="mr-2 h-4 w-4 text-green-500" />
-              <span>Confirmar</span>
+              <span>Confirmar Pagamento</span>
             </DropdownMenuItem>
           )}
           
-          {status !== "cancelled" && (
-            <DropdownMenuItem onClick={() => onUpdateStatus(bookingId, "cancelled")}>
+          {status !== "recused" && (
+          <DropdownMenuItem onClick={() => onUpdateStatus(bookingId, "recused")}>
               <X className="mr-2 h-4 w-4 text-red-500" />
               <span>Cancelar</span>
             </DropdownMenuItem>

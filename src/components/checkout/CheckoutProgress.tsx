@@ -15,7 +15,7 @@ const CheckoutProgress = ({ currentStep }: CheckoutProgressProps) => {
   return (
     <div className="flex items-center justify-between w-full mb-8">
       {steps.map((step, index) => (
-        <React.Fragment key={step.number}>
+        <div key={step.number} className="contents">
           <div className="flex flex-col items-center">
             <div className={`
               w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300
@@ -46,7 +46,7 @@ const CheckoutProgress = ({ currentStep }: CheckoutProgressProps) => {
               currentStep > step.number ? 'bg-primary' : 'bg-muted-foreground/20'
             }`} />
           )}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );

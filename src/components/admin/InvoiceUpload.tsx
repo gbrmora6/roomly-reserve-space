@@ -7,213 +7,172 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileText, File } from "lucide-react";
-import { useAdminLogger } from "@/hooks/useAdminLogger";
-import { useBranchFilter } from "@/hooks/useBranchFilter";
+import { Upload, FileText, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InvoiceUploadProps {
-  bookingId?: string;
-  equipmentBookingId?: string;
-  orderId?: string;
-  type: "booking" | "equipment" | "order";
+  recordId: string;
+  recordType: "order" | "booking" | "equipment_booking";
+  currentInvoiceUrl?: string | null;
   onSuccess?: () => void;
 }
 
 export const InvoiceUpload = ({ 
-  bookingId, 
-  equipmentBookingId, 
-  orderId, 
-  type,
+  recordId,
+  recordType,
+  currentInvoiceUrl,
   onSuccess 
 }: InvoiceUploadProps) => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [xmlFile, setXmlFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
-  const { logAction } = useAdminLogger();
-  const { branchId } = useBranchFilter();
+  const { user } = useAuth();
 
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      if (!branchId) throw new Error("Branch ID não encontrado");
+  const uploadInvoice = async () => {
+    if (!pdfFile || !user) return;
+
+    setUploading(true);
+    try {
+      // Upload file to Supabase Storage
+      const fileName = `invoice_${recordType}_${recordId}_${Date.now()}.pdf`;
+      const filePath = `invoices/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('invoices')
+        .upload(filePath, pdfFile);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoices')
+        .getPublicUrl(filePath);
+
+      // Update the record with invoice information
+      const tableName = recordType === 'equipment_booking' ? 'booking_equipment' : 
+                       recordType === 'booking' ? 'bookings' : 'orders';
       
-      let pdfUrl = null;
-      let xmlUrl = null;
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update({
+          invoice_url: publicUrl,
+          invoice_uploaded_at: new Date().toISOString(),
+          invoice_uploaded_by: user.id
+        })
+        .eq('id', recordId);
 
-      // Upload PDF se existir
-      if (pdfFile) {
-        const pdfFileName = `invoice-pdf-${Date.now()}-${pdfFile.name}`;
-        const { data: pdfData, error: pdfError } = await supabase.storage
-          .from("invoices")
-          .upload(pdfFileName, pdfFile);
-        
-        if (pdfError) throw pdfError;
-        
-        const { data: pdfPublicUrl } = supabase.storage
-          .from("invoices")
-          .getPublicUrl(pdfData.path);
-        
-        pdfUrl = pdfPublicUrl.publicUrl;
+      if (updateError) {
+        throw updateError;
       }
 
-      // Upload XML se existir
-      if (xmlFile) {
-        const xmlFileName = `invoice-xml-${Date.now()}-${xmlFile.name}`;
-        const { data: xmlData, error: xmlError } = await supabase.storage
-          .from("invoices")
-          .upload(xmlFileName, xmlFile);
-        
-        if (xmlError) throw xmlError;
-        
-        const { data: xmlPublicUrl } = supabase.storage
-          .from("invoices")
-          .getPublicUrl(xmlData.path);
-        
-        xmlUrl = xmlPublicUrl.publicUrl;
-      }
-
-      // Salvar no banco de dados
-      const { error: dbError } = await supabase
-        .from("invoice_files")
-        .insert({
-          booking_id: bookingId || null,
-          equipment_booking_id: equipmentBookingId || null,
-          order_id: orderId || null,
-          pdf_url: pdfUrl,
-          xml_url: xmlUrl,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id || "",
-          branch_id: branchId,
-        });
-
-      if (dbError) throw dbError;
-
-      return { pdfUrl, xmlUrl };
-    },
-    onSuccess: () => {
       toast({
-        title: "Nota fiscal carregada",
-        description: "Os arquivos foram carregados com sucesso.",
+        title: "Nota fiscal enviada",
+        description: "A nota fiscal foi enviada com sucesso.",
       });
-
-      // Log da ação
-      logAction("upload_invoice", {
-        type,
-        bookingId,
-        equipmentBookingId,
-        orderId,
-        files: {
-          pdf: !!pdfFile,
-          xml: !!xmlFile
-        }
-      });
-
+      
       setPdfFile(null);
-      setXmlFile(null);
-      queryClient.invalidateQueries({ queryKey: ["invoice-files"] });
+      queryClient.invalidateQueries({ queryKey: [recordType + 's'] });
       onSuccess?.();
-    },
-    onError: (error: any) => {
+    } catch (error) {
+      console.error('Erro ao enviar nota fiscal:', error);
       toast({
         variant: "destructive",
-        title: "Erro ao carregar arquivos",
-        description: error.message || "Ocorreu um erro ao carregar os arquivos.",
+        title: "Erro ao enviar nota fiscal",
+        description: "Ocorreu um erro ao enviar a nota fiscal. Tente novamente.",
       });
-    },
-  });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === "application/pdf") {
+    if (file) {
+      if (file.type !== "application/pdf") {
+        toast({
+          variant: "destructive",
+          title: "Arquivo inválido",
+          description: "Por favor, selecione apenas arquivos PDF.",
+        });
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast({
+          variant: "destructive",
+          title: "Arquivo muito grande",
+          description: "O arquivo deve ter no máximo 10MB.",
+        });
+        return;
+      }
       setPdfFile(file);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Arquivo inválido",
-        description: "Por favor, selecione um arquivo PDF válido.",
-      });
     }
   };
 
-  const handleXmlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && (file.type === "text/xml" || file.name.endsWith(".xml"))) {
-      setXmlFile(file);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Arquivo inválido",
-        description: "Por favor, selecione um arquivo XML válido.",
-      });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pdfFile && !xmlFile) {
-      toast({
-        variant: "destructive",
-        title: "Nenhum arquivo selecionado",
-        description: "Selecione pelo menos um arquivo (PDF ou XML).",
-      });
-      return;
-    }
-    uploadMutation.mutate();
+  const removePdfFile = () => {
+    setPdfFile(null);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Upload de Nota Fiscal
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="pdf-file" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Arquivo PDF
-            </Label>
-            <Input
-              id="pdf-file"
-              type="file"
-              accept=".pdf"
-              onChange={handlePdfChange}
-            />
-            {pdfFile && (
-              <p className="text-sm text-muted-foreground">
-                Arquivo selecionado: {pdfFile.name}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="xml-file" className="flex items-center gap-2">
-              <File className="h-4 w-4" />
-              Arquivo XML
-            </Label>
-            <Input
-              id="xml-file"
-              type="file"
-              accept=".xml"
-              onChange={handleXmlChange}
-            />
-            {xmlFile && (
-              <p className="text-sm text-muted-foreground">
-                Arquivo selecionado: {xmlFile.name}
-              </p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={uploadMutation.isPending || (!pdfFile && !xmlFile)}
-            className="w-full"
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Nota Fiscal (PDF)
+        </Label>
+        {currentInvoiceUrl && (
+          <a
+            href={currentInvoiceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
           >
-            {uploadMutation.isPending ? "Carregando..." : "Fazer Upload"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <FileText className="h-4 w-4" />
+            <span>Ver atual</span>
+          </a>
+        )}
+      </div>
+      
+      {!pdfFile ? (
+        <div className="flex items-center gap-2">
+          <Input
+            type="file"
+            accept=".pdf"
+            onChange={handlePdfChange}
+            className="flex-1"
+          />
+          <Upload className="h-4 w-4 text-gray-400" />
+        </div>
+      ) : (
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-red-600" />
+            <span className="text-sm text-gray-700">{pdfFile.name}</span>
+            <span className="text-xs text-gray-500">
+              ({(pdfFile.size / 1024 / 1024).toFixed(2)} MB)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={uploadInvoice}
+              disabled={uploading}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {uploading ? 'Enviando...' : 'Enviar'}
+            </Button>
+            <Button
+              onClick={removePdfFile}
+              variant="outline"
+              size="sm"
+              className="p-1"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

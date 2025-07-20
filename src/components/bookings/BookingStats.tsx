@@ -11,12 +11,12 @@ interface BookingStatsProps {
 export const BookingStats = ({ bookings, type }: BookingStatsProps) => {
   const stats = React.useMemo(() => {
     const total = bookings.length;
-    const paid = bookings.filter(b => b.status === "paid" || b.status === "confirmed").length;
-    const pending = bookings.filter(b => b.status === "pending" || b.status === "awaiting_payment").length;
-    const cancelled = bookings.filter(b => b.status === "cancelled" || b.status === "cancelled_due_to_payment").length;
+    const paid = bookings.filter(b => b.status === "paid").length;
+    const pending = bookings.filter(b => b.status === "in_process" || b.status === "pre_authorized").length;
+    const cancelled = bookings.filter(b => b.status === "recused").length;
     const totalValue = bookings.reduce((sum, booking) => sum + (booking.total_price || 0), 0);
     const paidValue = bookings
-      .filter(b => b.status === "paid" || b.status === "confirmed")
+      .filter(b => b.status === "paid")
       .reduce((sum, booking) => sum + (booking.total_price || 0), 0);
 
     return {

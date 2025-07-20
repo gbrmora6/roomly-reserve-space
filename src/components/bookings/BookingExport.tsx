@@ -38,10 +38,16 @@ interface BookingExportProps {
 export const BookingExport = ({ bookings }: BookingExportProps) => {
   const translateStatus = (status: BookingStatus): string => {
     switch (status) {
-      case "pending": return "Pendente";
-      case "confirmed": return "Confirmada";
-      case "cancelled": return "Cancelada";
-      default: return status;
+      case "in_process": return "Em Processamento";
+    case "paid": return "Paga";
+    case "partial_refunded": return "Parcialmente Devolvida";
+    case "recused": return "Cancelada";
+    case "pre_authorized": return "Pré-autorizada";
+    case "recused": return "Recusada";
+    // Status legados para compatibilidade
+    case "pending": return "Pendente";
+    case "confirmed": return "Confirmada";
+    default: return status;
     }
   };
 

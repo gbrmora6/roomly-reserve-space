@@ -42,7 +42,7 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
   ];
 
   return (
-    <RadioGroup value={selectedMethod} onValueChange={onMethodChange} className="space-y-4">
+    <RadioGroup value={selectedMethod} onValueChange={onMethodChange} className="space-y-3 sm:space-y-4">
       {paymentMethods.map((method) => {
         const Icon = method.icon;
         const isSelected = selectedMethod === method.id;
@@ -52,37 +52,37 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
             <RadioGroupItem 
               value={method.id} 
               id={method.id} 
-              className="absolute top-4 left-4 z-10"
+              className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10"
             />
             <Label htmlFor={method.id} className="cursor-pointer">
-              <Card className={`transition-all duration-200 hover:shadow-md ${
+              <Card className={`transition-all duration-200 hover:shadow-md rounded-xl md:rounded-2xl ${
                 isSelected 
                   ? 'ring-2 ring-primary border-primary bg-primary/5' 
                   : 'hover:border-primary/50'
               }`}>
-                <CardContent className="p-4 pl-12">
+                <CardContent className="p-3 sm:p-4 pl-8 sm:pl-12">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <div className={`p-2 rounded-lg ${
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <div className={`p-1.5 sm:p-2 rounded-lg ${
                         isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
                       }`}>
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-base">{method.title}</h3>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center space-x-2 flex-wrap">
+                          <h3 className="font-semibold text-sm sm:text-base">{method.title}</h3>
                           <Badge variant={method.badgeVariant} className="text-xs">
                             {method.badge}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">{method.description}</p>
-                        <div className="flex flex-wrap gap-2 mt-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground">{method.description}</p>
+                        <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
                           {method.benefits.map((benefit, index) => (
                             <div key={index} className="flex items-center space-x-1 text-xs text-muted-foreground">
-                              {index === 0 && <Zap className="w-3 h-3 text-green-600" />}
-                              {index === 1 && <Shield className="w-3 h-3 text-blue-600" />}
-                              {index === 2 && <Clock className="w-3 h-3 text-orange-600" />}
-                              <span>{benefit}</span>
+                              {index === 0 && <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-600" />}
+                              {index === 1 && <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-600" />}
+                              {index === 2 && <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-orange-600" />}
+                              <span className="text-xs">{benefit}</span>
                             </div>
                           ))}
                         </div>

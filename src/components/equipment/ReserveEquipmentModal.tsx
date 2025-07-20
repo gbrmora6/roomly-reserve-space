@@ -3,18 +3,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ReserveEquipmentForm } from "@/components/equipment/ReserveEquipmentForm";
 import { Database } from "@/integrations/supabase/types";
 
-// Updated Equipment interface to use the correct open_days type
-interface Equipment {
-  id: string;
-  name: string;
-  description: string | null;
-  quantity: number;
-  price_per_hour: number;
+type Equipment = Database["public"]["Tables"]["equipment"]["Row"] & {
+  equipment_photos?: { id: string; url: string }[];
+  branches?: { id: string; name: string; city: string };
   available: number;
-  open_time?: string;
-  close_time?: string;
-  open_days?: Database["public"]["Enums"]["weekday"][];
-}
+};
 
 interface FilterState {
   date: Date | null;

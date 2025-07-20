@@ -19,7 +19,7 @@ export const useNotifications = () => {
       const { data, error } = await supabase
         .from("bookings")
         .select("id")
-        .eq("status", "pending");
+        .eq("status", "in_process");
         
       if (error) throw error;
       return data || [];
@@ -34,7 +34,7 @@ export const useNotifications = () => {
       const { data, error } = await supabase
         .from("booking_equipment")
         .select("id")
-        .eq("status", "pending");
+        .eq("status", "in_process");
         
       if (error) throw error;
       return data || [];
@@ -58,8 +58,8 @@ export const useNotifications = () => {
           // Invalidate the query to force a refetch of the data
           queryClient.invalidateQueries({ queryKey: ["pending-room-bookings"] });
           
-          // If it's a new pending booking, play notification sound
-          if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+          // If it's a new in_process booking, play notification sound
+          if (payload.eventType === 'INSERT' && payload.new.status === 'in_process') {
             notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
           }
         }
@@ -80,8 +80,8 @@ export const useNotifications = () => {
           // Invalidate the query to force a refetch of the data
           queryClient.invalidateQueries({ queryKey: ["pending-equipment-bookings"] });
           
-          // If it's a new pending booking, play notification sound
-          if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+          // If it's a new in_process booking, play notification sound
+          if (payload.eventType === 'INSERT' && payload.new.status === 'in_process') {
             notificationSound?.play().catch(err => console.error("Error playing notification sound:", err));
           }
         }

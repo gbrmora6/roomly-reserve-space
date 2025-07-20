@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, ShoppingCart, Plus, Minus } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import { useCoupon } from "@/hooks/useCoupon";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +16,22 @@ import CartTimer from "./CartTimer";
 import ProductSuggestions from "./ProductSuggestions";
 import { CartItemImage } from "./CartItemImage";
 import { CartItemNotes } from "./CartItemNotes";
+import CouponInput from "./CouponInput";
 
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { cartItems, cartTotal, removeFromCart, updateCart, refetch } = useCart();
+  const {
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
+    getDiscountedTotal,
+    hasActiveCoupon,
+    discountAmount
+  } = useCoupon();
+
+  // Calcular total com desconto
+  const finalTotal = getDiscountedTotal(cartTotal);
 
   // Buscar detalhes dos itens do carrinho
   const { data: itemsWithDetails, isLoading } = useQuery({
@@ -29,11 +42,16 @@ const CartPage: React.FC = () => {
       const roomIds = cartItems.filter(item => item.item_type === 'room').map(item => item.item_id);
       const equipmentIds = cartItems.filter(item => item.item_type === 'equipment').map(item => item.item_id);
       const productIds = cartItems.filter(item => item.item_type === 'product').map(item => item.item_id);
+      const branchIds = [...new Set(cartItems.map(item => item.branch_id))];
 
-      const [roomsData, equipmentsData, productsData] = await Promise.all([
-        roomIds.length ? supabase.from('rooms').select('*').in('id', roomIds) : { data: [] },
+      const [roomsData, equipmentsData, productsData, branchesData] = await Promise.all([
+        roomIds.length ? supabase.from('rooms').select(`
+          *,
+          room_photos (url)
+        `).in('id', roomIds) : { data: [] },
         equipmentIds.length ? supabase.from('equipment').select('*').in('id', equipmentIds) : { data: [] },
-        productIds.length ? supabase.from('products').select('*').in('id', productIds) : { data: [] }
+        productIds.length ? supabase.from('products').select('*').in('id', productIds) : { data: [] },
+        branchIds.length ? supabase.from('branches').select('*').in('id', branchIds) : { data: [] }
       ]);
 
       return cartItems.map(item => {
@@ -49,7 +67,8 @@ const CartPage: React.FC = () => {
             details = productsData.data?.find(prod => prod.id === item.item_id);
             break;
         }
-        return { ...item, details };
+        const branch = branchesData.data?.find(branch => branch.id === item.branch_id);
+        return { ...item, details, branch };
       });
     },
     enabled: cartItems.length > 0,
@@ -138,7 +157,14 @@ const CartPage: React.FC = () => {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => removeFromCart(item.id)}
+              onClick={() => {
+                console.log("=== REMOVENDO ITEM DO CARRINHO ===");
+                console.log("Item ID:", item.id);
+                console.log("Item completo:", item);
+                console.log("Tipo do item:", item.item_type);
+                console.log("Metadata:", item.metadata);
+                removeFromCart(item.id);
+              }}
               className="ml-2"
             >
               <Trash2 className="h-4 w-4" />
@@ -149,25 +175,137 @@ const CartPage: React.FC = () => {
         <CardContent className="space-y-4">
           {/* Detalhes específicos do tipo */}
           {(item.item_type === 'room' || item.item_type === 'equipment') && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              {metadata.date && (
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Data:</span>
-                  <span>{metadata.date}</span>
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-700 font-semibold text-sm uppercase tracking-wide">Detalhes da Reserva</span>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl p-6 space-y-4 shadow-sm border border-blue-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">ℹ️</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-blue-900">Detalhes da Reserva</h3>
                 </div>
-              )}
-              {metadata.start_time_display && metadata.end_time_display && (
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Horário:</span>
-                  <span>{metadata.start_time_display} - {metadata.end_time_display}</span>
+                
+                {metadata.date && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
+                          <span className="text-white text-lg">📅</span>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-500 block">Data da Reserva</span>
+                          <span className="font-bold text-gray-800 text-lg">
+                            {(() => {
+                              const date = new Date(metadata.date + 'T00:00:00');
+                              return date.toLocaleDateString('pt-BR', {
+                                weekday: 'long',
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                              });
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(metadata.start_time_display || metadata.start_time) && (
+                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                          <span className="text-white text-lg">🕐</span>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-500 block">Horário de Início</span>
+                          <span className="font-bold text-gray-800 text-lg">
+                            {(() => {
+                              const timeStr = metadata.start_time_display || metadata.start_time;
+                              if (timeStr && timeStr.includes('T')) {
+                                return new Date(timeStr).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                });
+                              }
+                              return timeStr;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(metadata.end_time_display || metadata.end_time) && (
+                    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-md">
+                          <span className="text-white text-lg">🕑</span>
+                        </div>
+                        <div>
+                          <span className="text-sm text-gray-500 block">Horário de Término</span>
+                          <span className="font-bold text-gray-800 text-lg">
+                            {(() => {
+                              const timeStr = metadata.end_time_display || metadata.end_time;
+                              if (timeStr && timeStr.includes('T')) {
+                                return new Date(timeStr).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                });
+                              }
+                              return timeStr;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              {metadata.duration && (
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Duração:</span>
-                  <span>{metadata.duration}h</span>
-                </div>
-              )}
+                
+                {metadata.duration && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-white text-lg">⏱️</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500 block">Duração Total</span>
+                        <span className="font-bold text-gray-800 text-lg">{metadata.duration} hora(s)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Informações da filial */}
+                {item.branch && (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                        <span className="text-white text-lg">📍</span>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-500 block">Local da Reserva</span>
+                        <div className="font-bold text-gray-800 text-lg mb-1">{item.branch.name}</div>
+                        <div className="text-sm text-gray-600 leading-relaxed">
+                          {[item.branch.street, item.branch.number, item.branch.neighborhood, item.branch.city, item.branch.state]
+                            .filter(Boolean)
+                            .join(', ')}
+                          {item.branch.zip_code && (
+                            <span className="block text-xs text-gray-500 mt-1">
+                              CEP: {item.branch.zip_code}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -179,7 +317,13 @@ const CartPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateCart({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })}
+                    onClick={() => {
+                      console.log("=== DIMINUINDO QUANTIDADE ===");
+                      console.log("Item ID:", item.id);
+                      console.log("Quantidade atual:", item.quantity);
+                      console.log("Nova quantidade:", Math.max(1, item.quantity - 1));
+                      updateCart({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) });
+                    }}
                     disabled={item.quantity <= 1}
                     className="h-8 w-8 p-0"
                   >
@@ -189,7 +333,13 @@ const CartPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateCart({ itemId: item.id, quantity: item.quantity + 1 })}
+                    onClick={() => {
+                      console.log("=== AUMENTANDO QUANTIDADE ===");
+                      console.log("Item ID:", item.id);
+                      console.log("Quantidade atual:", item.quantity);
+                      console.log("Nova quantidade:", item.quantity + 1);
+                      updateCart({ itemId: item.id, quantity: item.quantity + 1 });
+                    }}
                     className="h-8 w-8 p-0"
                   >
                     <Plus className="h-3 w-3" />
@@ -266,13 +416,38 @@ const CartPage: React.FC = () => {
                       <span>Itens ({cartItems.length}):</span>
                       <span className="font-medium">{formatCurrency(cartTotal)}</span>
                     </div>
+                    
+                    {hasActiveCoupon && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Desconto ({appliedCoupon?.couponCode}):</span>
+                        <span className="font-medium">-{formatCurrency(discountAmount)}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Componente de Cupom */}
+                  <CouponInput
+                    cartTotal={cartTotal}
+                    cartItemCount={cartItems.length}
+                    onCouponApplied={applyCoupon}
+                    onCouponRemoved={removeCoupon}
+                    appliedCoupon={appliedCoupon}
+                  />
 
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between font-bold text-xl text-gray-900">
                       <span>Total:</span>
-                      <span className="text-primary">{formatCurrency(cartTotal)}</span>
+                      <span className="text-primary">{formatCurrency(finalTotal)}</span>
                     </div>
+                    
+                    {hasActiveCoupon && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        <span className="line-through">{formatCurrency(cartTotal)}</span>
+                        <span className="ml-2 text-green-600 font-medium">
+                          Economia: {formatCurrency(discountAmount)}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <Button 

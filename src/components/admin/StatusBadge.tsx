@@ -8,12 +8,37 @@ interface StatusBadgeProps {
 }
 
 const statusConfig = {
+  "in_process": {
+    label: "Em Processamento",
+    variant: "secondary" as const,
+    className: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+    icon: Clock
+  },
   "paid": {
     label: "Pago",
     variant: "default" as const,
     className: "bg-green-100 text-green-800 hover:bg-green-200",
     icon: CheckCircle
   },
+  "partial_refunded": {
+    label: "Parcialmente Devolvido",
+    variant: "secondary" as const,
+    className: "bg-orange-100 text-orange-800 hover:bg-orange-200",
+    icon: Clock
+  },
+  "pre_authorized": {
+    label: "Pré-autorizado",
+    variant: "secondary" as const,
+    className: "bg-purple-100 text-purple-800 hover:bg-purple-200",
+    icon: Clock
+  },
+  "recused": {
+    label: "Recusado",
+    variant: "destructive" as const,
+    className: "bg-red-100 text-red-800 hover:bg-red-200",
+    icon: XCircle
+  },
+  // Status legados para compatibilidade
   "pago": {
     label: "Pago", 
     variant: "default" as const,
@@ -21,7 +46,7 @@ const statusConfig = {
     icon: CheckCircle
   },
   "pending": {
-    label: "Falta pagar",
+    label: "Pendente",
     variant: "secondary" as const,
     className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
     icon: Clock
@@ -32,24 +57,8 @@ const statusConfig = {
     className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200", 
     icon: Clock
   },
-  "awaiting_payment": {
-    label: "Falta pagar",
-    variant: "secondary" as const,
-    className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
-    icon: Clock
-  },
-  "cancelled": {
-    label: "Cancelado por falta de pagamento",
-    variant: "destructive" as const,
-    className: "bg-red-100 text-red-800 hover:bg-red-200",
-    icon: XCircle
-  },
-  "cancelled_due_to_payment": {
-    label: "Cancelado por falta de pagamento",
-    variant: "destructive" as const,
-    className: "bg-red-100 text-red-800 hover:bg-red-200",
-    icon: XCircle
-  },
+
+
   "cancelado por falta de pagamento": {
     label: "Cancelado por falta de pagamento",
     variant: "destructive" as const,
@@ -59,15 +68,10 @@ const statusConfig = {
   "confirmed": {
     label: "Confirmado",
     variant: "default" as const,
-    className: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+    className: "bg-green-100 text-green-800 hover:bg-green-200",
     icon: CheckCircle
   },
-  "cancelled_unpaid": {
-    label: "Cancelado por falta de pagamento",
-    variant: "destructive" as const,
-    className: "bg-red-100 text-red-800 hover:bg-red-200",
-    icon: XCircle
-  }
+
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) => {

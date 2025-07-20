@@ -52,17 +52,17 @@ export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, isLoadi
   const labels = getLabels();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{labels.total}</CardTitle>
+            <Card className="rounded-xl md:rounded-2xl">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{labels.total}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">
-                  {isLoading ? <Skeleton className="h-8 w-16" /> : stats.total}
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold">
+                  {isLoading ? <Skeleton className="h-6 sm:h-8 w-12 sm:w-16" /> : stats.total}
                 </div>
               </CardContent>
             </Card>
@@ -75,13 +75,13 @@ export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, isLoadi
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento</CardTitle>
+              <Card className="rounded-xl md:rounded-2xl">
+                <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Faturamento</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-700">
-                    {isLoading ? <Skeleton className="h-8 w-24" /> : `R$ ${stats.faturado.toFixed(2)}`}
+                <CardContent className="p-3 sm:p-6 pt-0">
+                  <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-700 truncate">
+                    {isLoading ? <Skeleton className="h-6 sm:h-8 w-16 sm:w-24" /> : `R$ ${stats.faturado.toFixed(2)}`}
                   </div>
                 </CardContent>
               </Card>
@@ -94,13 +94,13 @@ export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, isLoadi
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{labels.paid}</CardTitle>
+            <Card className="rounded-xl md:rounded-2xl">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{labels.paid}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">
-                  {isLoading ? <Skeleton className="h-8 w-12" /> : stats.pagas}
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+                  {isLoading ? <Skeleton className="h-6 sm:h-8 w-8 sm:w-12" /> : stats.pagas}
                 </div>
               </CardContent>
             </Card>
@@ -112,13 +112,13 @@ export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, isLoadi
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{labels.pending}</CardTitle>
+            <Card className="rounded-xl md:rounded-2xl">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{labels.pending}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">
-                  {isLoading ? <Skeleton className="h-8 w-12" /> : stats.pendentes}
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-yellow-600">
+                  {isLoading ? <Skeleton className="h-6 sm:h-8 w-8 sm:w-12" /> : stats.pendentes}
                 </div>
               </CardContent>
             </Card>
@@ -130,13 +130,13 @@ export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, isLoadi
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{labels.cancelled}</CardTitle>
+            <Card className="rounded-xl md:rounded-2xl">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{labels.cancelled}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-red-600">
-                  {isLoading ? <Skeleton className="h-8 w-12" /> : stats.canceladas}
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">
+                  {isLoading ? <Skeleton className="h-6 sm:h-8 w-8 sm:w-12" /> : stats.canceladas}
                 </div>
               </CardContent>
             </Card>

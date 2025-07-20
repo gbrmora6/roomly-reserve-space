@@ -96,9 +96,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   // Show loading state
   if (isVerifying) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-roomly-600 mb-6" />
-        <p className="text-roomly-600 font-medium">Verificando permissões administrativas...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <div className="animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-b-2 border-roomly-600 mb-4 md:mb-6" />
+        <p className="text-roomly-600 font-medium text-sm md:text-base text-center">Verificando permissões administrativas...</p>
       </div>
     );
   }
@@ -123,15 +123,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         <SidebarInset className="flex-1">
           <div className="flex flex-col h-full">
-            <header className="flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm">
-              <div className="flex items-center gap-3">
+            <header className="flex items-center justify-between p-3 md:p-4 bg-white border-b border-slate-200 shadow-sm">
+              <div className="flex items-center gap-2 md:gap-3">
                 <SidebarTrigger className="hover:bg-slate-100 transition-colors" />
-                <div className="h-6 w-px bg-slate-300" />
-                <h1 className="text-xl font-semibold text-slate-800">Painel Administrativo</h1>
+                <div className="h-4 md:h-6 w-px bg-slate-300" />
+                <h1 className="text-lg md:text-xl font-semibold text-slate-800">Painel Administrativo</h1>
               </div>
             </header>
 
-            <main className="flex-1 p-6 overflow-auto">
+            <main className="flex-1 p-4 md:p-6 overflow-auto">
               {children || <Outlet />}
             </main>
           </div>

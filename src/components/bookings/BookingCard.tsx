@@ -9,6 +9,8 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { BookingStatusBadge } from "./BookingStatusBadge";
 import { InvoiceDownload } from "@/components/client/InvoiceDownload";
 
+
+
 interface BookingCardProps {
   booking: any;
   type: "room" | "equipment";
@@ -45,7 +47,7 @@ export const BookingCard = ({
     return type === "room" ? <MapPin className="h-4 w-4" /> : <Package className="h-4 w-4" />;
   };
 
-  const canRefresh = booking.status === "pending" || booking.status === "awaiting_payment";
+  const canRefresh = booking.status === "in_process" || booking.status === "pre_authorized";
   const canRefund = booking.status === "paid" && booking.payment_method && 
                    (booking.payment_method === "pix" || booking.payment_method === "cartao");
   const canCancel = booking.status === "pending";

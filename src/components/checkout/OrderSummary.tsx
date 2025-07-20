@@ -15,9 +15,22 @@ interface CartItem {
 interface OrderSummaryProps {
   cartItems: CartItem[];
   cartTotal: number;
+  appliedCoupon?: {
+    couponCode: string;
+    couponId: string;
+  } | null;
+  discountAmount?: number;
+  finalTotal?: number;
 }
 
-const OrderSummary = ({ cartItems, cartTotal }: OrderSummaryProps) => {
+const OrderSummary = ({ 
+  cartItems, 
+  cartTotal, 
+  appliedCoupon, 
+  discountAmount = 0, 
+  finalTotal 
+}: OrderSummaryProps) => {
+  const displayTotal = finalTotal !== undefined ? finalTotal : cartTotal;
   return (
     <div className="space-y-4">
       <Card className="sticky top-4">
@@ -55,6 +68,14 @@ const OrderSummary = ({ cartItems, cartTotal }: OrderSummaryProps) => {
               <span>Subtotal</span>
               <span>{formatCurrency(cartTotal)}</span>
             </div>
+            
+            {appliedCoupon && discountAmount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Desconto ({appliedCoupon.couponCode})</span>
+                <span>-{formatCurrency(discountAmount)}</span>
+              </div>
+            )}
+            
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Frete</span>
               <span>Grátis</span>
@@ -65,8 +86,17 @@ const OrderSummary = ({ cartItems, cartTotal }: OrderSummaryProps) => {
           
           <div className="flex justify-between items-center text-base font-bold">
             <span>Total</span>
-            <span className="text-lg">{formatCurrency(cartTotal)}</span>
+            <span className="text-lg">{formatCurrency(displayTotal)}</span>
           </div>
+          
+          {appliedCoupon && discountAmount > 0 && (
+            <div className="text-xs text-muted-foreground text-center">
+              <span className="line-through">{formatCurrency(cartTotal)}</span>
+              <span className="ml-2 text-green-600 font-medium">
+                Economia: {formatCurrency(discountAmount)}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -22,9 +22,9 @@ import {
   UserPlus,
   Tag,
   TrendingUp,
-  Bell,
   Archive,
-  CalendarDays,
+  CreditCard,
+  Clock,
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,14 +51,14 @@ export const AdminSidebarMenu: React.FC = () => {
       <SidebarMenuButton asChild>
         <Link 
           to={to} 
-          className={`flex items-center gap-3 text-gray-700 text-sm py-2.5 px-3 rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-2 sm:gap-3 text-gray-700 text-xs sm:text-sm py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg transition-all duration-200 ${
             isActive(to) 
               ? "bg-blue-50 text-blue-700 font-semibold shadow-sm border-l-2 border-blue-500" 
               : "hover:bg-gray-50 hover:text-gray-900"
           } ${className}`}
         >
-          <Icon className="h-4 w-4 flex-shrink-0" />
-          <span className="truncate">{children}</span>
+          <Icon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+          <span className="truncate text-xs sm:text-sm">{children}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -68,7 +68,7 @@ export const AdminSidebarMenu: React.FC = () => {
     <div className="flex flex-col h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
       {/* Dashboard */}
       <SidebarGroup>
-        <SidebarMenu className="px-2 pt-2">
+        <SidebarMenu className="px-1 sm:px-2 pt-1 sm:pt-2">
           <MenuLink to="/admin" icon={LayoutDashboard}>
             Dashboard
           </MenuLink>
@@ -80,10 +80,10 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Gestão */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-4 py-2 mt-2 uppercase tracking-wide">
+        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-2 sm:px-4 py-1 sm:py-2 mt-1 sm:mt-2 uppercase tracking-wide">
           Gestão
         </SidebarGroupLabel>
-        <SidebarMenu className="px-2">
+        <SidebarMenu className="px-1 sm:px-2">
           <MenuLink to="/admin/company-profile" icon={Building}>
             Perfil da Empresa
           </MenuLink>
@@ -104,10 +104,10 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Reservas e Vendas */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-4 py-2 mt-2 uppercase tracking-wide">
+        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-2 sm:px-4 py-1 sm:py-2 mt-1 sm:mt-2 uppercase tracking-wide">
           Reservas & Vendas
         </SidebarGroupLabel>
-        <SidebarMenu className="px-2">
+        <SidebarMenu className="px-1 sm:px-2">
           <MenuLink to="/admin/bookings" icon={BookOpen}>
             Reservas de Salas
           </MenuLink>
@@ -117,18 +117,16 @@ export const AdminSidebarMenu: React.FC = () => {
           <MenuLink to="/admin/product-sales" icon={ShoppingBag}>
             Vendas de Produtos
           </MenuLink>
-          <MenuLink to="/admin/calendar" icon={CalendarDays}>
-            Calendário
-          </MenuLink>
+
         </SidebarMenu>
       </SidebarGroup>
 
       {/* Usuários */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-4 py-2 mt-2 uppercase tracking-wide">
+        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-2 sm:px-4 py-1 sm:py-2 mt-1 sm:mt-2 uppercase tracking-wide">
           Usuários
         </SidebarGroupLabel>
-        <SidebarMenu className="px-2">
+        <SidebarMenu className="px-1 sm:px-2">
           <MenuLink to="/admin/clients" icon={Users}>
             Clientes
           </MenuLink>
@@ -140,10 +138,10 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Relatórios */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-4 py-2 mt-2 uppercase tracking-wide">
+        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-2 sm:px-4 py-1 sm:py-2 mt-1 sm:mt-2 uppercase tracking-wide">
           Relatórios
         </SidebarGroupLabel>
-        <SidebarMenu className="px-2">
+        <SidebarMenu className="px-1 sm:px-2">
           <MenuLink to="/admin/financial-reports" icon={TrendingUp}>
             Relatórios Financeiros
           </MenuLink>
@@ -155,12 +153,16 @@ export const AdminSidebarMenu: React.FC = () => {
 
       {/* Sistema */}
       <SidebarGroup>
-        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-4 py-2 mt-2 uppercase tracking-wide">
+        <SidebarGroupLabel className="text-gray-600 text-xs font-medium px-2 sm:px-4 py-1 sm:py-2 mt-1 sm:mt-2 uppercase tracking-wide">
           Sistema
         </SidebarGroupLabel>
-        <SidebarMenu className="px-2 pb-4">
-          <MenuLink to="/admin/notifications" icon={Bell}>
-            Notificações
+        <SidebarMenu className="px-1 sm:px-2 pb-2 sm:pb-4">
+
+          <MenuLink to="/admin/payment-settings" icon={CreditCard}>
+            Configurações de Pagamento
+          </MenuLink>
+          <MenuLink to="/admin/expiration-settings" icon={Clock}>
+            Configurações de Expiração
           </MenuLink>
           <MenuLink to="/admin/logs" icon={FileText}>
             Logs de Admin
