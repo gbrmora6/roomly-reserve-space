@@ -68,13 +68,16 @@ const CouponInput: React.FC<CouponInputProps> = ({
 
     try {
       // Chamar a função validate_coupon do Supabase
-      const { data, error } = await supabase.rpc('validate_coupon', {
+      const response = await (supabase as any).rpc('validate_coupon', {
         p_code: couponCode.toUpperCase(),
         p_user_id: user.id,
         p_total_amount: cartTotal,
         p_item_count: cartItemCount,
-        p_applicable_type: 'all' // Por enquanto, aceita todos os tipos
+        p_applicable_type: 'all'
       });
+      
+      const data = response.data as CouponResult[] | null;
+      const error = response.error;
 
       if (error) {
         console.error('Erro ao validar cupom:', error);
@@ -87,7 +90,7 @@ const CouponInput: React.FC<CouponInputProps> = ({
       }
 
       if (data && Array.isArray(data) && data.length > 0) {
-        const result = data[0] as CouponResult;
+        const result = data[0];
         
         if (result.is_valid) {
           // Cupom válido

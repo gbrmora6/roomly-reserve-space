@@ -14,6 +14,7 @@ interface ProductOrder {
   user_id: string;
   total_amount: number;
   status: 'pending' | 'billed' | 'paid' | 'cancelled';
+  payment_method?: string;
   created_at: string;
   updated_at: string;
   profiles: {
@@ -179,8 +180,9 @@ export function ProductSalesTable({
                         
                         {order.status === 'paid' && (
                           <RefundButton
-                            recordId={order.id}
-                            recordType="order"
+                            orderId={order.id}
+                            paymentMethod={order.payment_method}
+                            status={order.status}
                             onRefundSuccess={() => window.location.reload()}
                           />
                         )}
