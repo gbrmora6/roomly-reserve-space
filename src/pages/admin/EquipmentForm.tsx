@@ -179,13 +179,13 @@ const AdminEquipmentForm: React.FC = () => {
         
         // Log da criação
         if (!error && equipmentId) {
-          await logCreate('equipment', equipmentId, {
+          await logCreate('equipment', {
             name: equipment.name,
             description: equipment.description,
             quantity: equipment.quantity,
             price_per_hour: equipment.price_per_hour,
             branch_id: branchId,
-          });
+          }, equipmentId);
         }
       } else {
         // Edição: update
@@ -202,7 +202,7 @@ const AdminEquipmentForm: React.FC = () => {
         
         // Log da atualização
         if (!error) {
-          await logUpdate('equipment', id, {
+          await logUpdate('equipment', id!, equipmentData?.equipment || {}, {
             name: equipment.name,
             description: equipment.description,
             quantity: equipment.quantity,

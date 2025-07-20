@@ -302,7 +302,7 @@ const RoomForm: React.FC = () => {
 
         // Log da criação
         if (!error && roomId) {
-          await logCreate('room', roomId, {
+          await logCreate('room', {
             name: room.name,
             description: room.description,
             has_wifi: room.has_wifi,
@@ -311,7 +311,7 @@ const RoomForm: React.FC = () => {
             has_tables: room.has_tables,
             price_per_hour: room.price_per_hour,
             branch_id: branchId,
-          });
+          }, roomId);
         }
       } else {
         console.log("=== EDITANDO SALA EXISTENTE ===");
@@ -342,7 +342,7 @@ const RoomForm: React.FC = () => {
 
         // Log da atualização
         if (!error) {
-          await logUpdate('room', id, {
+          await logUpdate('room', id!, roomData?.room || {}, {
             name: room.name,
             description: room.description,
             has_wifi: room.has_wifi,
