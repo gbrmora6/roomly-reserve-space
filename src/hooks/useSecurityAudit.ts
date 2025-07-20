@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBranchFilter } from "./useBranchFilter";
@@ -6,26 +7,22 @@ import { toast } from "sonner";
 export interface SecurityAuditEvent {
   id: string;
   event_type: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: string;
   user_id?: string;
   user_email?: string;
   user_role?: string;
-  target_user_id?: string;
-  resource_type?: string;
-  resource_id?: string;
   action: string;
   details: any;
+  resource_type?: string;
+  resource_id?: string;
   ip_address?: string;
-  user_agent?: string;
-  session_id?: string;
-  request_id?: string;
-  branch_id?: string;
   risk_score: number;
   requires_review: boolean;
-  reviewed_by?: string;
   reviewed_at?: string;
+  reviewed_by?: string;
   review_notes?: string;
   created_at: string;
+  branch_id?: string;
 }
 
 export const useSecurityAudit = () => {
@@ -41,8 +38,8 @@ export const useSecurityAudit = () => {
       const { data, error } = await supabase
         .from('security_audit')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1000);
+        .eq('branch_id', branchId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as SecurityAuditEvent[];
@@ -59,6 +56,7 @@ export const useSecurityAudit = () => {
       const { data, error } = await supabase
         .from('security_audit')
         .select('*')
+        .eq('branch_id', branchId)
         .eq('requires_review', true)
         .is('reviewed_at', null)
         .order('created_at', { ascending: false });
@@ -69,27 +67,23 @@ export const useSecurityAudit = () => {
     enabled: !!branchId,
   });
 
-  // Marcar evento como revisado
-  const reviewEventMutation = useMutation({
-    mutationFn: async (params: {
-      eventId: string;
-      reviewNotes?: string;
-    }) => {
+  // Revisar evento
+  const reviewEvent = useMutation({
+    mutationFn: async ({ eventId, reviewNotes }: { eventId: string; reviewNotes: string }) => {
       const { error } = await supabase
         .from('security_audit')
         .update({
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
           reviewed_at: new Date().toISOString(),
-          review_notes: params.reviewNotes,
+          review_notes: reviewNotes,
         })
-        .eq('id', params.eventId);
+        .eq('id', eventId);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['security-audit'] });
       queryClient.invalidateQueries({ queryKey: ['security-audit-review'] });
-      toast.success('Evento marcado como revisado');
+      toast.success('Evento revisado com sucesso');
     },
     onError: (error) => {
       console.error('Error reviewing event:', error);
@@ -97,28 +91,7 @@ export const useSecurityAudit = () => {
     },
   });
 
-  // Log de evento de segurança
-  const logSecurityEvent = async (params: {
-    eventType: string;
-    action: string;
-    details: any;
-    severity?: 'info' | 'warning' | 'critical';
-    resourceType?: string;
-    resourceId?: string;
-    riskScore?: number;
-  }) => {
-    await supabase.rpc('log_security_event', {
-      p_event_type: params.eventType,
-      p_action: params.action,
-      p_details: params.details,
-      p_severity: params.severity || 'info',
-      p_resource_type: params.resourceType,
-      p_resource_id: params.resourceId,
-      p_risk_score: params.riskScore || 0
-    });
-  };
-
-  // Estatísticas de auditoria
+  // Calcular estatísticas
   const getAuditStats = () => {
     const totalEvents = auditEvents.length;
     const criticalEvents = auditEvents.filter(e => e.severity === 'critical').length;
@@ -139,9 +112,7 @@ export const useSecurityAudit = () => {
     auditEvents,
     eventsRequiringReview,
     isLoading,
-    reviewEvent: reviewEventMutation.mutate,
-    isReviewing: reviewEventMutation.isPending,
-    logSecurityEvent,
+    reviewEvent: reviewEvent.mutate,
     getAuditStats,
   };
 };

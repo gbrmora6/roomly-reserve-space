@@ -53,28 +53,37 @@ export const usePermissions = () => {
     }
   };
 
-  // Buscar permissões do usuário - usando dados mock por enquanto
+  // Buscar permissões do usuário
   const { data: userPermissions = [], isLoading: loadingPermissions } = useQuery({
     queryKey: ['user-permissions', user?.id, branchId],
     queryFn: async () => {
       if (!user?.id || !branchId) return [];
 
-      // Por enquanto, retornar array vazio até resolvermos a questão das tabelas
-      // TODO: Implementar busca real quando a tabela user_permissions estiver disponível
-      return [] as UserPermission[];
+      const { data, error } = await supabase
+        .from('user_permissions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('branch_id', branchId);
+
+      if (error) throw error;
+      return data as UserPermission[];
     },
     enabled: !!user?.id && !!branchId,
   });
 
-  // Buscar todas as permissões (para administradores) - usando dados mock por enquanto
+  // Buscar todas as permissões (para administradores)
   const { data: allPermissions = [], isLoading: loadingAllPermissions } = useQuery({
     queryKey: ['all-permissions', branchId],
     queryFn: async () => {
       if (!branchId) return [];
 
-      // Por enquanto, retornar array vazio até resolvermos a questão das tabelas
-      // TODO: Implementar busca real quando a tabela user_permissions estiver disponível
-      return [];
+      const { data, error } = await supabase
+        .from('user_permissions')
+        .select('*')
+        .eq('branch_id', branchId);
+
+      if (error) throw error;
+      return data as UserPermission[];
     },
     enabled: !!branchId,
   });
@@ -88,9 +97,6 @@ export const usePermissions = () => {
       expiresAt?: string;
       notes?: string;
     }) => {
-      // Por enquanto, apenas log da ação
-      console.log('Grant permission called with:', params);
-      
       // Log da ação de segurança
       try {
         await supabase.rpc('log_security_event', {
@@ -126,9 +132,6 @@ export const usePermissions = () => {
   // Revogar permissão
   const revokePermissionMutation = useMutation({
     mutationFn: async (permissionId: string) => {
-      // Por enquanto, apenas log da ação
-      console.log('Revoke permission called with:', permissionId);
-
       // Log da ação de segurança
       try {
         await supabase.rpc('log_security_event', {
