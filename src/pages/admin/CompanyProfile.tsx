@@ -89,33 +89,17 @@ const CompanyProfile: React.FC = () => {
       const upsertData = { ...profile, branch_id: branchId };
       console.log('Tentando salvar dados:', upsertData);
       
-      // Para agora, vamos usar a tabela branches existente
-      const { data: existingData } = await supabase
+      // Atualizar registro da filial
+      const updateResult = await supabase
         .from('branches')
-        .select('id')
+        .update(upsertData)
         .eq('id', branchId)
-        .single();
-      
-      let data, error;
-      
-      if (existingData) {
-        // Atualizar registro existente na tabela branches
-        const updateResult = await supabase
-          .from('branches')
-          .update(upsertData)
-          .eq('id', branchId)
           .select();
         data = updateResult.data;
         error = updateResult.error;
-      } else {
-        // Inserir novo registro na tabela branches
-        const insertResult = await supabase
-          .from('branches')
-          .insert({ ...upsertData, id: branchId })
-          .select();
-        data = insertResult.data;
-        error = insertResult.error;
-      }
+      
+      data = updateResult.data;
+      error = updateResult.error;
       
       console.log('Resultado do upsert:', { data, error });
       

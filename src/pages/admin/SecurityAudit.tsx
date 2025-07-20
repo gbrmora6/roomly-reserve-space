@@ -13,11 +13,12 @@ import { format } from "date-fns";
 import { useSecurityAudit } from "@/hooks/useSecurityAudit";
 
 export default function SecurityAudit() {
-  const {
-    events: auditEvents,
-    loading: isLoading,
-    markAsReviewed: reviewEvent,
-    fetchEvents
+  const { 
+    auditEvents, 
+    eventsRequiringReview, 
+    isLoading, 
+    reviewEvent, 
+    getAuditStats 
   } = useSecurityAudit();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,14 +28,7 @@ export default function SecurityAudit() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [reviewNotes, setReviewNotes] = useState("");
 
-  // Calculate stats from events data
-  const stats = {
-    totalEvents: auditEvents.length,
-    criticalEvents: auditEvents.filter(e => e.severity === 'critical').length,
-    warningEvents: auditEvents.filter(e => e.severity === 'warning').length,
-    highRiskEvents: auditEvents.filter(e => e.risk_score >= 70).length,
-    pendingReviewEvents: auditEvents.filter(e => e.requires_review && !e.reviewed_at).length
-  };
+  const stats = getAuditStats();
 
   const filteredEvents = auditEvents.filter(event => {
     const searchMatch = searchTerm === "" || 
@@ -80,7 +74,10 @@ export default function SecurityAudit() {
 
   const handleReviewEvent = () => {
     if (selectedEvent) {
-      reviewEvent(selectedEvent.id, reviewNotes);
+      reviewEvent({
+        eventId: selectedEvent.id,
+        reviewNotes: reviewNotes,
+      });
       setShowDetailsDialog(false);
     }
   };
@@ -153,11 +150,11 @@ export default function SecurityAudit() {
       </div>
 
       {/* Alertas de Eventos Pendentes */}
-      {stats.pendingReviewEvents > 0 && (
+      {eventsRequiringReview.length > 0 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Existem {stats.pendingReviewEvents} eventos de segurança que requerem revisão imediata.
+            Existem {eventsRequiringReview.length} eventos de segurança que requerem revisão imediata.
           </AlertDescription>
         </Alert>
       )}

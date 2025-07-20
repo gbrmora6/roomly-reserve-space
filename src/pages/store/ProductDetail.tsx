@@ -22,7 +22,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { addToCart, isLoading: isAddingToCart } = useCart();
+  const { addToCart, isAddingToCart } = useCart();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
 
@@ -52,7 +52,12 @@ const ProductDetail = () => {
     
     if (!id) return;
 
-    addToCart('product', id, quantity, {});
+    addToCart({
+      itemType: 'product',
+      itemId: id,
+      quantity,
+      metadata: {}
+    });
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {

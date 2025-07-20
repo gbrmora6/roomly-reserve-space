@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { useCart } from "@/hooks/useCart";
-import { useCoupon } from "@/hooks/useCoupon";
-import { useAuth } from "@/contexts/AuthContext";
-import MainLayout from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCurrency } from "@/utils/formatCurrency";
+
+import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { OrderSummary } from "@/components/ui/order-summary";
+import { CouponInput } from "@/components/ui/coupon-input";
+import { MainLayout } from "@/components/ui/main-layout";
+import { PersonalDataSection } from "@/components/checkout/PersonalDataSection";
+import { AddressSection } from "@/components/checkout/AddressSection";
+import { PaymentMethodSection } from "@/components/checkout/PaymentMethodSection";
+import { CheckoutProgress } from "@/components/ui/checkout-progress";
+import { useCheckout } from "@/hooks/useCheckout";
+import { formatCurrency } from "@/utils/formatCurrency";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import CheckoutProgress from "@/components/checkout/CheckoutProgress";
-import CreditCardPreview from "@/components/checkout/CreditCardPreview";
-import OrderSummary from "@/components/checkout/OrderSummary";
-import PaymentMethodCards from "@/components/checkout/PaymentMethodCards";
-import FormattedInput from "@/components/checkout/FormattedInput";
-import CepLookup from "@/components/checkout/CepLookup";
+import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { useCoupon } from "@/hooks/useCoupon";
+import { PaymentDataExtended } from "@/types/payment";
 
 // Declaração de tipos para a biblioteca Click2Pay
 declare global {
@@ -29,68 +30,35 @@ declare global {
   }
 }
 
-interface PaymentData {
-  nomeCompleto: string;
-  cpfCnpj: string;
-  telefone: string;
-  email: string;
-  // Dados de endereço
-  rua: string;
-  numero: string;
-  complemento: string;
-  bairro: string;
-  cidade: string;
-  estado: string;
-  cep: string;
-  // Dados do cartão
-  numeroCartao: string;
-  nomeNoCartao: string;
-  validadeCartao: string;
-  cvv: string;
-  parcelas: number;
-  card_hash?: string;
-}
-
 const Checkout = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const { cartItems, cartTotal, clearCart, isLoading: cartLoading } = useCart();
-  const {
-    appliedCoupon,
-    getDiscountedTotal,
-    hasActiveCoupon,
-    discountAmount,
-    recordCouponUsage
-  } = useCoupon();
-
-  // Calcular total com desconto
-  const finalTotal = getDiscountedTotal(cartTotal);
-  
-  const [paymentMethod, setPaymentMethod] = useState("pix");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { clearCart } = useCart();
+  const { recordCouponUsage } = useCoupon();
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [paymentData, setPaymentData] = useState<PaymentData>({
-    nomeCompleto: "",
-    cpfCnpj: "",
-    telefone: "",
-    email: "",
-    // Dados de endereço
-    rua: "",
-    numero: "",
-    complemento: "",
-    bairro: "",
-    cidade: "",
-    estado: "",
-    cep: "",
-    // Dados do cartão
-    numeroCartao: "",
-    nomeNoCartao: "",
-    validadeCartao: "",
-    cvv: "",
-    parcelas: 1
-  });
+  
+  const {
+    paymentData,
+    paymentMethod,
+    appliedCoupon,
+    discountAmount,
+    finalTotal,
+    cartItems,
+    cartTotal,
+    setPaymentData,
+    setPaymentMethod,
+    setAppliedCoupon,
+    setDiscountAmount,
+    handlePaymentDataChange,
+    handleAddressFromCep,
+    processPayment
+  } = useCheckout();
+  
+  // Verificar se há cupom ativo
+  const hasActiveCoupon = appliedCoupon && discountAmount > 0;
 
   // Hook para carregar dados do usuário
   useEffect(() => {
@@ -143,35 +111,9 @@ const Checkout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Aguardar carregamento do carrinho antes de verificar se está vazio
-  if (cartLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
-        <p className="text-muted-foreground text-sm">Carregando carrinho...</p>
-      </div>
-    );
-  }
-
   if (cartItems.length === 0) {
     return <Navigate to="/cart" replace />;
   }
-
-  const handlePaymentDataChange = (field: string, value: string | number) => {
-    setPaymentData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleAddressFromCep = (address: {
-    rua: string;
-    bairro: string;
-    cidade: string;
-    estado: string;
-  }) => {
-    setPaymentData(prev => ({
-      ...prev,
-      ...address
-    }));
-  };
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -236,7 +178,7 @@ const Checkout = () => {
             taxid: (processedPaymentData.cpfCnpj || '').replace(/\D/g, ''),
             phonenumber: (processedPaymentData.telefone || '').replace(/\D/g, ''),
             email: processedPaymentData.email || '',
-            birth_date: "1990-01-01"
+            birth_date: "1990-01-01" // Data padrão - pode ser ajustada
           },
           totalAmount: finalTotal,
           orderId: `order_${Date.now()}_${user.id.substring(0, 8)}`,
@@ -276,7 +218,12 @@ const Checkout = () => {
       console.log("Resposta completa da função:", { data, error });
 
       if (error) {
-        console.error("Erro detalhado na chamada da função:", error);
+        console.error("Erro detalhado na chamada da função:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          context: error.context
+        });
         throw new Error(`Erro de conexão: ${error.message}`);
       }
 
@@ -287,8 +234,9 @@ const Checkout = () => {
 
       console.log("Resposta da API Click2Pay:", data);
 
-      // Processar resposta baseado no método de pagamento - USAR DADOS CORRETOS
+      // Processar resposta baseado no método de pagamento
       if (paymentMethod === "boleto") {
+        // Verificar se o boleto foi criado corretamente
         if (!data.success || !data.boleto) {
           throw new Error(data.error || "Erro ao gerar boleto");
         }
@@ -296,86 +244,88 @@ const Checkout = () => {
         // Registrar uso do cupom se houver um aplicado
         if (hasActiveCoupon && appliedCoupon?.couponId) {
           try {
-            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount.toString());
+            await recordCouponUsage(data.boleto.tid || `boleto_${Date.now()}`, appliedCoupon.couponId, discountAmount);
           } catch (couponError) {
             console.error("Erro ao registrar uso do cupom:", couponError);
+            // Não bloquear o fluxo por erro no cupom
           }
         }
         
+        // Limpar carrinho
         clearCart();
         
-        // Redirecionar para página de instruções com dados corretos (problema 2)
+        // Redirecionar para página de instruções do boleto
         navigate("/payment-instructions", { 
           state: { 
             paymentMethod: "boleto", 
             paymentData: {
               barcode: data.boleto.barcode,
-              linhaDigitavel: data.boleto.linhaDigitavel,
+              linhaDigitavel: data.boleto.barcode, // Usar barcode como linhaDigitavel
               url: data.boleto.url,
-              urlBoleto: data.boleto.urlBoleto || data.boleto.url,
-              vencimento: data.boleto.vencimento || data.boleto.due_date,
-              boleto_barcode: data.boleto.barcode, // Campo adicional
-              boleto_url: data.boleto.url, // Campo adicional
-              boleto_due_date: data.boleto.due_date // Campo adicional
+              urlBoleto: data.boleto.url, // Usar url como urlBoleto
+              vencimento: data.boleto.due_date,
+              tid: data.tid,
+              due_date: data.boleto.due_date,
+              amount: data.totalAmount
             },
-            orderId: data.boleto.tid,
-            tid: data.boleto.tid
+            orderId: data.orderId // Usar o orderId retornado pela Edge Function
           } 
         });
       } else {
-        // Lógica para outros métodos de pagamento
+        // Lógica original para outros métodos de pagamento
+        // Verificar se a transação foi criada corretamente
         if (!data.orderId) {
           throw new Error("Erro: Ordem não foi criada corretamente");
         }
 
-        // Redirecionar baseado no método de pagamento
+        // Redirecionar baseado no método de pagamento e status
         if (paymentMethod === "cartao") {
           if (data.status === "paid" || data.status === "approved") {
+            // Registrar uso do cupom se houver um aplicado
             if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
               try {
-                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount.toString());
+                await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
               } catch (couponError) {
                 console.error("Erro ao registrar uso do cupom:", couponError);
+                // Não bloquear o fluxo por erro no cupom
               }
             }
             
+            // Limpar carrinho apenas se pagamento foi aprovado
             clearCart();
             toast({
               title: "Pagamento aprovado!",
               description: "Seu pagamento foi processado com sucesso.",
             });
-            navigate("/payment-success", { 
-              state: { 
-                orderId: data.orderId, 
-                tid: data.tid 
-              } 
-            });
+            navigate("/payment-success");
           } else {
             throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
           }
         } else if (paymentMethod === "pix") {
           // Para PIX, verificar se temos os dados necessários
-          if (!data.paymentData?.data?.pix?.textPayment) {
-            throw new Error("Erro: Dados PIX não foram gerados corretamente");
+          if (!data.pix?.qr_code_image && !data.pix?.qr_code) {
+            throw new Error("Erro: QR Code PIX não foi gerado corretamente");
           }
           
+          // Registrar uso do cupom se houver um aplicado
           if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
             try {
-              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount.toString());
+              await recordCouponUsage(data.orderId, appliedCoupon.couponId, discountAmount);
             } catch (couponError) {
               console.error("Erro ao registrar uso do cupom:", couponError);
+              // Não bloquear o fluxo por erro no cupom
             }
           }
           
+          // Limpar carrinho
           clearCart();
           
-          // Preparar dados do PIX para a página de instruções - USAR CAMPOS CORRETOS
+          // Preparar dados do PIX para a página de instruções
           const pixData = {
-            qr_code_image: data.paymentData?.data?.pix?.qrCodeImage?.base64,
-            qr_code: data.paymentData?.data?.pix?.textPayment,
-            qrCodeImage: data.paymentData?.data?.pix?.qrCodeImage?.base64,
-            pixCode: data.paymentData?.data?.pix?.textPayment,
-            expires_at: data.paymentData?.data?.expires_in
+            qrCodeImage: data.pix.qr_code_image,
+            pixCode: data.pix.qr_code,
+            // reference: data.reference, // Removido pois não está sendo retornado pela Edge Function para PIX
+            orderId: data.orderId
           };
           
           // Redirecionar para página de instrução
@@ -383,8 +333,7 @@ const Checkout = () => {
             state: { 
               paymentMethod: "pix", 
               paymentData: pixData,
-              orderId: data.orderId,
-              tid: data.tid
+              orderId: data.orderId 
             } 
           });
         }
@@ -433,246 +382,24 @@ const Checkout = () => {
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Formulário Principal */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Dados Pessoais */}
-                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center justify-between text-xl">
-                      <span className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
-                        <span>Dados Pessoais</span>
-                      </span>
-                      {profileLoaded && (
-                        <span className="text-sm font-normal text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                          ✓ Carregado do perfil
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid md:grid-cols-2 gap-4">
-                    <FormattedInput
-                      id="nomeCompleto"
-                      label="Nome Completo"
-                      value={paymentData.nomeCompleto}
-                      onChange={(value) => handlePaymentDataChange("nomeCompleto", value)}
-                      type="text"
-                      required
-                      className="md:col-span-2"
-                    />
-                    <FormattedInput
-                      id="cpfCnpj"
-                      label="CPF/CNPJ"
-                      value={paymentData.cpfCnpj}
-                      onChange={(value) => handlePaymentDataChange("cpfCnpj", value)}
-                      type="cpf"
-                      placeholder="000.000.000-00"
-                      required
-                    />
-                    <FormattedInput
-                      id="telefone"
-                      label="Telefone"
-                      value={paymentData.telefone}
-                      onChange={(value) => handlePaymentDataChange("telefone", value)}
-                      type="phone"
-                      placeholder="(11) 99999-9999"
-                      required
-                    />
-                    <FormattedInput
-                      id="email"
-                      label="Email"
-                      value={paymentData.email}
-                      onChange={(value) => handlePaymentDataChange("email", value)}
-                      type="email"
-                      placeholder="seu@email.com"
-                      required
-                      className="md:col-span-2"
-                    />
-                  </CardContent>
-                </Card>
+                <PersonalDataSection 
+                  paymentData={paymentData}
+                  onPaymentDataChange={handlePaymentDataChange}
+                />
 
-                {/* Endereço */}
-                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center justify-between text-xl">
-                      <span className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
-                        <span>Endereço de Entrega</span>
-                      </span>
-                      {profileLoaded && (
-                        <span className="text-sm font-normal text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                          ✓ Carregado do perfil
-                        </span>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-4">
-                      <FormattedInput
-                        id="cep"
-                        label="CEP"
-                        value={paymentData.cep}
-                        onChange={(value) => handlePaymentDataChange("cep", value)}
-                        type="cep"
-                        placeholder="00000-000"
-                        required
-                        className="flex-1"
-                      />
-                      <div className="flex items-end">
-                        <CepLookup cep={paymentData.cep} onAddressFound={handleAddressFromCep} />
-                      </div>
-                    </div>
-                    
-                    <FormattedInput
-                      id="rua"
-                      label="Rua/Logradouro"
-                      value={paymentData.rua}
-                      onChange={(value) => handlePaymentDataChange("rua", value)}
-                      type="text"
-                      required
-                    />
-                    
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <FormattedInput
-                        id="numero"
-                        label="Número"
-                        value={paymentData.numero}
-                        onChange={(value) => handlePaymentDataChange("numero", value)}
-                        type="text"
-                        required
-                      />
-                      <FormattedInput
-                        id="complemento"
-                        label="Complemento"
-                        value={paymentData.complemento}
-                        onChange={(value) => handlePaymentDataChange("complemento", value)}
-                        type="text"
-                        placeholder="Opcional"
-                        className="md:col-span-2"
-                      />
-                    </div>
-                    
-                    <FormattedInput
-                      id="bairro"
-                      label="Bairro"
-                      value={paymentData.bairro}
-                      onChange={(value) => handlePaymentDataChange("bairro", value)}
-                      type="text"
-                      required
-                    />
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <FormattedInput
-                        id="cidade"
-                        label="Cidade"
-                        value={paymentData.cidade}
-                        onChange={(value) => handlePaymentDataChange("cidade", value)}
-                        type="text"
-                        required
-                      />
-                      <FormattedInput
-                        id="estado"
-                        label="Estado"
-                        value={paymentData.estado}
-                        onChange={(value) => handlePaymentDataChange("estado", value)}
-                        type="text"
-                        placeholder="SP"
-                        required
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <AddressSection 
+                  paymentData={paymentData}
+                  onPaymentDataChange={handlePaymentDataChange}
+                  onAddressFromCep={handleAddressFromCep}
+                />
 
-                {/* Método de Pagamento */}
-                <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center space-x-3 text-xl">
-                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
-                      <span>Método de Pagamento</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PaymentMethodCards 
-                      selectedMethod={paymentMethod} 
-                      onMethodChange={setPaymentMethod} 
-                    />
-
-                    {/* Campos específicos para cartão */}
-                    {paymentMethod === "cartao" && (
-                      <div className="mt-6 space-y-6">
-                        <div className="grid lg:grid-cols-2 gap-6">
-                          <div className="space-y-4">
-                            <FormattedInput
-                              id="numeroCartao"
-                              label="Número do Cartão"
-                              value={paymentData.numeroCartao}
-                              onChange={(value) => handlePaymentDataChange("numeroCartao", value)}
-                              type="card"
-                              placeholder="1234 5678 9012 3456"
-                              required
-                            />
-                            <FormattedInput
-                              id="nomeNoCartao"
-                              label="Nome no Cartão"
-                              value={paymentData.nomeNoCartao}
-                              onChange={(value) => handlePaymentDataChange("nomeNoCartao", value)}
-                              type="text"
-                              placeholder="Como está impresso no cartão"
-                              required
-                            />
-                            <div className="grid grid-cols-2 gap-4">
-                              <FormattedInput
-                                id="validadeCartao"
-                                label="Validade"
-                                value={paymentData.validadeCartao}
-                                onChange={(value) => handlePaymentDataChange("validadeCartao", value)}
-                                type="expiry"
-                                placeholder="MM/AAAA"
-                                required
-                              />
-                              <FormattedInput
-                                id="cvv"
-                                label="CVV"
-                                value={paymentData.cvv}
-                                onChange={(value) => handlePaymentDataChange("cvv", value)}
-                                type="cvv"
-                                placeholder="123"
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium text-foreground block mb-2">
-                                Parcelas <span className="text-destructive">*</span>
-                              </label>
-                              <Select 
-                                value={paymentData.parcelas.toString()} 
-                                onValueChange={(value) => handlePaymentDataChange("parcelas", parseInt(value))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione as parcelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
-                                    <SelectItem key={i} value={i.toString()}>
-                                      {i}x de {formatCurrency(finalTotal / i)}
-                                      {i === 1 ? " à vista" : " sem juros"}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div className="flex justify-center">
-                            <CreditCardPreview
-                              cardNumber={paymentData.numeroCartao}
-                              cardName={paymentData.nomeNoCartao}
-                              cardExpiry={paymentData.validadeCartao}
-                              cvv={paymentData.cvv}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <PaymentMethodSection 
+                  paymentMethod={paymentMethod}
+                  onPaymentMethodChange={setPaymentMethod}
+                  paymentData={paymentData}
+                  onPaymentDataChange={handlePaymentDataChange}
+                  finalTotal={finalTotal}
+                />
 
                 <Button 
                   onClick={handleCheckout}

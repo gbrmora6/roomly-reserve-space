@@ -17,7 +17,7 @@ import {
   Search
 } from "lucide-react";
 
-type Equipment = Database["public"]["Tables"]["equipment"]["Row"] & {
+type EquipmentWithAvailability = Database["public"]["Tables"]["equipment"]["Row"] & {
   equipment_photos: { id: string; url: string }[];
   branches?: { id: string; name: string; city: string };
   available: number;

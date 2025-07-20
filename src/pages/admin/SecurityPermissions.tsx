@@ -74,7 +74,6 @@ export default function SecurityPermissions() {
       userId: grantForm.userId,
       resourceType: grantForm.resourceType,
       permissionType: grantForm.permissionType,
-      branchId: "default-branch", // Will be set automatically by the function
       expiresAt: grantForm.expiresAt || undefined,
       notes: grantForm.notes || undefined,
     });
