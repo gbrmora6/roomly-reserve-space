@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QrCode, Copy, CheckCircle, Download } from 'lucide-react';
+import { QrCode, Copy, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface PixQRCodeProps {
@@ -19,6 +20,7 @@ const PixQRCode: React.FC<PixQRCodeProps> = ({
 }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -33,17 +35,50 @@ const PixQRCode: React.FC<PixQRCodeProps> = ({
   const downloadQRCode = () => {
     if (!qrCodeImage) return;
     
-    const link = document.createElement('a');
-    link.href = `data:image/png;base64,${qrCodeImage}`;
-    link.download = `qr-code-pix-${orderId || 'pagamento'}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const link = document.createElement('a');
+      // Remove data:image/png;base64, prefix if it exists
+      const base64Data = qrCodeImage.replace(/^data:image\/[a-z]+;base64,/, '');
+      link.href = `data:image/png;base64,${base64Data}`;
+      link.download = `qr-code-pix-${orderId || 'pagamento'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "QR Code baixado!",
+        description: "O QR Code foi salvo em seus downloads.",
+      });
+    } catch (error) {
+      console.error('Erro ao baixar QR Code:', error);
+      toast({
+        title: "Erro ao baixar",
+        description: "Não foi possível baixar o QR Code.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageError = () => {
+    console.error('Erro ao carregar imagem do QR Code:', qrCodeImage);
+    setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    setImageError(false);
+  };
+
+  // Função para processar a imagem base64
+  const getImageSrc = (imageData: string) => {
+    if (!imageData) return '';
     
-    toast({
-      title: "QR Code baixado!",
-      description: "O QR Code foi salvo em seus downloads.",
-    });
+    // Se já tem o prefixo data:image, retorna como está
+    if (imageData.startsWith('data:image/')) {
+      return imageData;
+    }
+    
+    // Se não tem prefixo, adiciona
+    return `data:image/png;base64,${imageData}`;
   };
 
   return (
@@ -65,21 +100,37 @@ const PixQRCode: React.FC<PixQRCodeProps> = ({
         {qrCodeImage && (
           <div className="flex flex-col items-center space-y-3">
             <div className="p-4 bg-white rounded-lg border-2 border-gray-200 shadow-sm">
-              <img 
-                src={`data:image/png;base64,${qrCodeImage}`}
-                alt="QR Code PIX"
-                className="w-48 h-48 object-contain"
-              />
+              {!imageError ? (
+                <img 
+                  src={getImageSrc(qrCodeImage)}
+                  alt="QR Code PIX"
+                  className="w-48 h-48 object-contain"
+                  onError={handleImageError}
+                  onLoad={handleImageLoad}
+                />
+              ) : (
+                <div className="w-48 h-48 flex flex-col items-center justify-center bg-gray-100 rounded border-2 border-dashed border-gray-300">
+                  <AlertCircle className="w-12 h-12 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500 text-center">
+                    Erro ao carregar QR Code
+                  </p>
+                  <p className="text-xs text-gray-400 text-center mt-1">
+                    Use o código PIX abaixo
+                  </p>
+                </div>
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={downloadQRCode}
-              className="flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Baixar QR Code</span>
-            </Button>
+            {!imageError && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadQRCode}
+                className="flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Baixar QR Code</span>
+              </Button>
+            )}
           </div>
         )}
         
@@ -143,6 +194,19 @@ const PixQRCode: React.FC<PixQRCodeProps> = ({
             <li>4. Pronto! Você receberá a confirmação</li>
           </ol>
         </div>
+
+        {/* Debug info (apenas em desenvolvimento) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
+            <p>Debug Info:</p>
+            <p>QR Code presente: {qrCodeImage ? 'Sim' : 'Não'}</p>
+            <p>PIX Code presente: {pixCode ? 'Sim' : 'Não'}</p>
+            <p>Erro na imagem: {imageError ? 'Sim' : 'Não'}</p>
+            {qrCodeImage && (
+              <p>Tamanho da imagem: {qrCodeImage.length} caracteres</p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
