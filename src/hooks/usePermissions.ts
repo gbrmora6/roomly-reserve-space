@@ -9,11 +9,22 @@ type PermissionType = Database['public']['Enums']['permission_type'];
 
 export interface UserPermissionWithDetails extends UserPermission {
   granted_by_name?: string;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  granted_by_profile?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export const usePermissions = () => {
   const [permissions, setPermissions] = useState<UserPermissionWithDetails[]>([]);
+  const [allPermissions, setAllPermissions] = useState<UserPermissionWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAllPermissions, setLoadingAllPermissions] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPermissions = async () => {
@@ -22,7 +33,18 @@ export const usePermissions = () => {
       
       const { data, error } = await supabase
         .from('user_permissions')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            first_name,
+            last_name,
+            email
+          ),
+          granted_by_profile:granted_by (
+            first_name,
+            last_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -33,6 +55,37 @@ export const usePermissions = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllPermissions = async () => {
+    try {
+      setLoadingAllPermissions(true);
+      
+      const { data, error } = await supabase
+        .from('user_permissions')
+        .select(`
+          *,
+          profiles:user_id (
+            first_name,
+            last_name,
+            email
+          ),
+          granted_by_profile:granted_by (
+            first_name,
+            last_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAllPermissions(data || []);
+    } catch (err: any) {
+      console.error('Error fetching all permissions:', err);
+      setError(err.message);
+    } finally {
+      setLoadingAllPermissions(false);
     }
   };
 
@@ -58,14 +111,21 @@ export const usePermissions = () => {
     }
   };
 
-  const grantPermission = async (
-    userId: string,
-    resourceType: ResourceType,
-    permissionType: PermissionType,
-    branchId: string,
-    expiresAt?: string,
-    notes?: string
-  ) => {
+  const grantPermission = async ({
+    userId,
+    resourceType,
+    permissionType,
+    branchId,
+    expiresAt,
+    notes
+  }: {
+    userId: string;
+    resourceType: ResourceType;
+    permissionType: PermissionType;
+    branchId: string;
+    expiresAt?: string;
+    notes?: string;
+  }) => {
     try {
       const { data, error } = await supabase
         .from('user_permissions')
@@ -98,6 +158,7 @@ export const usePermissions = () => {
       });
 
       await fetchPermissions();
+      await fetchAllPermissions();
       return data;
     } catch (err: any) {
       console.error('Error granting permission:', err);
@@ -131,6 +192,7 @@ export const usePermissions = () => {
       });
 
       await fetchPermissions();
+      await fetchAllPermissions();
     } catch (err: any) {
       console.error('Error revoking permission:', err);
       throw err;
@@ -139,11 +201,14 @@ export const usePermissions = () => {
 
   useEffect(() => {
     fetchPermissions();
+    fetchAllPermissions();
   }, []);
 
   return {
     permissions,
+    allPermissions,
     loading,
+    loadingAllPermissions,
     error,
     hasPermission,
     grantPermission,
@@ -152,4 +217,5 @@ export const usePermissions = () => {
   };
 };
 
+export { ResourceType, PermissionType };
 export default usePermissions;
