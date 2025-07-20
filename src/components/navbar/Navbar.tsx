@@ -2,16 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Search, Bell, Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import CartButton from "@/components/cart/CartButton";
-import { Input } from "@/components/ui/input";
+
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -37,24 +37,24 @@ const Navbar = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 border-b border-white/20 shadow-lg">
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="flex items-center justify-between h-14 md:h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 select-none group">
+          <Link to="/" className="flex items-center gap-2 md:gap-3 select-none group">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
-                <span className="text-white font-bold text-lg">P</span>
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
+                <span className="text-white font-bold text-base md:text-lg">P</span>
               </div>
             </div>
-            <span className="font-extrabold text-2xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span className="font-extrabold text-xl md:text-2xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               PsicoFlex
             </span>
           </Link>
           {/* Menu Desktop */}
-          <nav className="hidden lg:flex flex-1 justify-center gap-8">
+          <nav className="hidden lg:flex flex-1 justify-center gap-6 xl:gap-8">
             <Link
               to="/rooms"
-              className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
                 isActive("/rooms") 
                   ? "text-primary bg-white/10" 
                   : "text-gray-700 hover:text-primary"
@@ -67,7 +67,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/equipment"
-              className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
                 isActive("/equipment") 
                   ? "text-primary bg-white/10" 
                   : "text-gray-700 hover:text-primary"
@@ -80,7 +80,7 @@ const Navbar = () => {
             </Link>
             <Link
               to="/store"
-              className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
                 location.pathname.startsWith("/store") 
                   ? "text-primary bg-white/10" 
                   : "text-gray-700 hover:text-primary"
@@ -94,7 +94,7 @@ const Navbar = () => {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+                className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
                   location.pathname.startsWith("/admin") 
                     ? "text-primary bg-white/10" 
                     : "text-gray-700 hover:text-primary"
@@ -108,48 +108,8 @@ const Navbar = () => {
             )}
           </nav>
           {/* Ações do usuário */}
-          <div className="flex items-center gap-3">
-            {/* Busca */}
-            <div className="relative hidden md:block">
-              {searchOpen ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Buscar salas, equipamentos..."
-                    className="w-64 bg-white/20 border-white/30 text-gray-700 placeholder:text-gray-500"
-                    autoFocus
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchOpen(false)}
-                    className="text-gray-600 hover:text-gray-800"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchOpen(true)}
-                  className="text-gray-600 hover:text-gray-800 hover:bg-white/20"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+          <div className="flex items-center gap-2 md:gap-3">
 
-            {/* Notificações */}
-            {user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="relative text-gray-600 hover:text-gray-800 hover:bg-white/20"
-              >
-                <Bell className="h-4 w-4" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-              </Button>
-            )}
 
             {/* Carrinho */}
             <CartButton />
@@ -158,10 +118,10 @@ const Navbar = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden text-gray-600 hover:text-gray-800"
+              className="lg:hidden text-gray-600 hover:text-gray-800 p-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileMenuOpen ? <X className="h-5 w-5 md:h-6 md:w-6" /> : <Menu className="h-5 w-5 md:h-6 md:w-6" />}
             </Button>
 
             {/* Avatar/Login */}
@@ -226,10 +186,10 @@ const Navbar = () => {
         {/* Menu Mobile */}
         {mobileMenuOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 backdrop-blur-xl bg-white/95 border-b border-white/20 shadow-lg animate-fade-in">
-            <nav className="container mx-auto px-6 py-4 space-y-2">
+            <nav className="container mx-auto px-6 py-4 space-y-2 max-h-screen overflow-y-auto">
               <Link
                 to="/rooms"
-                className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
                   isActive("/rooms") 
                     ? "text-primary bg-primary/10" 
                     : "text-gray-700 hover:text-primary hover:bg-white/20"
@@ -240,7 +200,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/equipment"
-                className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
                   isActive("/equipment") 
                     ? "text-primary bg-primary/10" 
                     : "text-gray-700 hover:text-primary hover:bg-white/20"
@@ -251,7 +211,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/store"
-                className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
                   location.pathname.startsWith("/store") 
                     ? "text-primary bg-primary/10" 
                     : "text-gray-700 hover:text-primary hover:bg-white/20"
@@ -263,7 +223,7 @@ const Navbar = () => {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className={`block px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`block px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
                     location.pathname.startsWith("/admin") 
                       ? "text-primary bg-primary/10" 
                       : "text-gray-700 hover:text-primary hover:bg-white/20"
@@ -273,6 +233,66 @@ const Navbar = () => {
                   Painel Admin
                 </Link>
               )}
+              
+              {/* User Menu in Mobile */}
+              <div className="pt-4 border-t border-white/20">
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center px-4 py-3 bg-white/20 rounded-lg">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt="Avatar"
+                          className="w-10 h-10 rounded-full object-cover mr-3"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center font-bold text-sm text-white mr-3">
+                          {user.user_metadata?.first_name?.[0] || user.email?.[0] || "U"}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-gray-900 block truncate">
+                          {user.user_metadata?.first_name || user.email}
+                        </span>
+                        <span className="text-xs text-gray-600 block truncate">
+                          {user.email}
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      to="/my-account"
+                      className="block px-4 py-3 text-gray-700 hover:text-primary hover:bg-white/20 rounded-lg transition-all duration-200 font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Minha Conta
+                    </Link>
+                    <Link
+                      to="/my-bookings"
+                      className="block px-4 py-3 text-gray-700 hover:text-primary hover:bg-white/20 rounded-lg transition-all duration-200 font-medium"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Minhas Reservas
+                    </Link>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium"
+                    >
+                      Sair
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="block px-4 py-3 text-white bg-primary hover:bg-primary/90 rounded-lg transition-all duration-200 font-medium text-center"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Entrar
+                  </Link>
+                )}
+              </div>
             </nav>
           </div>
         )}

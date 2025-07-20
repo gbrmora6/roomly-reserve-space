@@ -1,14 +1,45 @@
 
 import React from "react";
 import { useProfile } from "@/hooks/useProfile";
+import { useViaCep } from "@/hooks/useViaCep";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import { Search } from "lucide-react";
 
 export function ProfileForm() {
   const { form, onSubmit } = useProfile();
+  const { searchCep, isLoading } = useViaCep();
+
+  const formatCep = (value: string) => {
+    const cleanValue = value.replace(/\D/g, '');
+    if (cleanValue.length <= 5) {
+      return cleanValue;
+    }
+    return `${cleanValue.slice(0, 5)}-${cleanValue.slice(5, 8)}`;
+  };
+
+  const handleCepSearch = async () => {
+    const cep = form.getValues('cep');
+    if (!cep) return;
+
+    const result = await searchCep(cep);
+    if (result) {
+      form.setValue('state', result.uf);
+      form.setValue('city', result.localidade);
+      form.setValue('neighborhood', result.bairro);
+      form.setValue('street', result.logradouro);
+    }
+  };
+
+  const handleCepKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCepSearch();
+    }
+  };
 
   return (
     <Form {...form}>
@@ -136,8 +167,33 @@ export function ProfileForm() {
                 <FormItem>
                   <FormLabel>CEP</FormLabel>
                   <FormControl>
-                    <Input placeholder="00000-000" {...field} />
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="00000-000" 
+                        {...field}
+                        value={formatCep(field.value || '')}
+                        onChange={(e) => {
+                          const formatted = formatCep(e.target.value);
+                          field.onChange(formatted);
+                        }}
+                        onKeyPress={handleCepKeyPress}
+                        maxLength={9}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCepSearch}
+                        disabled={isLoading || !field.value}
+                        className="shrink-0"
+                      >
+                        <Search className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                   </FormControl>
+                  <FormDescription>
+                    Digite o CEP e pressione Enter ou clique na lupa para buscar automaticamente
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

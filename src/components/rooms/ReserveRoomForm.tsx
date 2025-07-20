@@ -8,6 +8,7 @@ import { TimeSelector } from "@/components/rooms/TimeSelector";
 import { Button } from "@/components/ui/button";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useRoomReservation } from "@/hooks/useRoomReservation";
+import { useRoomSchedule } from "@/hooks/useRoomSchedule";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 
@@ -28,6 +29,33 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
   const { availableHours, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
   const { handleReserve, loading } = useRoomReservation(room, onClose);
+  const roomSchedules = useRoomSchedule(room.id);
+
+  // Função para verificar se a sala funciona em um determinado dia da semana
+  const isRoomOpenOnDay = (date: Date): boolean => {
+    const dayOfWeek = date.getDay(); // 0=domingo, 1=segunda, ..., 6=sábado
+    
+    // Primeiro, verificar se há schedules específicos para este dia
+    if (roomSchedules.length > 0) {
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[dayOfWeek];
+      
+      // Verificar se existe um schedule para este dia da semana
+      const hasScheduleForDay = roomSchedules.some(schedule => 
+        schedule.weekday.toLowerCase() === dayName
+      );
+      
+      return hasScheduleForDay;
+    }
+    
+    // Fallback: usar open_days se disponível
+    if (room.open_days && room.open_days.length > 0) {
+      return room.open_days.includes(dayOfWeek);
+    }
+    
+    // Se não há informações específicas, assumir que funciona de segunda a sexta (1-5)
+    return dayOfWeek >= 1 && dayOfWeek <= 5;
+  };
 
   const handleSubmit = async () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) {
@@ -93,19 +121,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
             if (date < today) return true;
             
             // Verificar se a sala funciona neste dia da semana
-            const dayOfWeek = date.getDay(); // 0=domingo, 1=segunda, etc.
-            
-            // Se a sala tem open_days definido, verificar se este dia está incluído
-            if (room.open_days && room.open_days.length > 0) {
-              const isOpenOnDay = room.open_days.includes(dayOfWeek);
-              if (!isOpenOnDay) {
-                return true; // Desabilitar dia se não estiver em open_days
-              }
-            }
-            
-            // TODO: Adicionar verificação para room_schedules quando necessário
-            // Se chegou até aqui, o dia está disponível
-            return false;
+            return !isRoomOpenOnDay(date);
           }}
         />
       </div>

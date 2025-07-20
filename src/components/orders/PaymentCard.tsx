@@ -11,7 +11,8 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  Banknote
+  Banknote,
+  Download
 } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { format } from "date-fns";
@@ -46,7 +47,7 @@ export function PaymentCard({ order, onRefresh, onRefund, isRefreshing }: Paymen
           label: 'Aguardando Pagamento',
           variant: 'secondary' as const
         };
-      case 'cancelled':
+      case 'recused':
         return {
           color: 'bg-red-500',
           icon: XCircle,
@@ -193,6 +194,19 @@ export function PaymentCard({ order, onRefresh, onRefund, isRefreshing }: Paymen
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Atualizar Status
           </Button>
+
+          {/* Botão de download da nota fiscal */}
+          {order.status === 'paid' && order.invoice_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(order.invoice_url, '_blank')}
+              className="flex items-center gap-1 text-green-600 hover:text-green-700"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Nota Fiscal
+            </Button>
+          )}
 
           {canRefund && !isRefunding && order.refund_status !== 'completed' && (
             <Button
