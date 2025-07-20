@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
@@ -22,8 +23,8 @@ const timeToMinutes = (time: string): number => {
   return hours * 60 + minutes;
 };
 
-const getWeekdayFromDate = (date: Date): string => {
-  const weekdays = [
+const getWeekdayFromDate = (date: Date): Weekday => {
+  const weekdays: Weekday[] = [
     "sunday",
     "monday", 
     "tuesday", 
@@ -37,7 +38,7 @@ const getWeekdayFromDate = (date: Date): string => {
 
 const checkRoomSchedule = async (
   roomId: string,
-  weekday: string,
+  weekday: Weekday,
   startTime: string,
   endTime: string
 ): Promise<boolean> => {
