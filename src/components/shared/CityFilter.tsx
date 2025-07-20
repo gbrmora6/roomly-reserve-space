@@ -47,9 +47,9 @@ export const CityFilter: React.FC<CityFilterProps> = ({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Todas as cidades</SelectItem>
-        {cities.map((city) => (
-          <SelectItem key={city} value={city}>
-            {city}
+        {(cities as string[]).map((city: string) => (
+          <SelectItem key={city as string} value={city as string}>
+            {city as string}
           </SelectItem>
         ))}
       </SelectContent>

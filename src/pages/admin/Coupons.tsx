@@ -492,7 +492,7 @@ export default function Coupons() {
                     {format(new Date(coupon.valid_until), "dd/MM/yyyy HH:mm")}
                   </TableCell>
                   <TableCell>
-                    {getCouponUsageCount(coupon.id)}{coupon.max_uses ? `/${coupon.max_uses}` : ""}
+                    {String(getCouponUsageCount(coupon.id as string))}{(coupon as any).max_uses ? `/${(coupon as any).max_uses}` : ""}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

@@ -130,9 +130,9 @@ export default function AdminLogs() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as ações</SelectItem>
-                {uniqueActions.map((action) => (
-                  <SelectItem key={action} value={action}>
-                    {action}
+                {(uniqueActions as string[]).map((action: string) => (
+                  <SelectItem key={action as string} value={action as string}>
+                    {action as string}
                   </SelectItem>
                 ))}
               </SelectContent>
