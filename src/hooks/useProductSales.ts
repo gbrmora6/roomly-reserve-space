@@ -56,10 +56,10 @@ export function useProductSales() {
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
   
-  const { selectedBranch, branchFilter } = useBranchFilter();
+  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
 
   const ordersQuery = useQuery({
-    queryKey: ['product-orders', selectedBranch],
+    queryKey: ['product-orders', branchId],
     queryFn: async () => {
       let query = supabase
         .from('orders')
@@ -83,8 +83,8 @@ export function useProductSales() {
         `)
         .order('created_at', { ascending: false });
 
-      if (selectedBranch) {
-        query = query.eq('branch_id', selectedBranch);
+      if (branchId) {
+        query = query.eq('branch_id', branchId);
       }
 
       const { data, error } = await query;
@@ -229,31 +229,30 @@ export function useProductSales() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchTerm, selectedBranch]);
+  }, [activeTab, searchTerm, branchId]);
 
   return {
     activeTab,
     setActiveTab,
-    searchTerm,
-    setSearchTerm,
-    currentPage,
-    setCurrentPage,
+    branchId,
+    setBranchId,
+    branches,
+    isSuperAdmin,
+    orders: ordersQuery.data || [],
+    isLoading: ordersQuery.isLoading,
+    error: ordersQuery.error,
     selectedOrder,
-    setSelectedOrder,
-    isDetailsModalOpen,
-    setIsDetailsModalOpen,
-    selectedBranch,
-    branchFilter,
-    ordersQuery,
-    profilesQuery,
-    filteredOrders,
-    paginatedOrders,
+    showDetails: isDetailsModalOpen,
+    search: searchTerm,
+    setSearch: setSearchTerm,
+    page: currentPage,
+    setPage: setCurrentPage,
     totalPages,
-    stats,
-    translateStatus,
+    paginatedOrders,
+    resumo: stats,
     downloadReport,
-    handleMarkAsPaid,
     handleCancelOrder,
+    handleMarkAsPaid,
     handleViewDetails,
     handleCloseDetails
   };
