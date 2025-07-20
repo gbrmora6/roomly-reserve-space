@@ -1,0 +1,1 @@
+export { default as PaymentMethodCards } from '@/components/checkout/PaymentMethodCards';

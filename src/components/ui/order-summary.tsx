@@ -1,0 +1,1 @@
+export { default as OrderSummary } from '@/components/checkout/OrderSummary';

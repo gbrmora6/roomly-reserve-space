@@ -27,15 +27,9 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
-  
-  // Fixed hook calls to match actual return types
-  const { data: roomAvailability, isLoading } = useRoomAvailability(room.id, selectedDate);
-  const { reserveRoom, isReserving } = useRoomReservation();
+  const { availableHours, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
+  const { handleReserve, loading } = useRoomReservation(room, onClose);
   const roomSchedules = useRoomSchedule(room.id);
-
-  // Process availability data
-  const availableHours = Array.isArray(roomAvailability) ? roomAvailability.filter(slot => slot.is_available).map(slot => slot.hour) : [];
-  const blockedHours = Array.isArray(roomAvailability) ? roomAvailability.filter(slot => !slot.is_available).map(slot => slot.hour) : [];
 
   // Função para verificar se a sala funciona em um determinado dia da semana
   const isRoomOpenOnDay = (date: Date): boolean => {
@@ -94,19 +88,15 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
     const [endHour, endMinute] = selectedEndTime.split(":");
     endDate.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
 
-    // Call the mutation with correct parameters
-    reserveRoom({
-      roomId: room.id,
-      startTime: startDate.toISOString(),
-      endTime: endDate.toISOString(),
-      notes: ''
-    });
+    const booking = await handleReserve(startDate, endDate);
 
-    toast({
-      title: "Reserva adicionada ao carrinho!",
-      description: "Você tem 15 minutos para finalizar o pagamento.",
-    });
-    onClose();
+    if (booking) {
+      toast({
+        title: "Reserva adicionada ao carrinho!",
+        description: "Você tem 15 minutos para finalizar o pagamento.",
+      });
+      onClose();
+    }
   };
 
   return (
@@ -186,16 +176,16 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
                   <Button
                     variant="outline"
                     onClick={onClose}
-                    disabled={isReserving}
+                    disabled={loading}
                   >
                     Cancelar
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    disabled={isReserving}
+                    disabled={loading}
                     className="bg-roomly-600 hover:bg-roomly-700"
                   >
-                    {isReserving ? "Reservando..." : "Confirmar Reserva"}
+                    {loading ? "Reservando..." : "Confirmar Reserva"}
                   </Button>
                 </div>
               </div>

@@ -1,0 +1,1 @@
+export { default as FormattedInput } from '@/components/checkout/FormattedInput';

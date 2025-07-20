@@ -1,0 +1,1 @@
+export { default as CheckoutProgress } from '@/components/checkout/CheckoutProgress';
