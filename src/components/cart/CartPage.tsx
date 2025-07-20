@@ -322,7 +322,7 @@ const CartPage: React.FC = () => {
                       console.log("Item ID:", item.id);
                       console.log("Quantidade atual:", item.quantity);
                       console.log("Nova quantidade:", Math.max(1, item.quantity - 1));
-                      updateCart({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) });
+                      updateCart(item.id, Math.max(1, item.quantity - 1));
                     }}
                     disabled={item.quantity <= 1}
                     className="h-8 w-8 p-0"
@@ -338,7 +338,7 @@ const CartPage: React.FC = () => {
                       console.log("Item ID:", item.id);
                       console.log("Quantidade atual:", item.quantity);
                       console.log("Nova quantidade:", item.quantity + 1);
-                      updateCart({ itemId: item.id, quantity: item.quantity + 1 });
+                      updateCart(item.id, item.quantity + 1);
                     }}
                     className="h-8 w-8 p-0"
                   >
