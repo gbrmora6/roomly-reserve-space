@@ -285,14 +285,8 @@ export default function TodayReservations() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <User className="h-4 w-4" />
-                    <span>{room.capacity} pessoas</span>
+                    <span>Sala {room.name}</span>
                   </div>
-                  {room.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{room.location}</span>
-                    </div>
-                  )}
                 </div>
               </CardHeader>
               
@@ -340,11 +334,11 @@ export default function TodayReservations() {
                         <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                           <div>
                             <p className="text-sm text-muted-foreground">Capacidade</p>
-                            <p className="font-medium">{room.capacity} pessoas</p>
+                            <p className="font-medium">Sala {room.name}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Localização</p>
-                            <p className="font-medium">{room.location || "Não informado"}</p>
+                            <p className="font-medium">{room.description || "Não informado"}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Status Atual</p>
@@ -401,10 +395,10 @@ export default function TodayReservations() {
                                     </div>
                                   </div>
                                   
-                                  {booking.notes && (
+                                  {booking.status && (
                                     <div className="mt-3 pt-3 border-t">
                                       <p className="text-muted-foreground text-sm">Observações</p>
-                                      <p className="text-sm">{booking.notes}</p>
+                                      <p className="text-sm">Status: {booking.status}</p>
                                     </div>
                                   )}
                                 </div>

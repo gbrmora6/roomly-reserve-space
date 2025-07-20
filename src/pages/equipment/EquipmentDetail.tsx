@@ -78,11 +78,7 @@ const EquipmentDetail = () => {
     const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
     const totalPrice = equipment.price_per_hour * duration * quantity;
 
-    addToCart({
-      itemType: "equipment",
-      itemId: equipment.id,
-      quantity: quantity,
-      metadata: {
+    addToCart("equipment", equipment.id, quantity, {
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
         date: format(selectedDate, "dd/MM/yyyy"),
@@ -90,8 +86,7 @@ const EquipmentDetail = () => {
         end_time_display: selectedEndTime,
         duration: duration,
         total_price: totalPrice
-      }
-    });
+      });
 
     toast({
       title: "Equipamento adicionado ao carrinho!",
@@ -154,7 +149,7 @@ const EquipmentDetail = () => {
 
         console.log("Dados de disponibilidade recebidos:", availabilityData);
 
-        if (!availabilityData || availabilityData.length === 0) {
+        if (!availabilityData || (Array.isArray(availabilityData) && availabilityData.length === 0)) {
           console.log(`Equipamento ${equipment.name} fechado na data ${dateStr}`);
           setAvailableHours([]);
           setBlockedHours([]);
@@ -165,7 +160,7 @@ const EquipmentDetail = () => {
         const available: string[] = [];
         const blocked: string[] = [];
         
-        availabilityData.forEach((slot: any) => {
+        (Array.isArray(availabilityData) ? availabilityData : []).forEach((slot: any) => {
           if (slot.is_available) {
             available.push(slot.hour);
           } else {

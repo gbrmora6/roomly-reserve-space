@@ -215,13 +215,13 @@ export const fixRoomSchedules = async () => {
     
     // Inserir novos horários de funcionamento (6:00 às 23:00 para dias úteis)
     const schedules = [
-      { room_id: roomId, weekday: "monday", start_time: "06:00:00", end_time: "23:00:00" },
-      { room_id: roomId, weekday: "tuesday", start_time: "06:00:00", end_time: "23:00:00" },
-      { room_id: roomId, weekday: "wednesday", start_time: "06:00:00", end_time: "23:00:00" },
-      { room_id: roomId, weekday: "thursday", start_time: "06:00:00", end_time: "23:00:00" },
-      { room_id: roomId, weekday: "friday", start_time: "06:00:00", end_time: "23:00:00" },
-      { room_id: roomId, weekday: "saturday", start_time: "08:00:00", end_time: "20:00:00" },
-      { room_id: roomId, weekday: "sunday", start_time: "08:00:00", end_time: "18:00:00" }
+      { room_id: roomId, weekday: "monday" as const, start_time: "06:00:00", end_time: "23:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "tuesday" as const, start_time: "06:00:00", end_time: "23:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "wednesday" as const, start_time: "06:00:00", end_time: "23:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "thursday" as const, start_time: "06:00:00", end_time: "23:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "friday" as const, start_time: "06:00:00", end_time: "23:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "saturday" as const, start_time: "08:00:00", end_time: "20:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" },
+      { room_id: roomId, weekday: "sunday" as const, start_time: "08:00:00", end_time: "18:00:00", branch_id: "64a43fed-587b-415c-aeac-0abfd7867566" }
     ];
     
     const { error: insertError } = await supabase

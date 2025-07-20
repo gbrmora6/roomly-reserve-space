@@ -61,15 +61,21 @@ const RoomList: React.FC = () => {
       console.log("Buscando perfil da empresa...");
       
       const { data, error } = await supabase
-        .from("company_profile")
+        .from("branches")
         .select("street, number, neighborhood, city")
-        .single();
+        .limit(1)
+        .maybeSingle();
       
       if (data && !error) {
-        console.log("Perfil da empresa encontrado:", data);
-        setCompanyAddress(data);
+        console.log("Dados da empresa encontrados:", data);
+        setCompanyAddress({
+          street: data.street || "",
+          number: data.number || "",
+          neighborhood: data.neighborhood || "",
+          city: data.city || ""
+        });
       } else {
-        console.error("Erro ao buscar perfil da empresa:", error);
+        console.error("Erro ao buscar dados da empresa:", error);
       }
     };
     

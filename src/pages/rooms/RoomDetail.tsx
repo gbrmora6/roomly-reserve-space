@@ -72,11 +72,7 @@ const RoomDetail = () => {
     const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
     const totalPrice = room.price_per_hour * duration;
 
-    addToCart({
-      itemType: "room",
-      itemId: room.id,
-      quantity: 1,
-      metadata: {
+    addToCart("room", room.id, 1, {
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
         date: format(selectedDate, "dd/MM/yyyy"),
@@ -84,8 +80,7 @@ const RoomDetail = () => {
         end_time_display: selectedEndTime,
         duration: duration,
         total_price: totalPrice
-      }
-    });
+      });
 
     toast({
       title: "Sala adicionada ao carrinho!",

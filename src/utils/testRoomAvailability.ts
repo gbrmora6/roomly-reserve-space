@@ -32,7 +32,7 @@ export async function testRoomAvailability() {
       .from('room_schedules')
       .select('start_time, end_time')
       .eq('room_id', room.id)
-      .eq('weekday', weekday);
+      .eq('weekday', weekday as any);
     
     console.log('📋 Horários cadastrados:', schedules);
     
