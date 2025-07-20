@@ -1,7 +1,6 @@
 import React from "react";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { Loader2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
 
 interface ProfileCompletionGuardProps {
   children: React.ReactNode;
@@ -9,18 +8,8 @@ interface ProfileCompletionGuardProps {
 
 const ProfileCompletionGuard: React.FC<ProfileCompletionGuardProps> = ({ children }) => {
   const { isProfileComplete, isLoading } = useProfileCompletion();
-  const location = useLocation();
 
-  // Páginas que sempre devem ser acessíveis
-  const allowedPaths = ['/my-account', '/checkout', '/cart'];
-  const isOnAllowedPath = allowedPaths.some(path => location.pathname.includes(path));
-
-  // Se estamos numa página permitida, sempre renderizar os filhos
-  if (isOnAllowedPath) {
-    return <>{children}</>;
-  }
-
-  // Mostrar loading apenas se ainda estiver carregando E não for página permitida
+  // Mostrar loading enquanto verifica o perfil
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -32,7 +21,7 @@ const ProfileCompletionGuard: React.FC<ProfileCompletionGuardProps> = ({ childre
     );
   }
 
-  // Se não está carregando, sempre renderizar os filhos
+  // Se o perfil está completo ou ainda está carregando, renderizar os filhos
   // O redirecionamento é feito pelo hook useProfileCompletion
   return <>{children}</>;
 };

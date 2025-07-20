@@ -30,7 +30,12 @@ const ProductSuggestions: React.FC<ProductSuggestionsProps> = ({ equipmentId }) 
   });
 
   const handleAddProduct = (productId: string, price: number) => {
-    addToCart("product", productId, 1, {});
+    addToCart({
+      itemType: "product",
+      itemId: productId,
+      quantity: 1,
+      metadata: {}
+    });
   };
 
   if (isLoading || !relatedProducts || relatedProducts.length === 0) {
