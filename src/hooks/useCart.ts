@@ -18,6 +18,7 @@ export interface CartItem {
   expires_at: string;
   reserved_booking_id?: string;
   reserved_equipment_booking_id?: string;
+  branch_id: string;
 }
 
 export const useCart = () => {
@@ -265,7 +266,7 @@ export const useCart = () => {
     isLoading,
     addToCart: addToCartMutation.mutate,
     removeFromCart: removeFromCartMutation.mutate,
-    updateCart: updateCartMutation.mutate,
+    updateCart: (itemId: string, quantity: number) => updateCartMutation.mutate({ itemId, quantity }),
     clearCart: clearCartMutation.mutate,
     refetch,
     isAddingToCart: addToCartMutation.isPending,

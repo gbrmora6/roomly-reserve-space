@@ -39,15 +39,16 @@ export const BookingExport = ({ bookings }: BookingExportProps) => {
   const translateStatus = (status: BookingStatus): string => {
     switch (status) {
       case "in_process": return "Em Processamento";
-    case "paid": return "Paga";
-    case "partial_refunded": return "Parcialmente Devolvida";
-    case "recused": return "Cancelada";
-    case "pre_authorized": return "Pré-autorizada";
-    case "recused": return "Recusada";
-    // Status legados para compatibilidade
-    case "pending": return "Pendente";
-    case "confirmed": return "Confirmada";
-    default: return status;
+      case "paid": return "Paga";
+      case "partial_refunded": return "Parcialmente Devolvida";
+      case "cancelled": return "Cancelada";
+      case "pre_authorized": return "Pré-autorizada";
+      case "recused": return "Recusada";
+      // Status legados para compatibilidade
+      case "pending" as any: return "Pendente";
+      case "confirmed" as any: return "Confirmada";
+      case "cancelled_unpaid" as any: return "Cancelada não paga";
+      default: return status;
     }
   };
 

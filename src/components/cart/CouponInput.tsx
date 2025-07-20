@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/utils/formatCurrency";
+
+interface CouponResult {
+  is_valid: boolean;
+  coupon_id: string;
+  discount_amount: number;
+  error_message?: string;
+}
 
 interface CouponInputProps {
   cartTotal: number;
@@ -78,8 +86,8 @@ const CouponInput: React.FC<CouponInputProps> = ({
         return;
       }
 
-      if (data && data.length > 0) {
-        const result = data[0];
+      if (data && Array.isArray(data) && data.length > 0) {
+        const result = data[0] as CouponResult;
         
         if (result.is_valid) {
           // Cupom válido

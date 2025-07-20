@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -153,7 +154,7 @@ export function ProductSalesDetailsModal({
               <CardContent>
                 <InvoiceUpload
                   recordId={order.id}
-                  recordType="product_order"
+                  recordType="order"
                   currentInvoiceUrl={null}
                   onSuccess={() => window.location.reload()}
                 />

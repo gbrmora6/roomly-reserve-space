@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -178,8 +179,8 @@ export function ProductSalesTable({
                         
                         {order.status === 'paid' && (
                           <RefundButton
-                            bookingId={order.id}
-                            bookingType="product_order"
+                            recordId={order.id}
+                            recordType="order"
                             onRefundSuccess={() => window.location.reload()}
                           />
                         )}
