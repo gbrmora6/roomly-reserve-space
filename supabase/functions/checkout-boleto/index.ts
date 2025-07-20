@@ -43,13 +43,6 @@ interface Click2PayResponse {
       url: string;
     };
   };
-  // Resposta direta da API (sem wrapper)
-  tid?: string;
-  boleto?: {
-    due_date: string;
-    barcode: string;
-    url: string;
-  };
   error?: string;
 }
 
@@ -221,15 +214,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Configurar API Click2Pay PRODUÇÃO com credenciais corretas
-    const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID") || "a84f96cf-b580-479a-9ecc-d9aa1d85b634124617090002540";
-    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "260ac62f63720b4803ef5793df23605b";
-    
-    console.log('=== CONFIGURAÇÃO CLICK2PAY ===');
-    console.log('Client ID:', clientId ? 'Configurado' : 'Não configurado');
-    console.log('Client Secret:', clientSecret ? 'Configurado' : 'Não configurado');
+    // Configurações da API Click2Pay
+    const click2payOptions = {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'authorization': 'Basic MmE2YjQxMzYtNTliMy00NWNkLTlmZTktODg1MTEwMWMyOGYwMTI0NjE3MDkwMDAyNTQ6NzAzYjIwY2E4NDNjN2Q1NjYwYWU0ZDkxMDVjOTgzMzU='
+      }
+    };
 
-    // Preparar dados conforme EXEMPLO OFICIAL da Click2Pay
+    // Preparar dados do boleto
     const boletoData: BoletoRequest = {
       payerInfo: {
         address: {
@@ -252,33 +247,27 @@ Deno.serve(async (req: Request) => {
       interest: { mode: 'DAILY_AMOUNT' },
       totalAmount: totalAmount,
       id: orderId,
-      callbackAddress: callbackUrl || `${Deno.env.get('SUPABASE_URL')}/functions/v1/click2pay-webhook`
+      callbackAddress: callbackUrl || 'https://webhook-default.requestcatcher.com/slip'
     };
 
-    console.log('=== DADOS PARA CLICK2PAY ===');
-    console.log('Dados preparados:', JSON.stringify(boletoData, null, 2));
-
-    // Fazer requisição para a API Click2Pay PRODUÇÃO seguindo exemplo oficial
-    const auth = btoa(`${clientId}:${clientSecret}`);
-    
+    // Fazer requisição para a API Click2Pay
     const click2payResponse = await fetch(
-      'https://api.click2pay.com.br/v1/transactions/boleto', // URL DE PRODUÇÃO
+      'https://apisandbox.click2pay.com.br/v1/transactions/boleto',
       {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'authorization': `Basic ${auth}` // Exatamente como no exemplo
-        },
+        ...click2payOptions,
         body: JSON.stringify(boletoData)
       }
     );
 
     const responseData = await click2payResponse.json() as Click2PayResponse;
     
-    console.log('=== RESPOSTA CLICK2PAY ===');
-    console.log('Status:', click2payResponse.status);
-    console.log('Response:', JSON.stringify(responseData, null, 2));
+    // Log detalhado da resposta da Click2Pay
+    console.log('Resposta completa da Click2Pay:', {
+      status: click2payResponse.status,
+      statusText: click2payResponse.statusText,
+      headers: Object.fromEntries(click2payResponse.headers.entries()),
+      data: responseData
+    });
 
     // Verificar se a requisição foi bem-sucedida
     if (!click2payResponse.ok) {
@@ -286,8 +275,7 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao processar pagamento', 
-          details: responseData,
-          status: click2payResponse.status
+          details: responseData 
         }),
         { 
           status: click2payResponse.status, 
@@ -307,8 +295,8 @@ Deno.serve(async (req: Request) => {
       const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId);
       
       // Acessar dados do boleto na estrutura correta
-      const boletoDataResult = responseData.data?.boleto || responseData.boleto;
-      const transactionData = responseData.data || responseData;
+      const boletoData = responseData.data?.boleto;
+      const transactionData = responseData.data;
       
       const { error: dbError } = await supabase
           .from('boleto_transactions')
@@ -317,10 +305,10 @@ Deno.serve(async (req: Request) => {
             amount: totalAmount,
             status: 'pending',
             click2pay_transaction_id: transactionData?.tid,
-            barcode: boletoDataResult?.barcode,
-            digitable_line: boletoDataResult?.barcode ? barcodeToDigitableLine(boletoDataResult.barcode) : null,
-            pdf_url: boletoDataResult?.url,
-            expires_at: boletoDataResult?.due_date,
+            barcode: boletoData?.barcode,
+            digitable_line: boletoData?.barcode ? barcodeToDigitableLine(boletoData.barcode) : null,
+            pdf_url: boletoData?.url,
+            expires_at: boletoData?.due_date,
             payer_data: payerInfo,
             click2pay_response: responseData
           });
@@ -343,19 +331,19 @@ Deno.serve(async (req: Request) => {
     }
 
     // Preparar resposta final
-    const boletoDataResult = responseData.data?.boleto || responseData.boleto;
-    const transactionData = responseData.data || responseData;
+    const boletoData = responseData.data?.boleto;
+    const transactionData = responseData.data;
     
     const finalResponse = {
       success: true,
       boleto: {
         tid: transactionData?.tid,
-        barcode: boletoDataResult?.barcode,
-        linhaDigitavel: boletoDataResult?.barcode ? barcodeToDigitableLine(boletoDataResult.barcode) : null,
-        url: boletoDataResult?.url,
-        urlBoleto: boletoDataResult?.url, // Alias para compatibilidade
-        due_date: boletoDataResult?.due_date,
-        vencimento: boletoDataResult?.due_date, // Alias para compatibilidade
+        barcode: boletoData?.barcode,
+        linhaDigitavel: boletoData?.barcode ? barcodeToDigitableLine(boletoData.barcode) : null,
+        url: boletoData?.url,
+        urlBoleto: boletoData?.url, // Alias para compatibilidade
+        due_date: boletoData?.due_date,
+        vencimento: boletoData?.due_date, // Alias para compatibilidade
         amount: transactionData?.totalAmount
       }
     };
