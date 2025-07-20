@@ -58,55 +58,13 @@ export const useCart = () => {
     }
 
     try {
-      let itemPrice = 0;
-      
-      // Buscar preço correto baseado no tipo do item
-      if (itemType === 'product') {
-        const { data: product, error } = await supabase
-          .from('products')
-          .select('price')
-          .eq('id', itemId)
-          .single();
-          
-        if (error || !product) {
-          throw new Error('Produto não encontrado');
-        }
-        itemPrice = product.price;
-      } else if (itemType === 'room') {
-        const { data: room, error } = await supabase
-          .from('rooms')
-          .select('price_per_hour')
-          .eq('id', itemId)
-          .single();
-          
-        if (error || !room) {
-          throw new Error('Sala não encontrada');
-        }
-        itemPrice = room.price_per_hour;
-      } else if (itemType === 'equipment') {
-        const { data: equipment, error } = await supabase
-          .from('equipment')
-          .select('price_per_hour')
-          .eq('id', itemId)
-          .single();
-          
-        if (error || !equipment) {
-          throw new Error('Equipamento não encontrado');
-        }
-        itemPrice = equipment.price_per_hour;
-      }
-
-      const { error } = await supabase
-        .from('cart_items')
-        .insert({
-          user_id: user.id,
-          item_type: itemType,
-          item_id: itemId,
-          quantity: quantity,
-          price: itemPrice,
-          metadata: metadata,
-          branch_id: user.user_metadata?.branch_id || '64a43fed-587b-415c-aeac-0abfd7867566'
-        });
+      const { data, error } = await supabase.rpc('add_to_cart', {
+        p_user_id: user.id,
+        p_item_type: itemType,
+        p_item_id: itemId,
+        p_quantity: quantity,
+        p_metadata: metadata
+      });
 
       if (error) throw error;
 
@@ -122,10 +80,9 @@ export const useCart = () => {
 
   const removeFromCart = async (itemId: string) => {
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
+      const { data, error } = await supabase.rpc('remove_from_cart', {
+        p_id: itemId
+      });
 
       if (error) throw error;
 
@@ -141,10 +98,10 @@ export const useCart = () => {
 
   const updateCart = async (itemId: string, quantity: number) => {
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity })
-        .eq('id', itemId);
+      const { data, error } = await supabase.rpc('update_cart', {
+        p_id: itemId,
+        p_quantity: quantity
+      });
 
       if (error) throw error;
 
@@ -161,10 +118,9 @@ export const useCart = () => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('clear_cart', {
+        p_user_id: user.id
+      });
 
       if (error) throw error;
 

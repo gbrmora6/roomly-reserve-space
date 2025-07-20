@@ -1670,23 +1670,13 @@ export type Database = {
     }
     Functions: {
       add_to_cart: {
-        Args:
-          | {
-              p_user_id: string
-              p_item_type: string
-              p_item_id: string
-              p_quantity: number
-              p_price: number
-              p_metadata?: Json
-              p_branch_id?: string
-            }
-          | {
-              p_user_id: string
-              p_item_type: string
-              p_item_id: string
-              p_quantity?: number
-              p_metadata?: Json
-            }
+        Args: {
+          p_user_id: string
+          p_item_type: string
+          p_item_id: string
+          p_quantity?: number
+          p_metadata?: Json
+        }
         Returns: {
           branch_id: string
           created_at: string
@@ -1747,31 +1737,25 @@ export type Database = {
         }[]
       }
       get_equipment_availability: {
-        Args:
-          | {
-              p_equipment_id: string
-              p_date: string
-              p_requested_quantity: number
-            }
-          | {
-              p_equipment_id: string
-              p_start_time: string
-              p_end_time: string
-              p_quantity: number
-              p_exclude_booking_id?: string
-            }
-        Returns: boolean
+        Args: {
+          p_equipment_id: string
+          p_date: string
+          p_requested_quantity: number
+        }
+        Returns: {
+          hour: string
+          is_available: boolean
+          available_quantity: number
+          blocked_reason: string
+        }[]
       }
       get_room_availability: {
-        Args:
-          | { p_room_id: string; p_date: string }
-          | {
-              p_room_id: string
-              p_start_time: string
-              p_end_time: string
-              p_exclude_booking_id?: string
-            }
-        Returns: boolean
+        Args: { p_room_id: string; p_date: string }
+        Returns: {
+          hour: string
+          is_available: boolean
+          blocked_reason: string
+        }[]
       }
       has_permission: {
         Args: {
