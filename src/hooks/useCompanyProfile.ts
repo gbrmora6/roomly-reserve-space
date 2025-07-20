@@ -12,9 +12,9 @@ export const useCompanyProfile = () => {
   const handleShowAddress = async () => {
     if (!branchId) return;
     const { data, error } = await supabase
-      .from("company_profile")
+      .from("branches")
       .select("*")
-      .eq("branch_id", branchId)
+      .eq("id", branchId)
       .single();
 
     if (error) {

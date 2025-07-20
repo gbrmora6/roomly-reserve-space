@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Encapsulamento do método signUp para manter a API consistente
   const signUp = async (email: string, password: string, firstName: string, lastName: string, branchId: string) => {
-    await authSignUp(email, password, firstName, lastName, branchId);
+    await authSignUp(email, password, { firstName, lastName, branchId });
   };
 
   // Log auth state on changes for debugging

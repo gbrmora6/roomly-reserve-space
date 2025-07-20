@@ -37,45 +37,57 @@ export const useCoupon = () => {
     }
 
     try {
-      const { data, error } = await supabase.rpc('validate_coupon', {
-        p_code: couponCode.toUpperCase(),
-        p_user_id: user.id,
-        p_total_amount: cartTotal,
-        p_item_count: cartItemCount,
-        p_applicable_type: 'all'
-      });
+      // Buscar cupom diretamente da tabela
+      const { data: coupon, error: couponError } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase())
+        .eq('is_active', true)
+        .single();
 
-      if (error) {
-        console.error('Erro ao validar cupom:', error);
+      if (couponError || !coupon) {
         toast({
           variant: "destructive",
-          title: "Erro",
-          description: "Erro interno ao validar o cupom. Tente novamente."
+          title: "Cupom inválido",
+          description: "Cupom não encontrado ou inativo."
         });
         return false;
       }
 
-      if (data && data.length > 0) {
-        const result = data[0];
-        
-        if (result.is_valid) {
-          applyCoupon({
-            couponId: result.coupon_id,
-            discountAmount: result.discount_amount,
-            couponCode: couponCode.toUpperCase()
-          });
-          return true;
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Cupom inválido",
-            description: result.error_message || "Este cupom não pode ser aplicado."
-          });
-          return false;
-        }
+      // Validações básicas
+      if (new Date(coupon.valid_until) < new Date()) {
+        toast({
+          variant: "destructive",
+          title: "Cupom expirado",
+          description: "Este cupom já expirou."
+        });
+        return false;
       }
-      
-      return false;
+
+      if (cartTotal < coupon.minimum_amount) {
+        toast({
+          variant: "destructive",
+          title: "Valor mínimo não atingido",
+          description: `Valor mínimo para este cupom: ${coupon.minimum_amount}`
+        });
+        return false;
+      }
+
+      // Calcular desconto
+      let discountAmount = 0;
+      if (coupon.discount_type === 'fixed') {
+        discountAmount = Math.min(coupon.discount_value, cartTotal);
+      } else {
+        discountAmount = (cartTotal * coupon.discount_value / 100);
+      }
+
+      applyCoupon({
+        couponId: coupon.id,
+        discountAmount: discountAmount,
+        couponCode: couponCode.toUpperCase()
+      });
+
+      return true;
     } catch (error) {
       console.error('Erro ao validar cupom:', error);
       toast({
@@ -97,7 +109,6 @@ export const useCoupon = () => {
     }
 
     try {
-      // Obter branch_id do usuário
       const { data: profile } = await supabase
         .from('profiles')
         .select('branch_id')
@@ -139,7 +150,7 @@ export const useCoupon = () => {
     }
     
     const discountedTotal = originalTotal - appliedCoupon.discountAmount;
-    return Math.max(0, discountedTotal); // Garantir que não seja negativo
+    return Math.max(0, discountedTotal);
   }, [appliedCoupon]);
 
   const clearCoupon = useCallback(() => {
