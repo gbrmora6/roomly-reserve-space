@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client-bypass";
@@ -16,19 +17,17 @@ interface EquipmentBooking {
   status: BookingStatus;
   user_id: string;
   created_at: string;
+  quantity: number;
+  equipment_id: string;
+  invoice_url?: string;
   user?: {
     first_name: string | null;
     last_name: string | null;
   } | null;
-  booking_equipment?: Array<{
-    id: string;
-    quantity: number;
-    equipment: {
-      name: string;
-      price_per_hour: number;
-    };
-    invoice_url?: string;
-  }>;
+  equipment?: {
+    name: string;
+    price_per_hour: number;
+  } | null;
 }
 
 export const useEquipmentBookings = () => {
@@ -48,6 +47,8 @@ export const useEquipmentBookings = () => {
         return [];
       }
 
+      console.log("Fetching equipment bookings for branch:", branchId, "status:", activeTab);
+
       let query = supabase
         .from("booking_equipment")
         .select(`
@@ -59,77 +60,88 @@ export const useEquipmentBookings = () => {
           user_id,
           created_at,
           quantity,
-          equipment(
-            name,
-            price_per_hour
-          ),
+          equipment_id,
           invoice_url
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
 
       if (activeTab !== "all") {
-        query = query.eq("status", activeTab as any);
+        query = query.eq("status", activeTab);
       }
 
-      const { data, error } = await query;
+      const { data: equipmentBookings, error: bookingError } = await query;
 
-      if (error) {
-        console.error("Equipment Bookings Query Error:", error);
-        throw error;
+      if (bookingError) {
+        console.error("Equipment Bookings Query Error:", bookingError);
+        throw bookingError;
       }
 
-      // Fetch user profiles separately
-      if (data && data.length > 0) {
-        const userIds = [...new Set(data.map(booking => booking.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name")
-          .in("id", userIds);
+      console.log("Raw equipment bookings data:", equipmentBookings);
 
-        return (data as any[]).map(booking => ({
-          ...booking,
-          user: profiles?.find(profile => profile.id === booking.user_id) || null,
-          booking_equipment: [{
-            id: booking.id,
-            quantity: booking.quantity,
-            equipment: booking.equipment,
-            invoice_url: booking.invoice_url
-          }]
-        })) as EquipmentBooking[];
+      if (!equipmentBookings || equipmentBookings.length === 0) {
+        return [];
       }
 
-      return (data as any) as EquipmentBooking[] || [];
+      // Fetch user profiles
+      const userIds = [...new Set(equipmentBookings.map(booking => booking.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", userIds);
+
+      console.log("User profiles:", profiles);
+
+      // Fetch equipment data
+      const equipmentIds = [...new Set(equipmentBookings.map(booking => booking.equipment_id))];
+      const { data: equipmentData } = await supabase
+        .from("equipment")
+        .select("id, name, price_per_hour")
+        .in("id", equipmentIds);
+
+      console.log("Equipment data:", equipmentData);
+
+      // Combine data
+      const result = equipmentBookings.map(booking => ({
+        ...booking,
+        user: profiles?.find(profile => profile.id === booking.user_id) || null,
+        equipment: equipmentData?.find(equipment => equipment.id === booking.equipment_id) || null
+      })) as EquipmentBooking[];
+
+      console.log("Final combined bookings:", result);
+
+      return result;
     },
     enabled: !!branchId,
   });
 
-  // Filtro de busca
+  // Filter bookings based on search
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
     if (!search.trim()) return bookings;
-    const s = search.trim().toLowerCase();
+    
+    const searchTerm = search.trim().toLowerCase();
     return bookings.filter(booking => {
       const user = booking.user;
-      const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
-      const equipmentName = booking.booking_equipment?.[0]?.equipment?.name?.toLowerCase() || "";
-      return name.includes(s) || equipmentName.includes(s);
+      const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase() : "";
+      const equipmentName = booking.equipment?.name?.toLowerCase() || "";
+      return userName.includes(searchTerm) || equipmentName.includes(searchTerm);
     });
   }, [bookings, search]);
 
-  // Paginação
+  // Pagination
   const totalPages = Math.ceil(filteredBookings.length / perPage) || 1;
   const paginatedBookings = useMemo(() => {
     const start = (page - 1) * perPage;
     return filteredBookings.slice(start, start + perPage);
   }, [filteredBookings, page]);
 
-  // Resetar página ao buscar
+  // Reset page when search/tab/branch changes
   useEffect(() => {
     setPage(1);
   }, [search, activeTab, branchId]);
 
-  // Estatísticas
+  // Statistics
   const stats = useMemo(() => {
     if (!bookings) return {
       total: 0,
@@ -192,21 +204,16 @@ export const useEquipmentBookings = () => {
         const startDate = new Date(booking.start_time);
         const endDate = new Date(booking.end_time);
         
-        const equipmentText = booking.booking_equipment && booking.booking_equipment.length > 0
-          ? booking.booking_equipment.map(item => 
-              `${item.quantity}x ${item.equipment.name}`
-            ).join("; ")
-          : "Nenhum";
-        
         return {
           "ID": booking.id,
           "Cliente": booking.user 
             ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
             : "-",
+          "Equipamento": booking.equipment?.name || "-",
           "Data": format(startDate, "dd/MM/yyyy"),
           "Horário Início": format(startDate, "HH:mm"),
           "Horário Fim": format(endDate, "HH:mm"),
-          "Equipamentos": equipmentText,
+          "Quantidade": booking.quantity,
           "Valor Total": `R$ ${booking.total_price?.toFixed(2) || "0.00"}`,
           "Status": translateStatus(booking.status)
         };

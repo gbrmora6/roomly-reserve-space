@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -18,19 +19,17 @@ interface EquipmentBooking {
   status: BookingStatus;
   user_id: string;
   created_at: string;
+  quantity: number;
+  equipment_id: string;
+  invoice_url?: string;
   user?: {
     first_name: string | null;
     last_name: string | null;
   } | null;
-  booking_equipment?: Array<{
-    id: string;
-    quantity: number;
-    equipment: {
-      name: string;
-      price_per_hour: number;
-    };
-    invoice_url?: string;
-  }>;
+  equipment?: {
+    name: string;
+    price_per_hour: number;
+  } | null;
 }
 
 interface EquipmentBookingTableProps {
@@ -92,6 +91,23 @@ export const EquipmentBookingTable: React.FC<EquipmentBookingTableProps> = ({
     }
   };
 
+  const getCustomerName = (user?: { first_name: string | null; last_name: string | null } | null) => {
+    if (!user) return "Cliente não encontrado";
+    return `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nome não informado";
+  };
+
+  if (bookings.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            <p>Nenhuma reserva de equipamento encontrada.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -113,13 +129,11 @@ export const EquipmentBookingTable: React.FC<EquipmentBookingTableProps> = ({
                 <TableRow key={booking.id}>
                   <TableCell className="py-3 px-4">
                     <div className="font-medium">
-                      {booking.user 
-                        ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
-                        : booking.user_id}
+                      {getCustomerName(booking.user)}
                     </div>
                   </TableCell>
                   <TableCell className="py-3 px-4">
-                    {booking.booking_equipment?.[0]?.equipment?.name || "-"}
+                    {booking.equipment?.name || "Equipamento não encontrado"}
                   </TableCell>
                   <TableCell className="py-3 px-4 text-sm">
                     <div>
@@ -130,7 +144,7 @@ export const EquipmentBookingTable: React.FC<EquipmentBookingTableProps> = ({
                     </div>
                   </TableCell>
                   <TableCell className="py-3 px-4 text-sm">
-                    {booking.booking_equipment?.[0]?.quantity || 0}x
+                    {booking.quantity}x
                   </TableCell>
                   <TableCell className="py-3 px-4 text-sm font-medium">
                     R$ {booking.total_price?.toFixed(2) || "0.00"}

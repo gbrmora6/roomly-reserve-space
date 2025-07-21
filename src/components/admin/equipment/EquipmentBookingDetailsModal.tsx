@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format } from "date-fns";
@@ -14,19 +15,17 @@ interface EquipmentBooking {
   status: BookingStatus;
   user_id: string;
   created_at: string;
+  quantity: number;
+  equipment_id: string;
+  invoice_url?: string;
   user?: {
     first_name: string | null;
     last_name: string | null;
   } | null;
-  booking_equipment?: Array<{
-    id: string;
-    quantity: number;
-    equipment: {
-      name: string;
-      price_per_hour: number;
-    };
-    invoice_url?: string;
-  }>;
+  equipment?: {
+    name: string;
+    price_per_hour: number;
+  } | null;
 }
 
 interface EquipmentBookingDetailsModalProps {
@@ -44,6 +43,11 @@ export const EquipmentBookingDetailsModal: React.FC<EquipmentBookingDetailsModal
 }) => {
   if (!booking) return null;
 
+  const getCustomerName = (user?: { first_name: string | null; last_name: string | null } | null) => {
+    if (!user) return "Cliente não encontrado";
+    return `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Nome não informado";
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -55,7 +59,7 @@ export const EquipmentBookingDetailsModal: React.FC<EquipmentBookingDetailsModal
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h3 className="font-semibold mb-2">Informações do Cliente</h3>
-              <p><strong>Nome:</strong> {booking.user ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() : booking.user_id}</p>
+              <p><strong>Nome:</strong> {getCustomerName(booking.user)}</p>
               <p><strong>Data da Reserva:</strong> {format(new Date(booking.created_at), "dd/MM/yyyy HH:mm")}</p>
             </div>
             <div>
@@ -64,35 +68,30 @@ export const EquipmentBookingDetailsModal: React.FC<EquipmentBookingDetailsModal
               <p className="mt-2"><strong>Valor Total:</strong> R$ {booking.total_price?.toFixed(2) || "0.00"}</p>
             </div>
           </div>
+          
           <div>
             <h3 className="font-semibold mb-2">Horário</h3>
             <p><strong>Data:</strong> {format(new Date(booking.start_time), "dd/MM/yyyy")}</p>
             <p><strong>Início:</strong> {format(new Date(booking.start_time), "HH:mm")}</p>
             <p><strong>Fim:</strong> {format(new Date(booking.end_time), "HH:mm")}</p>
           </div>
+          
           <div>
-            <h3 className="font-semibold mb-2">Equipamentos</h3>
-            {booking.booking_equipment && booking.booking_equipment.length > 0 ? (
-              <div>
-                {booking.booking_equipment.map((item, index) => (
-                  <div key={index} className="border p-3 rounded">
-                    <p><strong>Equipamento:</strong> {item.equipment.name}</p>
-                    <p><strong>Quantidade:</strong> {item.quantity}x</p>
-                    <p><strong>Preço por hora:</strong> R$ {item.equipment.price_per_hour.toFixed(2)}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">Nenhum equipamento encontrado</p>
-            )}
+            <h3 className="font-semibold mb-2">Equipamento</h3>
+            <div className="border p-3 rounded">
+              <p><strong>Nome:</strong> {booking.equipment?.name || "Equipamento não encontrado"}</p>
+              <p><strong>Quantidade:</strong> {booking.quantity}x</p>
+              <p><strong>Preço por hora:</strong> R$ {booking.equipment?.price_per_hour?.toFixed(2) || "0.00"}</p>
+            </div>
           </div>
-          {booking.booking_equipment && booking.booking_equipment.length > 0 && booking.booking_equipment[0].invoice_url !== undefined && (
+          
+          {booking.invoice_url !== undefined && (
             <div>
               <h3 className="font-semibold mb-2">Nota Fiscal</h3>
               <InvoiceUpload
-                recordId={booking.booking_equipment[0].id}
+                recordId={booking.id}
                 recordType="equipment_booking"
-                currentInvoiceUrl={booking.booking_equipment[0].invoice_url}
+                currentInvoiceUrl={booking.invoice_url}
                 onSuccess={() => onRefetch()}
               />
             </div>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,18 +8,32 @@ import { EquipmentBookingFilters } from '@/components/admin/equipment/EquipmentB
 import { EquipmentBookingTable } from '@/components/admin/equipment/EquipmentBookingTable';
 import { EquipmentBookingDetailsModal } from '@/components/admin/equipment/EquipmentBookingDetailsModal';
 
-
-
 export default function EquipmentBookings() {
-  const equipmentBookingsData = useEquipmentBookings();
-  
+  const {
+    activeTab,
+    setActiveTab,
+    search,
+    setSearch,
+    page,
+    setPage,
+    branchId,
+    setBranchId,
+    branches,
+    isSuperAdmin,
+    bookings,
+    filteredBookings,
+    isLoading,
+    stats,
+    totalPages,
+    refetch,
+    downloadReport,
+    selectedBooking,
+    showDetails,
+    handleViewDetails,
+    handleCloseDetails,
+  } = useEquipmentBookings();
 
-
-
-  
-
-  
-  if (false) { // Temporary loading check disabled
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -58,9 +73,45 @@ export default function EquipmentBookings() {
         </CardHeader>
       </Card>
 
-      {/* Temporary removed until props are fixed */}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pagas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.pagas}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendentes}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Faturado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              R$ {stats.faturado.toFixed(2)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Tabs value={equipmentBookingsData.activeTab || 'all'} onValueChange={(value) => equipmentBookingsData.setActiveTab?.(value as any)}>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
           <TabsTrigger value="pending">Pendentes</TabsTrigger>
@@ -70,12 +121,35 @@ export default function EquipmentBookings() {
           <TabsTrigger value="completed">Concluídas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={equipmentBookingsData.activeTab || 'all'} className="mt-6">
-          {/* Temporary removed until props are fixed */}
+        <TabsContent value={activeTab} className="mt-6">
+          <EquipmentBookingFilters
+            search={search}
+            setSearch={setSearch}
+            branchId={branchId}
+            setBranchId={setBranchId}
+            branches={branches}
+            isSuperAdmin={isSuperAdmin}
+            filteredBookingsCount={filteredBookings.length}
+            page={page}
+            totalPages={totalPages}
+            setPage={setPage}
+            onDownloadReport={downloadReport}
+          />
+
+          <EquipmentBookingTable
+            bookings={bookings}
+            onViewDetails={handleViewDetails}
+            onRefetch={refetch}
+          />
         </TabsContent>
       </Tabs>
 
-      {/* Temporary removed until props are fixed */}
+      <EquipmentBookingDetailsModal
+        isOpen={showDetails}
+        onClose={handleCloseDetails}
+        booking={selectedBooking}
+        onRefetch={refetch}
+      />
     </div>
   );
 }
