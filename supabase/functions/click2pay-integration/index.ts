@@ -138,7 +138,7 @@ async function getCartItems(supabase: any, userId: string) {
     .from('cart_items')
     .select('*')
     .eq('user_id', userId)
-    .gt('expires_at', new Date().toISOString());
+    .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString());
 
   if (error) {
     console.error("Erro ao buscar itens do carrinho:", error);
@@ -146,6 +146,7 @@ async function getCartItems(supabase: any, userId: string) {
   }
 
   console.log("Itens do carrinho encontrados:", cartItems?.length || 0);
+  console.log("Detalhes dos itens:", JSON.stringify(cartItems, null, 2));
   return cartItems || [];
 }
 
