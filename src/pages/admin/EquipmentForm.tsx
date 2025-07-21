@@ -1,17 +1,18 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
+import { WeeklyScheduleForm, WeeklyScheduleItem } from "@/components/admin/shared/WeeklyScheduleForm";
 
 interface Equipment {
   id: string;
@@ -20,42 +21,6 @@ interface Equipment {
   quantity: number;
   price_per_hour: number;
 }
-
-interface EquipmentSchedule {
-  weekday: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-  start_time: string;
-  end_time: string;
-}
-
-const WEEKDAYS = [
-  { value: 'monday', label: 'Segunda-feira' },
-  { value: 'tuesday', label: 'Terça-feira' },
-  { value: 'wednesday', label: 'Quarta-feira' },
-  { value: 'thursday', label: 'Quinta-feira' },
-  { value: 'friday', label: 'Sexta-feira' },
-  { value: 'saturday', label: 'Sábado' },
-  { value: 'sunday', label: 'Domingo' }
-] as const;
-
-const WEEKDAYS_MAP: Record<string, EquipmentSchedule['weekday']> = {
-  'monday': 'monday',
-  'tuesday': 'tuesday',
-  'wednesday': 'wednesday',
-  'thursday': 'thursday',
-  'friday': 'friday',
-  'saturday': 'saturday',
-  'sunday': 'sunday'
-};
-
-const WEEKDAYS_MAP_REVERSE: Record<EquipmentSchedule['weekday'], string> = {
-  'monday': 'monday',
-  'tuesday': 'tuesday',
-  'wednesday': 'wednesday',
-  'thursday': 'thursday',
-  'friday': 'friday',
-  'saturday': 'saturday',
-  'sunday': 'sunday'
-};
 
 const AdminEquipmentForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,7 +38,7 @@ const AdminEquipmentForm: React.FC = () => {
     price_per_hour: 0,
   });
   
-  const [schedules, setSchedules] = useState<EquipmentSchedule[]>([]);
+  const [schedules, setSchedules] = useState<WeeklyScheduleItem[]>([]);
   
   const { data: equipmentData } = useQuery({
     queryKey: ["equipment", id],
@@ -85,6 +50,8 @@ const AdminEquipmentForm: React.FC = () => {
         .eq("id", id)
         .single();
       
+      if (equipmentError) throw equipmentError;
+      
       const { data: scheduleData } = await supabase
         .from("equipment_schedules")
         .select("*")
@@ -93,47 +60,16 @@ const AdminEquipmentForm: React.FC = () => {
       setEquipment(equipmentInfo || {});
       
       if (scheduleData) {
-        setSchedules(scheduleData);
+        setSchedules(scheduleData.map(s => ({
+          weekday: s.weekday,
+          start_time: s.start_time,
+          end_time: s.end_time
+        })));
       }
       
       return { equipment: equipmentInfo, schedules: scheduleData };
     },
   });
-
-  const handleAddSchedule = () => {
-    setSchedules([...schedules, {
-      weekday: 'monday',
-      start_time: '08:00',
-      end_time: '17:00'
-    }]);
-  };
-  
-  const handleRemoveSchedule = (index: number) => {
-    const newSchedules = schedules.filter((_, i) => i !== index);
-    setSchedules(newSchedules);
-  };
-  
-  const handleScheduleChange = (
-    index: number, 
-    field: keyof EquipmentSchedule, 
-    value: string
-  ) => {
-    const newSchedules = [...schedules];
-    
-    if (field === 'weekday') {
-      newSchedules[index] = {
-        ...newSchedules[index],
-        [field]: WEEKDAYS_MAP[value] as EquipmentSchedule['weekday']
-      };
-    } else {
-      newSchedules[index] = {
-        ...newSchedules[index],
-        [field]: value
-      };
-    }
-    
-    setSchedules(newSchedules);
-  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -196,7 +132,7 @@ const AdminEquipmentForm: React.FC = () => {
         
         // Log da atualização
         if (!error) {
-          // await logUpdate('equipment', id, 'Equipamento atualizado');
+          await logUpdate('equipment', id, 'Equipamento atualizado');
         }
       }
       
@@ -302,7 +238,7 @@ const AdminEquipmentForm: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="quantity">Quantidade</Label>
+                  <Label htmlFor="quantity">Quantidade Disponível *</Label>
                   <Input
                     id="quantity"
                     name="quantity"
@@ -315,7 +251,7 @@ const AdminEquipmentForm: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="price_per_hour">Preço por Hora (R$)</Label>
+                  <Label htmlFor="price_per_hour">Preço por Hora (R$) *</Label>
                   <Input
                     id="price_per_hour"
                     name="price_per_hour"
@@ -331,78 +267,11 @@ const AdminEquipmentForm: React.FC = () => {
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Horários de Disponibilidade</CardTitle>
-              <p className="text-sm text-gray-600">
-                Configure os horários específicos em que o equipamento estará disponível para cada dia da semana.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {schedules.map((schedule, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <Label>Dia da Semana</Label>
-                      <Select
-                        value={WEEKDAYS_MAP_REVERSE[schedule.weekday] || 'monday'}
-                        onValueChange={(value) => handleScheduleChange(index, 'weekday', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {WEEKDAYS.map((day) => (
-                            <SelectItem key={day.value} value={day.value}>
-                              {day.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex-1">
-                      <Label>Horário de Início</Label>
-                      <Input
-                        type="time"
-                        value={schedule.start_time}
-                        onChange={(e) => handleScheduleChange(index, 'start_time', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <Label>Horário de Fim</Label>
-                      <Input
-                        type="time"
-                        value={schedule.end_time}
-                        onChange={(e) => handleScheduleChange(index, 'end_time', e.target.value)}
-                      />
-                    </div>
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveSchedule(index)}
-                      className="mt-6"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddSchedule}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Horário
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <WeeklyScheduleForm
+            schedules={schedules}
+            onChange={setSchedules}
+            title="Horários de Disponibilidade"
+          />
           
           <div className="flex justify-end gap-4">
             <Button

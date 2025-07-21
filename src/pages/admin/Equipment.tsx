@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,18 +9,19 @@ import { Plus, Pencil, Trash, PowerOff, Power } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Mic } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 
 interface Equipment {
   id: string;
   name: string;
   description: string | null;
   quantity: number;
+  price_per_hour: number;
   is_active: boolean;
 }
 
@@ -76,10 +78,10 @@ const AdminEquipment: React.FC = () => {
         .eq("id", id);
       
       if (error) throw error;
-      
-      // Registrar log da exclusão
+
+      // Log da exclusão
       if (equipmentData) {
-        logDelete("equipment", id, equipmentData);
+        await logDelete('equipment', id, equipmentData);
       }
       
       toast({
@@ -97,22 +99,19 @@ const AdminEquipment: React.FC = () => {
 
   const toggleEquipmentStatus = async (id: string, currentStatus: boolean) => {
     try {
-      // Buscar nome do equipamento para o log
-      const { data: equipmentData } = await supabase
-        .from("equipment")
-        .select("name")
-        .eq("id", id)
-        .single();
-
       const { error } = await supabase
         .from("equipment")
         .update({ is_active: !currentStatus })
         .eq("id", id);
       
       if (error) throw error;
-      
-      // Registrar log da mudança de status
-      logStatusChange("equipment", id, currentStatus, !currentStatus, equipmentData?.name);
+
+      // Log da mudança de status
+      await (logStatusChange as any)('equipment', id, {
+        previous_status: currentStatus,
+        new_status: !currentStatus,
+        action: currentStatus ? 'deactivated' : 'activated'
+      }, {});
       
       toast({
         title: currentStatus ? "Equipamento desativado com sucesso" : "Equipamento ativado com sucesso",
@@ -134,20 +133,11 @@ const AdminEquipment: React.FC = () => {
       <Card className="shadow-lg rounded-2xl border-0 bg-white p-6 mb-8">
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
-            <Mic className="h-7 w-7 text-green-700" /> Equipamentos
+            <Wrench className="h-7 w-7 text-blue-700" /> Equipamentos
           </CardTitle>
           <CardDescription className="text-gray-500">Gerencie todos os equipamentos cadastrados</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Gerenciar Equipamentos</h1>
-            <Button asChild>
-              <Link to="/admin/equipment/new">
-                <Plus className="mr-2 h-4 w-4" /> Novo Equipamento
-              </Link>
-            </Button>
-          </div>
-          
           {isSuperAdmin && branches && (
             <div className="mb-4 max-w-xs">
               <Select value={branchId || undefined} onValueChange={setBranchId!}>
@@ -162,6 +152,14 @@ const AdminEquipment: React.FC = () => {
               </Select>
             </div>
           )}
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Gerenciar Equipamentos</h1>
+            <Button asChild>
+              <Link to="/admin/equipment/new">
+                <Plus className="mr-2 h-4 w-4" /> Novo Equipamento
+              </Link>
+            </Button>
+          </div>
           
           {isError ? (
             <div className="rounded-lg bg-destructive/10 p-6 text-center">
@@ -174,6 +172,7 @@ const AdminEquipment: React.FC = () => {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : (
             <div className="border rounded-md">
@@ -183,6 +182,7 @@ const AdminEquipment: React.FC = () => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Quantidade</TableHead>
+                    <TableHead>Preço/Hora</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -192,8 +192,9 @@ const AdminEquipment: React.FC = () => {
                     equipment.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="max-w-[300px] truncate">{item.description}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
+                        <TableCell>R$ {item.price_per_hour.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge variant={item.is_active ? "default" : "outline"}>
                             {item.is_active ? "Ativo" : "Inativo"}
@@ -207,7 +208,7 @@ const AdminEquipment: React.FC = () => {
                           </Button>
                           <Button 
                             variant="ghost" 
-                            size="icon"
+                            size="icon" 
                             onClick={() => toggleEquipmentStatus(item.id, item.is_active)}
                             title={item.is_active ? "Desativar equipamento" : "Ativar equipamento"}
                           >
@@ -218,7 +219,7 @@ const AdminEquipment: React.FC = () => {
                           </Button>
                           <Button 
                             variant="ghost" 
-                            size="icon"
+                            size="icon" 
                             onClick={() => handleDelete(item.id)}
                           >
                             <Trash className="h-4 w-4" />
@@ -228,7 +229,7 @@ const AdminEquipment: React.FC = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
+                      <TableCell colSpan={6} className="text-center py-4">
                         Nenhum equipamento cadastrado
                       </TableCell>
                     </TableRow>
