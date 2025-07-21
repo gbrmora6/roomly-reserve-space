@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client-bypass";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
@@ -58,15 +58,12 @@ export const useEquipmentBookings = () => {
           status,
           user_id,
           created_at,
-          booking_equipment(
-            id,
-            quantity,
-            equipment(
-              name,
-              price_per_hour
-            ),
-            invoice_url
-          )
+          quantity,
+          equipment(
+            name,
+            price_per_hour
+          ),
+          invoice_url
         `)
         .eq("branch_id", branchId)
         .order("created_at", { ascending: false });
@@ -92,7 +89,13 @@ export const useEquipmentBookings = () => {
 
         return (data as any[]).map(booking => ({
           ...booking,
-          user: profiles?.find(profile => profile.id === booking.user_id) || null
+          user: profiles?.find(profile => profile.id === booking.user_id) || null,
+          booking_equipment: [{
+            id: booking.id,
+            quantity: booking.quantity,
+            equipment: booking.equipment,
+            invoice_url: booking.invoice_url
+          }]
         })) as EquipmentBooking[];
       }
 
