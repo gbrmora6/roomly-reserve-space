@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
 
@@ -200,6 +199,40 @@ function prepareCustomerData(paymentData: any, userEmail: string) {
       birth_date: paymentData.dataNascimento || ""
     }
   };
+}
+
+// Função para salvar dados de pagamento na tabela payment_details
+async function savePaymentDetails(supabase: any, orderId: string, paymentMethod: string, click2payResult: any) {
+  console.log("Salvando dados de pagamento para pedido:", orderId);
+  
+  const paymentDetailsData: any = {
+    order_id: orderId,
+    payment_method: paymentMethod
+  };
+
+  if (paymentMethod === 'pix' && click2payResult.pix) {
+    paymentDetailsData.pix_code = click2payResult.pix.qr_code;
+    paymentDetailsData.pix_qr_code = click2payResult.pix.qr_code_image;
+    paymentDetailsData.pix_expiration = click2payResult.pix.expires_at;
+  } else if (paymentMethod === 'boleto' && click2payResult.boleto) {
+    paymentDetailsData.boleto_url = click2payResult.boleto.url;
+    paymentDetailsData.boleto_barcode = click2payResult.boleto.barcode;
+    paymentDetailsData.boleto_due_date = click2payResult.boleto.due_date;
+  } else if (paymentMethod === 'cartao' && click2payResult.card) {
+    paymentDetailsData.card_transaction_id = click2payResult.card.transaction_id;
+    paymentDetailsData.card_authorization_code = click2payResult.card.authorization_code;
+  }
+
+  const { error } = await supabase
+    .from('payment_details')
+    .insert(paymentDetailsData);
+
+  if (error) {
+    console.error("Erro ao salvar payment_details:", error);
+    throw new Error(`Erro ao salvar detalhes do pagamento: ${error.message}`);
+  }
+
+  console.log("Dados de pagamento salvos com sucesso");
 }
 
 serve(async (req) => {
@@ -468,6 +501,15 @@ serve(async (req) => {
         console.log("18.2. Dados do boleto preparados:", JSON.stringify(boletoData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/boleto', boletoData, clientId, clientSecret);
+        
+        // Mapear resposta do boleto
+        if (click2payResult.success && click2payResult.data && click2payResult.data.boleto) {
+          click2payResult.boleto = {
+            url: click2payResult.data.boleto.url || null,
+            barcode: click2payResult.data.boleto.barcode || null,
+            due_date: click2payResult.data.boleto.due_date || null
+          };
+        }
         break;
 
       case "pix":
@@ -519,6 +561,14 @@ serve(async (req) => {
         console.log("18.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
+        
+        // Mapear resposta do cartão
+        if (click2payResult.success && click2payResult.data && click2payResult.data.card) {
+          click2payResult.card = {
+            transaction_id: click2payResult.data.card.transaction_id || null,
+            authorization_code: click2payResult.data.card.authorization_code || null
+          };
+        }
         break;
 
       default:
@@ -528,14 +578,26 @@ serve(async (req) => {
     console.log("19. Resultado Click2Pay após mapeamento:", JSON.stringify(click2payResult, null, 2));
 
     // Salvar resposta da Click2Pay na ordem
+    const orderUpdateData: any = {
+      click2pay_response: click2payResult,
+      click2pay_tid: click2payResult.tid,
+      external_identifier: click2payResult.tid
+    };
+
+    // Definir data de expiração baseada no método de pagamento
+    if (paymentMethod === 'pix' && click2payResult.pix && click2payResult.pix.expires_at) {
+      orderUpdateData.expires_at = click2payResult.pix.expires_at;
+    } else if (paymentMethod === 'boleto' && click2payResult.boleto && click2payResult.boleto.due_date) {
+      orderUpdateData.expires_at = new Date(click2payResult.boleto.due_date + 'T23:59:59').toISOString();
+    }
+
     await supabase
       .from('orders')
-      .update({
-        click2pay_response: click2payResult,
-        click2pay_tid: click2payResult.tid,
-        external_identifier: click2payResult.tid
-      })
+      .update(orderUpdateData)
       .eq('id', order.id);
+
+    // Salvar detalhes do pagamento na tabela payment_details
+    await savePaymentDetails(supabase, order.id, paymentMethod, click2payResult);
 
     // Retornar resposta de sucesso com campos mapeados
     return new Response(

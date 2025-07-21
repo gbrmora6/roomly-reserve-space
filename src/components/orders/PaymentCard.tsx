@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   Banknote,
-  Download
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { format } from "date-fns";
@@ -20,6 +22,7 @@ import { ptBR } from "date-fns/locale";
 import { BoletoActions } from "./BoletoActions";
 import { PixActions } from "./PixActions";
 import { RefundModal } from "./RefundModal";
+import { Link } from "react-router-dom";
 
 interface PaymentCardProps {
   order: any;
@@ -106,6 +109,11 @@ export function PaymentCard({ order, onRefresh, onRefund, isRefreshing }: Paymen
   const isExpired = order.expires_at && new Date(order.expires_at) < new Date();
   const canRefund = order.status === 'paid' && (order.payment_method === 'pix' || order.payment_method === 'cartao');
   const isRefunding = order.refund_status === 'processing';
+  
+  // Verificar se pode mostrar o botão de pagar
+  const canShowPayButton = order.status === 'in_process' && !isExpired && 
+    (order.payment_method === 'pix' || order.payment_method === 'boleto') &&
+    order.payment_details && order.payment_details.length > 0;
 
   return (
     <Card className="w-full">
@@ -184,6 +192,19 @@ export function PaymentCard({ order, onRefresh, onRefund, isRefreshing }: Paymen
 
         {/* Botões de ação */}
         <div className="flex gap-2 pt-4 border-t">
+          {/* Botão de pagar - destaque especial para pagamentos pendentes */}
+          {canShowPayButton && (
+            <Button
+              asChild
+              className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Link to={`/payment-instructions/${order.id}`}>
+                <ExternalLink className="h-4 w-4" />
+                Pagar
+              </Link>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"

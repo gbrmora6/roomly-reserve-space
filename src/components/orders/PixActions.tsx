@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +60,7 @@ export function PixActions({ paymentDetails, isExpired }: PixActionsProps) {
             size="sm"
             onClick={copyPixCode}
             className="flex items-center gap-1"
+            disabled={isExpired}
           >
             <Copy className="h-4 w-4" />
             Copiar Código PIX
@@ -71,24 +73,27 @@ export function PixActions({ paymentDetails, isExpired }: PixActionsProps) {
             size="sm"
             onClick={() => setShowQrCode(true)}
             className="flex items-center gap-1"
+            disabled={isExpired}
           >
             <QrCode className="h-4 w-4" />
             Ver QR Code
           </Button>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={openBankApp}
-          className="flex items-center gap-1"
-        >
-          <Smartphone className="h-4 w-4" />
-          Abrir App do Banco
-        </Button>
+        {!isExpired && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openBankApp}
+            className="flex items-center gap-1"
+          >
+            <Smartphone className="h-4 w-4" />
+            Abrir App do Banco
+          </Button>
+        )}
       </div>
 
-      {paymentDetails.pix_code && (
+      {paymentDetails.pix_code && !isExpired && (
         <div className="p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-muted-foreground mb-1">Código PIX Copia e Cola:</p>
           <p className="font-mono text-sm break-all">
@@ -112,7 +117,7 @@ export function PixActions({ paymentDetails, isExpired }: PixActionsProps) {
             <DialogTitle>QR Code PIX</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-4">
-            {paymentDetails.pix_qr_code ? (
+            {paymentDetails.pix_qr_code && !isExpired ? (
               <img 
                 src={paymentDetails.pix_qr_code} 
                 alt="QR Code PIX" 
@@ -120,19 +125,23 @@ export function PixActions({ paymentDetails, isExpired }: PixActionsProps) {
               />
             ) : (
               <div className="w-64 h-64 bg-gray-100 border rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">QR Code não disponível</p>
+                <p className="text-gray-500">
+                  {isExpired ? "QR Code expirado" : "QR Code não disponível"}
+                </p>
               </div>
             )}
             <p className="text-sm text-center text-muted-foreground">
-              Escaneie este QR Code com o app do seu banco ou Pix
+              {isExpired ? "Este código PIX expirou" : "Escaneie este QR Code com o app do seu banco ou Pix"}
             </p>
-            <Button
-              variant="outline"
-              onClick={copyPixCode}
-              className="w-full"
-            >
-              Ou copie o código PIX
-            </Button>
+            {!isExpired && paymentDetails.pix_code && (
+              <Button
+                variant="outline"
+                onClick={copyPixCode}
+                className="w-full"
+              >
+                Ou copie o código PIX
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Copy, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ export function BoletoActions({ paymentDetails, isExpired }: BoletoActionsProps)
             size="sm"
             onClick={openBoleto}
             className="flex items-center gap-1"
+            disabled={isExpired}
           >
             <ExternalLink className="h-4 w-4" />
             Ver Boleto
@@ -49,6 +51,7 @@ export function BoletoActions({ paymentDetails, isExpired }: BoletoActionsProps)
             size="sm"
             onClick={copyBarcode}
             className="flex items-center gap-1"
+            disabled={isExpired}
           >
             <Copy className="h-4 w-4" />
             Copiar Código
@@ -66,6 +69,7 @@ export function BoletoActions({ paymentDetails, isExpired }: BoletoActionsProps)
               link.click();
             }}
             className="flex items-center gap-1"
+            disabled={isExpired}
           >
             <Download className="h-4 w-4" />
             Baixar PDF
@@ -73,7 +77,7 @@ export function BoletoActions({ paymentDetails, isExpired }: BoletoActionsProps)
         )}
       </div>
 
-      {paymentDetails.boleto_barcode && (
+      {paymentDetails.boleto_barcode && !isExpired && (
         <div className="p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-muted-foreground mb-1">Código de barras:</p>
           <p className="font-mono text-sm break-all">
