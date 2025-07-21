@@ -33,6 +33,27 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
 
         if (error) {
           console.error("Error fetching room availability:", error);
+          // Fallback: try to get basic schedule if function fails
+          const { data: schedule, error: scheduleError } = await supabase
+            .from("room_schedules")
+            .select("start_time, end_time")
+            .eq("room_id", room.id)
+            .eq("weekday", format(selectedDate, "EEEE").toLowerCase())
+            .maybeSingle();
+          
+          if (!scheduleError && schedule) {
+            const startHour = parseInt(schedule.start_time.split(':')[0]);
+            const endHour = parseInt(schedule.end_time.split(':')[0]);
+            const fallbackHours = [];
+            for (let h = startHour; h < endHour; h++) {
+              fallbackHours.push(`${h.toString().padStart(2, '0')}:00`);
+            }
+            setAvailableHours(fallbackHours);
+            setBlockedHours([]);
+          } else {
+            setAvailableHours([]);
+            setBlockedHours([]);
+          }
           return;
         }
 
