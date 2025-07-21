@@ -292,9 +292,15 @@ const Checkout = () => {
             throw new Error(data.message || "Cartão recusado ou aguardando aprovação");
           }
         } else if (paymentMethod === "pix") {
-          // Para PIX, verificar se temos os dados necessários
-          if (!data.pix?.qr_code_image && !data.pix?.qr_code) {
-            throw new Error("Erro: QR Code PIX não foi gerado corretamente");
+          // Para PIX, verificar se temos os dados necessários com verificação mais flexível
+          console.log("Verificando dados do PIX:", data.pix);
+          
+          const hasQrCode = data.pix?.qr_code || data.pix?.qrCode;
+          const hasQrImage = data.pix?.qr_code_image || data.pix?.qrCodeImage;
+          
+          if (!hasQrCode && !hasQrImage) {
+            console.error("PIX data received:", data.pix);
+            throw new Error("Erro: Dados do PIX não foram gerados corretamente");
           }
           
           // Registrar uso do cupom se houver um aplicado
@@ -310,13 +316,15 @@ const Checkout = () => {
           // Limpar carrinho
           clearCart();
           
-          // Preparar dados do PIX para a página de instruções
+          // Preparar dados do PIX para a página de instruções com mapeamento flexível
           const pixData = {
-            qrCodeImage: data.pix.qr_code_image,
-            pixCode: data.pix.qr_code,
-            // reference: data.reference, // Removido pois não está sendo retornado pela Edge Function para PIX
+            qrCodeImage: data.pix.qr_code_image || data.pix.qrCodeImage,
+            pixCode: data.pix.qr_code || data.pix.qrCode,
+            reference: data.reference,
             orderId: data.orderId
           };
+          
+          console.log("Dados do PIX preparados para navegação:", pixData);
           
           // Redirecionar para página de instrução
           navigate("/payment-instructions", { 

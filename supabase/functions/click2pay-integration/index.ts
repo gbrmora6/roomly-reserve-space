@@ -482,6 +482,19 @@ serve(async (req) => {
         console.log("18.2. Dados do PIX preparados:", JSON.stringify(pixData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/pix', pixData, clientId, clientSecret);
+        console.log("18.3. Resposta Click2Pay PIX:", JSON.stringify(click2payResult, null, 2));
+        
+        // Mapear campos do PIX para o formato esperado pelo frontend
+        if (click2payResult.pix) {
+          const pixMapped = {
+            qr_code: click2payResult.pix.qrCode || click2payResult.pix.qr_code || null,
+            qr_code_image: click2payResult.pix.qrCodeImage || click2payResult.pix.qr_code_image || null,
+            expires_at: click2payResult.pix.expiresAt || click2payResult.pix.expires_at || null
+          };
+          
+          console.log("18.4. PIX mapeado:", JSON.stringify(pixMapped, null, 2));
+          click2payResult.pix = pixMapped;
+        }
         break;
 
       case "cartao":
@@ -506,7 +519,7 @@ serve(async (req) => {
         throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
     }
 
-    console.log("19. Resultado Click2Pay:", JSON.stringify(click2payResult, null, 2));
+    console.log("19. Resultado Click2Pay após mapeamento:", JSON.stringify(click2payResult, null, 2));
 
     // Salvar resposta da Click2Pay na ordem
     await supabase
@@ -518,7 +531,7 @@ serve(async (req) => {
       })
       .eq('id', order.id);
 
-    // Retornar resposta de sucesso
+    // Retornar resposta de sucesso com campos mapeados
     return new Response(
       JSON.stringify({
         success: true,
