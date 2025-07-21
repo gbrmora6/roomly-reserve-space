@@ -5,38 +5,32 @@ import { Database } from "@/integrations/supabase/types";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-interface UseEquipmentBookingsProps {
+interface UseRoomBookingsProps {
   branchId: string;
 }
 
-export const useEquipmentBookings = ({ branchId }: UseEquipmentBookingsProps) => {
+export const useRoomBookings = ({ branchId }: UseRoomBookingsProps) => {
   // Valid booking statuses from the enum
   const validStatuses: BookingStatus[] = ['in_process', 'paid', 'partial_refunded', 'cancelled', 'pre_authorized', 'recused'];
 
   const getBookingsByStatus = (status: BookingStatus) => {
     return useQuery({
-      queryKey: ["equipment-bookings", branchId, status],
+      queryKey: ["room-bookings", branchId, status],
       queryFn: async () => {
         const { data, error } = await supabase
-          .from("booking_equipment")
+          .from("bookings")
           .select(`
-            id,
-            start_time,
-            end_time,
-            total_price,
-            status,
-            user_id,
-            created_at,
-            quantity,
-            equipment(name, price_per_hour),
-            invoice_url
+            *,
+            room:rooms(name, description),
+            payment_details:payment_details(*),
+            orders!left(id, payment_method, payment_data)
           `)
           .eq("branch_id", branchId)
           .eq("status", status)
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.error(`Error fetching ${status} equipment bookings:`, error);
+          console.error(`Error fetching ${status} room bookings:`, error);
           throw error;
         }
 

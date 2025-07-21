@@ -174,85 +174,6 @@ function applyDiscount(cartTotal: number, couponData: any): { finalTotal: number
   return { finalTotal, discountAmount };
 }
 
-interface PixTransactionRequest {
-  action: 'create-checkout' | 'refund-payment';
-  data: any;
-  userEmail?: string;
-}
-
-interface CreateCheckoutPayload {
-  id: string;
-  totalAmount: number;
-  payerInfo: {
-    name: string;
-    taxid: string;
-    phonenumber: string;
-    email: string;
-  };
-  expiration: number;
-  callbackAddress: string;
-  returnQRCode: boolean;
-}
-
-interface RefundPaymentPayload {
-  tid: string;
-  totalAmount: number;
-}
-
-async function handlePixTransaction(
-  action: 'create-checkout' | 'refund-payment',
-  data: any,
-  clientId: string,
-  clientSecret: string,
-  userEmail?: string
-) {
-  console.log(`Iniciando transação Pix: ${action}`);
-  let endpoint: string;
-  let payload: any;
-
-  if (action === 'create-checkout') {
-    const createCheckoutData: CreateCheckoutPayload = data;
-    endpoint = '/v1/transactions/pix';
-    payload = {
-      id: createCheckoutData.id,
-      totalAmount: createCheckoutData.totalAmount,
-      payerInfo: {
-        name: createCheckoutData.payerInfo.name,
-        taxid: createCheckoutData.payerInfo.taxid,
-        phonenumber: createCheckoutData.payerInfo.phonenumber,
-        email: createCheckoutData.payerInfo.email || userEmail || '',
-      },
-      expiration: createCheckoutData.expiration,
-      callbackAddress: createCheckoutData.callbackAddress,
-      returnQRCode: createCheckoutData.returnQRCode,
-    };
-    console.log('Payload para create-checkout:', JSON.stringify(payload, null, 2));
-  } else if (action === 'refund-payment') {
-    const refundPaymentData: RefundPaymentPayload = data;
-    if (!refundPaymentData.tid) {
-      throw new Error('Transaction ID (tid) is required for refund-payment.');
-    }
-    endpoint = `/v1/transactions/pix/${refundPaymentData.tid}/refund`;
-    payload = {
-      totalAmount: refundPaymentData.totalAmount,
-    };
-    console.log('Payload para refund-payment:', JSON.stringify(payload, null, 2));
-  } else {
-    throw new Error(`Ação Pix desconhecida: ${action}`);
-  }
-
-  try {
-    const result = await retryWithBackoff(() =>
-      makeClick2PayRequest(endpoint, payload, clientId, clientSecret)
-    );
-    console.log(`Resultado da transação Pix (${action}):`, JSON.stringify(result, null, 2));
-    return result;
-  } catch (error) {
-    console.error(`Erro na transação Pix (${action}):`, error);
-    throw error;
-  }
-}
-
 // Função para preparar dados do cliente
 function prepareCustomerData(paymentData: any, userEmail: string) {
   // Validar se paymentData existe
@@ -334,6 +255,7 @@ serve(async (req) => {
     console.log("- SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
     console.log("- SUPABASE_SERVICE_ROLE_KEY:", supabaseServiceKey ? "✓" : "✗");
     console.log("- CLICK2PAY_CLIENT_ID:", clientId ? "✓" : "✗");
+    console.log("- CLICK2PAY_CLIENT_SECRET:", clientSecret ? "✓" : "✗");
 
     // Extrair dados do corpo da requisição
     const { action, userId, paymentMethod, paymentData, couponData } = body;
@@ -346,28 +268,13 @@ serve(async (req) => {
       );
     }
 
-    // Verificar se é uma transação PIX com formato antigo
-    if (action.startsWith('pix-')) {
-      const pixAction = action.replace('pix-', ''); // Remove o prefixo 'pix-'
-      const { data, userEmail } = body as PixTransactionRequest;
-      const pixResult = await handlePixTransaction(pixAction as 'create-checkout' | 'refund-payment', data, clientId, clientSecret, userEmail);
-      return new Response(JSON.stringify({ success: true, data: pixResult }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    console.log("- CLICK2PAY_CLIENT_SECRET:", clientSecret ? "✓" : "✗");
-
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("ERRO: Variáveis do Supabase não configuradas");
-      console.error("SUPABASE_URL:", supabaseUrl);
-      console.error("SUPABASE_SERVICE_ROLE_KEY:", supabaseServiceKey ? "[PRESENTE]" : "[AUSENTE]");
       throw new Error("Variáveis do Supabase não configuradas");
     }
 
     if (!clientId || !clientSecret) {
       console.error("ERRO: Credenciais da Click2Pay não configuradas");
-      console.error("CLICK2PAY_CLIENT_ID:", clientId);
-      console.error("CLICK2PAY_CLIENT_SECRET:", clientSecret ? "[PRESENTE]" : "[AUSENTE]");
       throw new Error("Credenciais da Click2Pay não configuradas");
     }
 
@@ -410,94 +317,22 @@ serve(async (req) => {
 
     // Buscar profile do usuário para obter branch_id
     console.log("8.1. Buscando profile do usuário...");
-    console.log("8.1.1. UserID para busca:", userId);
-    
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('branch_id, first_name, last_name')
       .eq('id', userId)
       .maybeSingle();
 
-    console.log("8.1.2. Resultado da query profile:", { profile, profileError });
-
     if (profileError) {
       console.error("Erro ao buscar profile:", profileError);
       throw new Error(`Erro ao buscar profile do usuário: ${profileError.message}`);
     }
 
-    if (!profile) {
-      console.error("Profile não encontrado para o usuário:", userId);
-      throw new Error("Profile do usuário não encontrado");
-    }
-
-    if (!profile.branch_id) {
-      console.error("Branch ID não encontrado no profile:", profile);
+    if (!profile || !profile.branch_id) {
       throw new Error("Usuário não possui branch_id válido");
     }
 
     console.log("8.2. Branch ID encontrado:", profile.branch_id);
-    console.log("8.3. Dados completos do profile:", profile);
-
-    // Verificar e habilitar configurações de pagamento automaticamente
-    console.log("8.4. Verificando configurações de pagamento...");
-    let { data: paymentSettings, error: settingsError } = await supabase
-      .from('payment_settings')
-      .select('*')
-      .eq('branch_id', profile.branch_id)
-      .maybeSingle();
-
-    if (settingsError) {
-      console.error("Erro ao buscar configurações de pagamento:", settingsError);
-      throw new Error(`Erro ao buscar configurações de pagamento: ${settingsError.message}`);
-    }
-
-    // Se não existem configurações, criar com Click2Pay habilitado
-    if (!paymentSettings) {
-      console.log("8.4.1. Criando configurações de pagamento para branch_id:", profile.branch_id);
-      const { data: newSettings, error: createError } = await supabase
-        .from('payment_settings')
-        .insert({
-          branch_id: profile.branch_id,
-          click2pay_enabled: true,
-          click2pay_api_url: 'https://api.click2pay.com.br',
-          pix_enabled: true,
-          boleto_enabled: true,
-          credit_card_enabled: true
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        console.error("Erro ao criar configurações de pagamento:", createError);
-        throw new Error(`Erro ao criar configurações de pagamento: ${createError.message}`);
-      }
-      
-      paymentSettings = newSettings;
-      console.log("8.4.2. Configurações criadas:", paymentSettings);
-    }
-    // Se existem configurações mas Click2Pay está desabilitado, habilitar automaticamente
-    else if (!paymentSettings.click2pay_enabled) {
-      console.log("8.4.3. Habilitando Click2Pay automaticamente para branch_id:", profile.branch_id);
-      const { data: updatedSettings, error: updateError } = await supabase
-        .from('payment_settings')
-        .update({
-          click2pay_enabled: true,
-          click2pay_api_url: 'https://api.click2pay.com.br'
-        })
-        .eq('branch_id', profile.branch_id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error("Erro ao atualizar configurações de pagamento:", updateError);
-        throw new Error(`Erro ao atualizar configurações de pagamento: ${updateError.message}`);
-      }
-      
-      paymentSettings = updatedSettings;
-      console.log("8.4.4. Configurações atualizadas:", paymentSettings);
-    }
-
-    console.log("8.5. Configurações de pagamento finais:", paymentSettings);
 
     // Buscar itens do carrinho do usuário
     console.log("9. Buscando itens do carrinho...");
@@ -530,7 +365,6 @@ serve(async (req) => {
       status: 'in_process',
       payment_method: paymentMethod
     };
-    console.log("13.1. Dados da ordem:", orderData);
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -545,31 +379,54 @@ serve(async (req) => {
 
     console.log("14. Ordem criada:", order.id);
 
-    // Criar itens da ordem baseados no carrinho real
-    console.log("15. Criando itens da ordem...");
-    const orderItems = cartItems.map((item: any) => ({
-      order_id: order.id,
-      product_id: item.item_id,
-      quantity: item.quantity,
-      price_per_unit: item.price,
-      branch_id: profile.branch_id
-    }));
+    // Separar itens de produto dos itens de reserva
+    console.log("15. Separando itens de produto e reserva...");
+    const productItems = cartItems.filter(item => item.item_type === 'product');
+    const reservationItems = cartItems.filter(item => item.item_type === 'room' || item.item_type === 'equipment');
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    console.log("15.1. Itens de produto:", productItems.length);
+    console.log("15.2. Itens de reserva:", reservationItems.length);
 
-    if (itemsError) {
-      console.error("Erro ao criar itens da ordem:", itemsError);
-      throw new Error(`Erro ao criar itens da ordem: ${itemsError.message}`);
+    // Criar order_items apenas para produtos
+    if (productItems.length > 0) {
+      console.log("16. Criando order_items para produtos...");
+      const orderItems = productItems.map((item: any) => ({
+        order_id: order.id,
+        product_id: item.item_id,
+        quantity: item.quantity,
+        price_per_unit: item.price,
+        branch_id: profile.branch_id
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        console.error("Erro ao criar itens da ordem:", itemsError);
+        throw new Error(`Erro ao criar itens da ordem: ${itemsError.message}`);
+      }
+    }
+
+    // Para reservas, elas já existem como bookings/booking_equipment
+    // Apenas atualizar o status conforme necessário
+    console.log("17. Processando reservas...");
+    for (const item of reservationItems) {
+      if (item.item_type === 'room' && item.reserved_booking_id) {
+        console.log("17.1. Processando reserva de sala:", item.reserved_booking_id);
+        // A reserva já existe, apenas confirmar que está no carrinho
+      } else if (item.item_type === 'equipment' && item.reserved_equipment_booking_id) {
+        console.log("17.2. Processando reserva de equipamento:", item.reserved_equipment_booking_id);
+        // A reserva já existe, apenas confirmar que está no carrinho
+      }
     }
 
     // Preparar dados para Click2Pay
-    console.log("16. Preparando dados para Click2Pay...");
+    console.log("18. Preparando dados para Click2Pay...");
     
     // Dados do cliente
     const customer = prepareCustomerData(paymentData, userData.user.email);
-    console.log("16.1. Dados do cliente preparados:", JSON.stringify(customer, null, 2));
+    console.log("18.1. Dados do cliente preparados:", JSON.stringify(customer, null, 2));
     
     let click2payResult: any;
     
@@ -578,13 +435,12 @@ serve(async (req) => {
     
     switch (paymentMethod) {
       case "boleto":
-        console.log("16.1. Configurando dados para boleto...");
+        console.log("18.1. Configurando dados para boleto...");
         
-        // Preparar dados conforme exemplo oficial da Click2Pay
         const boletoData = {
           totalAmount: finalTotal,
           id: shortOrderId,
-          due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 dias a partir de hoje
+          due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           payment_limit_days: 3,
           instructions: ['Pagamento referente ao pedido', `Pedido #${order.id}`, 'Não aceitar após o vencimento'],
           fine: {
@@ -608,30 +464,28 @@ serve(async (req) => {
           logo: 'https://logosrated.net/wp-content/uploads/parser/Teste-Logo-1.gif'
         };
         
-        console.log("16.2. Dados do boleto preparados:", JSON.stringify(boletoData, null, 2));
+        console.log("18.2. Dados do boleto preparados:", JSON.stringify(boletoData, null, 2));
         
-        // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/boleto', boletoData, clientId, clientSecret);
         break;
 
       case "pix":
-        console.log("16.1. Configurando dados para PIX...");
+        console.log("18.1. Configurando dados para PIX...");
         const pixData = {
           id: shortOrderId,
           totalAmount: finalTotal,
-          expiration: "86400", // 24 horas
+          expiration: "86400",
           returnQRCode: true,
           payerInfo: customer.payerInfo
         };
         
-        console.log("16.2. Dados do PIX preparados:", JSON.stringify(pixData, null, 2));
+        console.log("18.2. Dados do PIX preparados:", JSON.stringify(pixData, null, 2));
         
-        // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/pix', pixData, clientId, clientSecret);
         break;
 
       case "cartao":
-        console.log("16.1. Configurando dados para cartão...");
+        console.log("18.1. Configurando dados para cartão...");
         const cardData = {
           id: shortOrderId,
           totalAmount: finalTotal,
@@ -643,9 +497,8 @@ serve(async (req) => {
           payerInfo: customer.payerInfo
         };
         
-        console.log("16.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
+        console.log("18.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
-        // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
         break;
 
@@ -653,178 +506,58 @@ serve(async (req) => {
         throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
     }
 
-    console.log("17. Resultado Click2Pay:", JSON.stringify(click2payResult, null, 2));
+    console.log("19. Resultado Click2Pay:", JSON.stringify(click2payResult, null, 2));
 
-    // Atualizar ordem com dados da Click2Pay
-    console.log("18. Atualizando ordem com dados da Click2Pay...");
-    
-    // Calcular data de expiração baseada no método de pagamento
-    let expiresAt: string | null = null;
-    if (paymentMethod === 'pix') {
-      // PIX expira em 24 horas
-      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    } else if (paymentMethod === 'boleto') {
-      // Boleto expira em 3 dias
-      expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-    }
-
-    const { error: updateError } = await supabase
+    // Salvar resposta da Click2Pay na ordem
+    await supabase
       .from('orders')
       .update({
-        click2pay_tid: click2payResult.data?.tid || click2payResult.tid || click2payResult.id,
-        status: click2payResult.data?.status || click2payResult.status || 'in_process',
-        external_identifier: click2payResult.data?.externalIdentifier || click2payResult.external_identifier || order.id,
-        expires_at: expiresAt
+        click2pay_response: click2payResult,
+        click2pay_tid: click2payResult.tid,
+        external_identifier: click2payResult.tid
       })
       .eq('id', order.id);
 
-    if (updateError) {
-      console.error("Erro ao atualizar ordem:", updateError);
-      // Não falhar aqui, apenas logar
-    }
-
-    // Salvar detalhes do pagamento
-    console.log("19. Salvando detalhes do pagamento...");
-    let paymentDetailsData: any = {
-      order_id: order.id,
-      payment_method: paymentMethod
-    };
-
-    if (paymentMethod === 'pix') {
-      paymentDetailsData = {
-        ...paymentDetailsData,
-        pix_code: click2payResult.data?.pix?.code || click2payResult.pix?.code || null,
-        pix_qr_code: click2payResult.data?.pix?.qrCode || click2payResult.pix?.qr_code || null,
-        pix_expiration: expiresAt
-      };
-    } else if (paymentMethod === 'boleto') {
-      paymentDetailsData = {
-        ...paymentDetailsData,
-        boleto_url: click2payResult.data?.boleto?.url || click2payResult.boleto?.url || null,
-        boleto_barcode: click2payResult.data?.boleto?.barcode || click2payResult.boleto?.barcode || null,
-        boleto_due_date: click2payResult.data?.boleto?.due_date || click2payResult.boleto?.due_date || null
-      };
-    } else if (paymentMethod === 'cartao') {
-      paymentDetailsData = {
-        ...paymentDetailsData,
-        card_transaction_id: click2payResult.data?.tid || click2payResult.tid || null,
-        card_authorization_code: click2payResult.data?.authorizationCode || click2payResult.authorization_code || null
-      };
-    }
-
-    const { error: paymentDetailsError } = await supabase
-      .from('payment_details')
-      .insert(paymentDetailsData);
-
-    if (paymentDetailsError) {
-      console.error("20. Erro ao salvar detalhes do pagamento:", paymentDetailsError);
-      // Não falha a operação, apenas loga o erro
-    }
-
-    // Confirmar pagamento se já estiver pago (PIX instantâneo, por exemplo)
-    if (click2payResult.status === 'paid') {
-      console.log("21. Pagamento confirmado automaticamente - atualizando status da ordem...");
-      const { error: confirmError } = await supabase
-        .from('orders')
-        .update({ status: 'paid' })
-        .eq('id', order.id);
-
-      if (confirmError) {
-        console.error("Erro ao confirmar pagamento:", confirmError);
-      }
-    }
-
-    console.log("22. Processamento concluído com sucesso");
-    console.log("click2payResult object:", JSON.stringify(click2payResult, null, 2));
-
-    // Preparar resposta baseada no método de pagamento
-    let response: any = {
-      success: true,
-      orderId: order.id,
-      status: click2payResult.status,
-      paymentMethod,
-      tid: click2payResult.tid || click2payResult.id,
-      totalAmount: finalTotal,
-      discountAmount: discountAmount
-    };
-
-    // Adicionar dados específicos do método de pagamento
-    switch (paymentMethod) {
-      case "boleto":
-        response.boleto = {
-          url: click2payResult.boleto_url,
-          barcode: click2payResult.barcode,
-          due_date: click2payResult.due_date
-        };
-        break;
-
-      case "pix":
-        response.pix = {
-          qr_code: click2payResult.data?.pix?.textPayment || click2payResult.pix?.textPayment || null,
-          qr_code_image: click2payResult.data?.pix?.qrCodeImage?.base64 || click2payResult.pix?.qrCodeImage?.base64 || null,
-          expires_at: expiresAt
-        };
-        break;
-
-      case "cartao":
-        response.card = {
-          authorization_code: click2payResult.authorization_code,
-          captured: click2payResult.captured
-        };
-        break;
-    }
-
-    console.log("Final response object:", JSON.stringify(response, null, 2));
-
+    // Retornar resposta de sucesso
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        success: true,
+        orderId: order.id,
+        tid: click2payResult.tid,
+        totalAmount: finalTotal,
+        status: click2payResult.status,
+        pix: click2payResult.pix || null,
+        boleto: click2payResult.boleto || null,
+        card: click2payResult.card || null,
+        message: click2payResult.message || "Transação processada com sucesso"
+      }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("=== ERRO CAPTURADO NO EDGE FUNCTION ===");
     console.error("Tipo do erro:", typeof error);
-    console.error("Constructor:", error?.constructor?.name);
-    console.error("Mensagem:", error?.message);
-    console.error("Stack trace:", error?.stack);
-    console.error("Error object completo:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    
-    // Log adicional para debug
-    console.error("=== INFORMAÇÕES ADICIONAIS DE DEBUG ===");
+    console.error("Constructor:", error.constructor.name);
+    console.error("Mensagem:", error.message);
+    console.error("Stack trace:", error.stack);
+    console.error("Error object completo:", JSON.stringify(error, null, 2));
     console.error("Request method:", req.method);
     console.error("Request URL:", req.url);
     console.error("Timestamp:", new Date().toISOString());
-    
-    const errorMessage = error?.message || error?.toString() || "Erro desconhecido";
-    
-    const errorResponse: any = {
-      success: false,
-      error: errorMessage,
-      errorType: error?.constructor?.name || typeof error,
-      timestamp: new Date().toISOString(),
-      debug: {
-        method: req.method,
-        url: req.url
-      }
-    };
-
-    // Adicionar click2payResult se existir e não for nulo
-    if (typeof click2payResult !== 'undefined' && click2payResult !== null) {
-      errorResponse.debug.click2payResult = click2payResult;
-    }
-    // Adicionar body se existir e não for nulo
-    if (typeof body !== 'undefined' && body !== null) {
-      errorResponse.debug.requestBody = body;
-    }
+    console.error("=== INFORMAÇÕES ADICIONAIS DE DEBUG ===");
 
     return new Response(
-      JSON.stringify(errorResponse),
+      JSON.stringify({
+        success: false,
+        error: error.message || "Erro interno do servidor",
+        details: error.stack || "Sem stack trace disponível"
+      }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     );
   }
