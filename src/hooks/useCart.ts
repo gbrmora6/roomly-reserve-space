@@ -34,14 +34,28 @@ export const useCart = () => {
       
       console.log("Buscando carrinho para usuário:", user.id);
       
-      // Primeiro, executar limpeza de itens expirados de forma robusta
-      try {
-        console.log("Executando limpeza de itens expirados...");
-        await (supabase as any).rpc("clean_expired_cart_items");
-        console.log("Limpeza automática concluída com sucesso");
-      } catch (error) {
-        console.log("Nota: Erro na limpeza automática (continuando):", error);
-        // Continue mesmo se a limpeza falhar para não bloquear o carrinho
+      // Verificar se há checkout em progresso antes de limpar itens expirados
+      const { data: activeOrders } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .in("status", ["pending", "processing"])
+        .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+      const hasActiveCheckout = activeOrders && activeOrders.length > 0;
+      
+      if (!hasActiveCheckout) {
+        // Só executa limpeza se não houver checkout em progresso
+        try {
+          console.log("Executando limpeza de itens expirados...");
+          await (supabase as any).rpc("clean_expired_cart_items");
+          console.log("Limpeza automática concluída com sucesso");
+        } catch (error) {
+          console.log("Nota: Erro na limpeza automática (continuando):", error);
+          // Continue mesmo se a limpeza falhar para não bloquear o carrinho
+        }
+      } else {
+        console.log("Checkout em progresso detectado, pulando limpeza automática");
       }
       
       // Chama a function do Supabase para buscar o carrinho

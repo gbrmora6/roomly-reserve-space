@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
 
@@ -53,61 +54,141 @@ serve(async (req) => {
 
     // Mapear eventos da Click2Pay baseado na documentação
     if (tipoEvento === "PAYMENT_RECEIVED" && status === "paid") {
-      // Pagamento confirmado - atualizar pedido usando o tid da Click2Pay
-      const { error: updateError } = await supabase
+      console.log("Pagamento confirmado - processando...");
+      
+      // Atualizar pedido usando o tid da Click2Pay
+      const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .update({ 
           status: "paid",
           updated_at: new Date().toISOString()
         })
-        .eq("click2pay_tid", transacaoId);
+        .eq("click2pay_tid", transacaoId)
+        .select('id, user_id')
+        .single();
 
-      if (updateError) {
-        console.error("Erro ao atualizar pedido:", updateError);
+      if (orderError) {
+        console.error("Erro ao atualizar pedido:", orderError);
         throw new Error("Falha ao atualizar status do pedido");
       }
 
-      // Buscar a ordem para confirmar o carrinho
-      const { data: order } = await supabase
-        .from("orders")
-        .select("id, user_id")
-        .eq("click2pay_tid", transacaoId)
-        .single();
+      if (!orderData) {
+        console.error("Pedido não encontrado para TID:", transacaoId);
+        throw new Error("Pedido não encontrado");
+      }
 
-      if (order) {
-        const { error: confirmError } = await supabase
-          .rpc("confirm_cart_payment", { 
-            p_user_id: order.user_id, 
-            p_order_id: order.id 
-          });
+      console.log("Pedido atualizado:", orderData);
 
-        if (confirmError) {
-          console.error("Erro ao confirmar carrinho:", confirmError);
-        } else {
-          console.log("Carrinho confirmado para usuário:", order.user_id);
+      // Confirmar o carrinho (confirmar bookings e equipment_bookings)
+      const { data: confirmResult, error: confirmError } = await supabase
+        .rpc("confirm_cart_payment", { 
+          p_user_id: orderData.user_id, 
+          p_order_id: orderData.id 
+        });
+
+      if (confirmError) {
+        console.error("Erro ao confirmar carrinho:", confirmError);
+        // Não falhar completamente aqui, pois o pedido já foi marcado como pago
+      } else {
+        console.log("Carrinho confirmado com sucesso para usuário:", orderData.user_id);
+      }
+
+      // Atualizar diretamente as reservas relacionadas ao pedido se a função falhar
+      if (confirmError) {
+        console.log("Tentando atualizar reservas diretamente...");
+        
+        // Buscar e atualizar bookings relacionados
+        const { data: bookings, error: bookingsError } = await supabase
+          .from("bookings")
+          .select("id")
+          .eq("user_id", orderData.user_id)
+          .eq("status", "in_process");
+
+        if (!bookingsError && bookings && bookings.length > 0) {
+          const bookingIds = bookings.map(b => b.id);
+          const { error: updateBookingsError } = await supabase
+            .from("bookings")
+            .update({ status: "paid", updated_at: new Date().toISOString() })
+            .in("id", bookingIds);
+
+          if (updateBookingsError) {
+            console.error("Erro ao atualizar bookings diretamente:", updateBookingsError);
+          } else {
+            console.log("Bookings atualizados diretamente:", bookingIds);
+          }
+        }
+
+        // Buscar e atualizar equipment bookings relacionados
+        const { data: equipmentBookings, error: equipmentError } = await supabase
+          .from("booking_equipment")
+          .select("id")
+          .eq("user_id", orderData.user_id)
+          .eq("status", "in_process");
+
+        if (!equipmentError && equipmentBookings && equipmentBookings.length > 0) {
+          const equipmentBookingIds = equipmentBookings.map(b => b.id);
+          const { error: updateEquipmentError } = await supabase
+            .from("booking_equipment")
+            .update({ status: "paid", updated_at: new Date().toISOString() })
+            .in("id", equipmentBookingIds);
+
+          if (updateEquipmentError) {
+            console.error("Erro ao atualizar equipment bookings diretamente:", updateEquipmentError);
+          } else {
+            console.log("Equipment bookings atualizados diretamente:", equipmentBookingIds);
+          }
         }
       }
 
       console.log(`Pedido com TID ${transacaoId} marcado como pago via ${metodo}.`);
 
     } else if (status === "cancelled" || status === "recused" || status === "expired") {
+      console.log("Pagamento cancelado/recusado/expirado - processando...");
+      
       // Pagamento cancelado/recusado/expirado
-      const { error: updateError } = await supabase
+      const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .update({ 
           status: "recused",
           updated_at: new Date().toISOString()
         })
-        .eq("click2pay_tid", transacaoId);
+        .eq("click2pay_tid", transacaoId)
+        .select('id, user_id')
+        .single();
 
-      if (updateError) {
-        console.error("Erro ao cancelar pedido:", updateError);
+      if (orderError) {
+        console.error("Erro ao cancelar pedido:", orderError);
         throw new Error("Falha ao cancelar pedido");
       }
 
-      console.log(`Pedido com TID ${transacaoId} cancelado/recusado/expirado.`);
+      if (orderData) {
+        // Cancelar reservas relacionadas
+        const { error: cancelBookingsError } = await supabase
+          .from("bookings")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("user_id", orderData.user_id)
+          .eq("status", "in_process");
+
+        if (cancelBookingsError) {
+          console.error("Erro ao cancelar bookings:", cancelBookingsError);
+        }
+
+        const { error: cancelEquipmentError } = await supabase
+          .from("booking_equipment")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("user_id", orderData.user_id)
+          .eq("status", "in_process");
+
+        if (cancelEquipmentError) {
+          console.error("Erro ao cancelar equipment bookings:", cancelEquipmentError);
+        }
+
+        console.log(`Pedido com TID ${transacaoId} cancelado/recusado/expirado.`);
+      }
       
     } else if (status === "authorized") {
+      console.log("Pagamento autorizado - processando...");
+      
       // Pagamento autorizado (cartão de crédito) - aguardando captura
       const { error: updateError } = await supabase
         .from("orders")
