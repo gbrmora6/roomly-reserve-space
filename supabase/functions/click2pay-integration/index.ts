@@ -580,9 +580,12 @@ serve(async (req) => {
     // Salvar resposta da Click2Pay na ordem
     const orderUpdateData: any = {
       click2pay_response: click2payResult,
-      click2pay_tid: click2payResult.tid,
-      external_identifier: click2payResult.tid
+      click2pay_tid: click2payResult.data?.tid || null,
+      external_identifier: click2payResult.data?.externalIdentifier || null
     };
+    
+    console.log("Salvando dados de pagamento para pedido:", order.id);
+    console.log("TID que será salvo:", click2payResult.data?.tid);
 
     // Definir data de expiração baseada no método de pagamento
     if (paymentMethod === 'pix' && click2payResult.pix && click2payResult.pix.expires_at) {

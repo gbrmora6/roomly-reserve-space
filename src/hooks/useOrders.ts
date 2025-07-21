@@ -32,17 +32,17 @@ export const useOrders = (userId: string | undefined) => {
   // Função para consultar status do pagamento
   const checkPaymentStatus = useMutation({
     mutationFn: async (orderId: string) => {
-      const { data, error } = await supabase.functions.invoke('payment-status', {
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
         body: { orderId }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["my-product-orders", userId] });
       toast({
-        title: "Status atualizado",
-        description: "Status do pagamento foi atualizado",
+        title: data.updated ? "Status atualizado" : "Status verificado",
+        description: data.message || "Verificação concluída",
       });
     },
     onError: (error: any) => {

@@ -15,3 +15,9 @@ verify_jwt = false
 
 [functions.payment-status]
 verify_jwt = false
+
+[functions.check-payment-status]
+verify_jwt = false
+
+[functions.simulate-webhook]
+verify_jwt = false
