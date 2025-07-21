@@ -132,7 +132,7 @@ const AdminEquipmentForm: React.FC = () => {
         
         // Log da atualização
         if (!error) {
-          await logUpdate('equipment', id, 'Equipamento atualizado');
+          await logUpdate('equipment', id, equipmentData?.equipment, equipment);
         }
       }
       

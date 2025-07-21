@@ -205,7 +205,7 @@ const AdminRoomForm: React.FC = () => {
 
         // Log da atualização
         if (!error) {
-          await logUpdate('room', id, 'Sala atualizada');
+          await logUpdate('room', id, roomData?.room, room);
         }
       }
       
