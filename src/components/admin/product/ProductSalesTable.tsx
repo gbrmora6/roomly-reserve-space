@@ -27,7 +27,7 @@ interface ProductOrder {
     id: string;
     product_id: string;
     quantity: number;
-    unit_price: number;
+    price_per_unit: number;
     products: {
       name: string;
       price: number;

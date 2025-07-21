@@ -23,7 +23,7 @@ interface ProductOrder {
     id: string;
     product_id: string;
     quantity: number;
-    unit_price: number;
+    price_per_unit: number;
     products: {
       name: string;
       price: number;
@@ -133,13 +133,13 @@ export function ProductSalesDetailsModal({
                         </div>
                         <div>
                           <span className="font-medium">Preço Unitário:</span>
-                          <div>{formatCurrency(item.unit_price)}</div>
+                          <div>{formatCurrency(item.price_per_unit)}</div>
                         </div>
                       </div>
                       <div className="mt-2 pt-2 border-t">
                         <span className="font-medium">Subtotal:</span>{' '}
                         <span className="font-bold">
-                          {formatCurrency(item.quantity * item.unit_price)}
+                          {formatCurrency(item.quantity * item.price_per_unit)}
                         </span>
                       </div>
                     </div>
