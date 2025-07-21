@@ -18,7 +18,8 @@ interface ProductOrder {
   created_at: string;
   updated_at: string;
   profiles: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
   };
@@ -65,6 +66,11 @@ export function ProductSalesTable({
   const { user } = useAuth();
   const isSuperAdmin = user?.user_metadata?.role === 'super_admin';
 
+  const getCustomerName = (profiles: ProductOrder['profiles']) => {
+    if (!profiles) return 'N/A';
+    return `${profiles.first_name || ''} ${profiles.last_name || ''}`.trim() || 'N/A';
+  };
+
   if (orders.length === 0) {
     return (
       <Card>
@@ -102,7 +108,7 @@ export function ProductSalesTable({
                     <TableCell>
                       <div>
                         <div className="font-medium">
-                          {order.profiles?.full_name || 'N/A'}
+                          {getCustomerName(order.profiles)}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {order.profiles?.email || 'N/A'}

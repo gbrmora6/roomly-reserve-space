@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client-bypass";
@@ -14,7 +15,8 @@ interface ProductOrder {
   created_at: string;
   updated_at: string;
   profiles: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
   };
@@ -66,7 +68,8 @@ export function useProductSales() {
         .select(`
           *,
           profiles:user_id (
-            full_name,
+            first_name,
+            last_name,
             email,
             phone
           ),
@@ -98,7 +101,7 @@ export function useProductSales() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, phone');
+        .select('id, first_name, last_name, email, phone');
       if (error) throw error;
       return data;
     }
@@ -120,13 +123,14 @@ export function useProductSales() {
     // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(order => 
-        order.profiles?.full_name?.toLowerCase().includes(term) ||
-        order.profiles?.email?.toLowerCase().includes(term) ||
-        order.order_items?.some(item => 
-          item.products?.name?.toLowerCase().includes(term)
-        )
-      );
+      filtered = filtered.filter(order => {
+        const fullName = `${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}`.toLowerCase();
+        return fullName.includes(term) ||
+               order.profiles?.email?.toLowerCase().includes(term) ||
+               order.order_items?.some(item => 
+                 item.products?.name?.toLowerCase().includes(term)
+               );
+      });
     }
     
     return filtered;
@@ -162,7 +166,7 @@ export function useProductSales() {
     }
 
     const reportData = filteredOrders.map(order => ({
-      'Cliente': order.profiles?.full_name || 'N/A',
+      'Cliente': `${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}`.trim() || 'N/A',
       'Email': order.profiles?.email || 'N/A',
       'Telefone': order.profiles?.phone || 'N/A',
       'Data do Pedido': new Date(order.created_at).toLocaleString('pt-BR'),

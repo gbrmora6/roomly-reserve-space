@@ -14,7 +14,8 @@ interface ProductOrder {
   created_at: string;
   updated_at: string;
   profiles: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
   };
@@ -52,6 +53,11 @@ export function ProductSalesDetailsModal({
 }: ProductSalesDetailsModalProps) {
   if (!order) return null;
 
+  const getCustomerName = () => {
+    if (!order.profiles) return 'N/A';
+    return `${order.profiles.first_name || ''} ${order.profiles.last_name || ''}`.trim() || 'N/A';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -70,7 +76,7 @@ export function ProductSalesDetailsModal({
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
-                <span className="font-medium">Nome:</span> {order.profiles?.full_name || 'N/A'}
+                <span className="font-medium">Nome:</span> {getCustomerName()}
               </div>
               <div>
                 <span className="font-medium">Email:</span> {order.profiles?.email || 'N/A'}
