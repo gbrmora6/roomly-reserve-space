@@ -485,15 +485,20 @@ serve(async (req) => {
         console.log("18.3. Resposta Click2Pay PIX:", JSON.stringify(click2payResult, null, 2));
         
         // Mapear campos do PIX para o formato esperado pelo frontend
-        if (click2payResult.pix) {
+        if (click2payResult.success && click2payResult.data && click2payResult.data.pix) {
+          console.log("18.4. PIX original da Click2Pay:", JSON.stringify(click2payResult.data.pix, null, 2));
+          
           const pixMapped = {
-            qr_code: click2payResult.pix.qrCode || click2payResult.pix.qr_code || null,
-            qr_code_image: click2payResult.pix.qrCodeImage || click2payResult.pix.qr_code_image || null,
-            expires_at: click2payResult.pix.expiresAt || click2payResult.pix.expires_at || null
+            qr_code: click2payResult.data.pix.textPayment || click2payResult.data.pix.qrCode || click2payResult.data.pix.qr_code || null,
+            qr_code_image: click2payResult.data.pix.qrCodeImage?.base64 || click2payResult.data.pix.qrCodeImage || click2payResult.data.pix.qr_code_image || null,
+            expires_at: click2payResult.data.pix.expiresAt || click2payResult.data.pix.expires_at || null
           };
           
-          console.log("18.4. PIX mapeado:", JSON.stringify(pixMapped, null, 2));
+          console.log("18.5. PIX mapeado:", JSON.stringify(pixMapped, null, 2));
           click2payResult.pix = pixMapped;
+        } else {
+          console.log("18.4. Estrutura Click2Pay completa:", JSON.stringify(click2payResult, null, 2));
+          click2payResult.pix = null;
         }
         break;
 
