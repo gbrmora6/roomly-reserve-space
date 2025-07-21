@@ -17,7 +17,7 @@ export const useBranchByCity = (selectedCity: string) => {
         .select("id")
         .eq("city", selectedCity)
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error("Erro ao buscar branch por cidade:", error);

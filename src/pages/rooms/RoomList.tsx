@@ -60,16 +60,24 @@ const RoomList: React.FC = () => {
     const fetchCompanyProfile = async () => {
       console.log("Buscando perfil da empresa...");
       
+      // Buscar a primeira branch disponível ou usar dados padrão
       const { data, error } = await supabase
         .from("branches")
         .select("street, number, neighborhood, city")
-        .single();
+        .limit(1)
+        .maybeSingle();
       
       if (data && !error) {
         console.log("Perfil da empresa encontrado:", data);
         setCompanyAddress(data);
       } else {
-        console.error("Erro ao buscar perfil da empresa:", error);
+        console.log("Nenhum perfil de empresa encontrado, usando dados padrão");
+        setCompanyAddress({
+          street: "",
+          number: "",
+          neighborhood: "",
+          city: "Cidade não configurada"
+        });
       }
     };
     

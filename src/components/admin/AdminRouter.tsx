@@ -30,6 +30,7 @@ import Inventory from '@/pages/admin/Inventory';
 const AdminRouter: React.FC = () => {
   return (
     <Routes>
+      <Route index element={<Dashboard />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="rooms" element={<AdminRooms />} />
       <Route path="rooms/new" element={<AdminRoomForm />} />

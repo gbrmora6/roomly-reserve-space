@@ -27,7 +27,7 @@ export const useCompanyAddress = () => {
         .from("branches")
         .select("street, number, neighborhood, city, name")
         .eq("id", branchId)
-        .single();
+        .maybeSingle();
       
       if (data && !error) {
         setCompanyAddress(data);
