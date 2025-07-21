@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.32.0";
 
@@ -129,7 +130,49 @@ async function retryWithBackoff<T>(
   throw lastError!;
 }
 
-// Função removida - checkPixApiHealth causava erro 401 com endpoint inexistente
+// Função para buscar itens do carrinho do usuário
+async function getCartItems(supabase: any, userId: string) {
+  console.log("Buscando itens do carrinho para usuário:", userId);
+  
+  const { data: cartItems, error } = await supabase
+    .from('cart_items')
+    .select('*')
+    .eq('user_id', userId)
+    .gt('expires_at', new Date().toISOString());
+
+  if (error) {
+    console.error("Erro ao buscar itens do carrinho:", error);
+    throw new Error(`Erro ao buscar itens do carrinho: ${error.message}`);
+  }
+
+  console.log("Itens do carrinho encontrados:", cartItems?.length || 0);
+  return cartItems || [];
+}
+
+// Função para calcular o total do carrinho
+function calculateCartTotal(cartItems: any[]): number {
+  const total = cartItems.reduce((sum, item) => {
+    return sum + (item.price * item.quantity);
+  }, 0);
+  
+  console.log("Total do carrinho calculado:", total);
+  return total;
+}
+
+// Função para aplicar desconto de cupom
+function applyDiscount(cartTotal: number, couponData: any): { finalTotal: number, discountAmount: number } {
+  if (!couponData) {
+    return { finalTotal: cartTotal, discountAmount: 0 };
+  }
+
+  const discountAmount = couponData.discountAmount || 0;
+  const finalTotal = Math.max(0, cartTotal - discountAmount);
+  
+  console.log("Desconto aplicado:", discountAmount);
+  console.log("Total final após desconto:", finalTotal);
+  
+  return { finalTotal, discountAmount };
+}
 
 interface PixTransactionRequest {
   action: 'create-checkout' | 'refund-payment';
@@ -293,7 +336,7 @@ serve(async (req) => {
     console.log("- CLICK2PAY_CLIENT_ID:", clientId ? "✓" : "✗");
 
     // Extrair dados do corpo da requisição
-    const { action, userId, paymentMethod, paymentData } = body;
+    const { action, userId, paymentMethod, paymentData, couponData } = body;
     console.log("3.1. Parâmetros extraídos:", { action, userId, paymentMethod });
 
     if (!action) {
@@ -419,7 +462,7 @@ serve(async (req) => {
           click2pay_api_url: 'https://api.click2pay.com.br',
           pix_enabled: true,
           boleto_enabled: true,
-          cartao_enabled: true
+          credit_card_enabled: true
         })
         .select()
         .single();
@@ -456,31 +499,38 @@ serve(async (req) => {
 
     console.log("8.5. Configurações de pagamento finais:", paymentSettings);
 
-    // Usar valor fixo para teste (removendo dependência do carrinho)
-    console.log("9. Usando valor fixo para pagamento...");
+    // Buscar itens do carrinho do usuário
+    console.log("9. Buscando itens do carrinho...");
+    const cartItems = await getCartItems(supabase, userId);
     
-    // Valor fixo para teste - não depende mais do carrinho
-    const totalAmount = 35.00;
-    console.log("10. Valor total fixo:", totalAmount);
+    if (!cartItems || cartItems.length === 0) {
+      throw new Error("Carrinho vazio - não é possível prosseguir com o pagamento");
+    }
+
+    // Calcular total do carrinho
+    console.log("10. Calculando total do carrinho...");
+    const cartTotal = calculateCartTotal(cartItems);
     
-    // Itens fictícios para a ordem (não dependem do carrinho real)
-     const mockCartItems = [{
-       item_id: '7521a6bc-c90a-4514-9e5d-67f10e65f680',
-       quantity: 1,
-       price: 35.00,
-       item_type: 'product'
-     }];
+    if (cartTotal <= 0) {
+      throw new Error("Valor do carrinho inválido");
+    }
+
+    // Aplicar desconto se houver cupom
+    console.log("11. Aplicando desconto...");
+    const { finalTotal, discountAmount } = applyDiscount(cartTotal, couponData);
+    
+    console.log("12. Valor final calculado:", finalTotal);
 
     // Criar ordem no banco
-    console.log("12. Criando ordem no banco...");
+    console.log("13. Criando ordem no banco...");
     const orderData = {
       user_id: userId,
       branch_id: profile.branch_id,
-      total_amount: totalAmount,
+      total_amount: finalTotal,
       status: 'in_process',
       payment_method: paymentMethod
     };
-    console.log("12.1. Dados da ordem:", orderData);
+    console.log("13.1. Dados da ordem:", orderData);
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -493,11 +543,11 @@ serve(async (req) => {
       throw new Error(`Erro ao criar ordem: ${orderError.message}`);
     }
 
-    console.log("13. Ordem criada:", order.id);
+    console.log("14. Ordem criada:", order.id);
 
-    // Criar itens da ordem
-    console.log("14. Criando itens da ordem...");
-    const orderItems = mockCartItems.map((item: any) => ({
+    // Criar itens da ordem baseados no carrinho real
+    console.log("15. Criando itens da ordem...");
+    const orderItems = cartItems.map((item: any) => ({
       order_id: order.id,
       product_id: item.item_id,
       quantity: item.quantity,
@@ -515,11 +565,11 @@ serve(async (req) => {
     }
 
     // Preparar dados para Click2Pay
-    console.log("15. Preparando dados para Click2Pay...");
+    console.log("16. Preparando dados para Click2Pay...");
     
     // Dados do cliente
     const customer = prepareCustomerData(paymentData, userData.user.email);
-    console.log("15.1. Dados do cliente preparados:", JSON.stringify(customer, null, 2));
+    console.log("16.1. Dados do cliente preparados:", JSON.stringify(customer, null, 2));
     
     let click2payResult: any;
     
@@ -528,11 +578,11 @@ serve(async (req) => {
     
     switch (paymentMethod) {
       case "boleto":
-        console.log("15.1. Configurando dados para boleto...");
+        console.log("16.1. Configurando dados para boleto...");
         
         // Preparar dados conforme exemplo oficial da Click2Pay
         const boletoData = {
-          totalAmount: totalAmount,
+          totalAmount: finalTotal,
           id: shortOrderId,
           due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 dias a partir de hoje
           payment_limit_days: 3,
@@ -558,33 +608,33 @@ serve(async (req) => {
           logo: 'https://logosrated.net/wp-content/uploads/parser/Teste-Logo-1.gif'
         };
         
-        console.log("15.2. Dados do boleto preparados:", JSON.stringify(boletoData, null, 2));
+        console.log("16.2. Dados do boleto preparados:", JSON.stringify(boletoData, null, 2));
         
         // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/boleto', boletoData, clientId, clientSecret);
         break;
 
       case "pix":
-        console.log("15.1. Configurando dados para PIX...");
+        console.log("16.1. Configurando dados para PIX...");
         const pixData = {
           id: shortOrderId,
-          totalAmount: totalAmount,
+          totalAmount: finalTotal,
           expiration: "86400", // 24 horas
           returnQRCode: true,
           payerInfo: customer.payerInfo
         };
         
-        console.log("15.2. Dados do PIX preparados:", JSON.stringify(pixData, null, 2));
+        console.log("16.2. Dados do PIX preparados:", JSON.stringify(pixData, null, 2));
         
         // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/pix', pixData, clientId, clientSecret);
         break;
 
       case "cartao":
-        console.log("15.1. Configurando dados para cartão...");
+        console.log("16.1. Configurando dados para cartão...");
         const cardData = {
           id: shortOrderId,
-          totalAmount: totalAmount,
+          totalAmount: finalTotal,
           cardHash: paymentData.card_hash,
           installments: paymentData.parcelas || 1,
           capture: true,
@@ -593,7 +643,7 @@ serve(async (req) => {
           payerInfo: customer.payerInfo
         };
         
-        console.log("15.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
+        console.log("16.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
         // Chamar API Click2Pay diretamente
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
@@ -603,10 +653,10 @@ serve(async (req) => {
         throw new Error(`Método de pagamento não suportado: ${paymentMethod}`);
     }
 
-    console.log("16. Resultado Click2Pay:", JSON.stringify(click2payResult, null, 2));
+    console.log("17. Resultado Click2Pay:", JSON.stringify(click2payResult, null, 2));
 
     // Atualizar ordem com dados da Click2Pay
-    console.log("21. Atualizando ordem com dados da Click2Pay...");
+    console.log("18. Atualizando ordem com dados da Click2Pay...");
     
     // Calcular data de expiração baseada no método de pagamento
     let expiresAt: string | null = null;
@@ -634,7 +684,7 @@ serve(async (req) => {
     }
 
     // Salvar detalhes do pagamento
-    console.log("22. Salvando detalhes do pagamento...");
+    console.log("19. Salvando detalhes do pagamento...");
     let paymentDetailsData: any = {
       order_id: order.id,
       payment_method: paymentMethod
@@ -667,13 +717,13 @@ serve(async (req) => {
       .insert(paymentDetailsData);
 
     if (paymentDetailsError) {
-      console.error("23. Erro ao salvar detalhes do pagamento:", paymentDetailsError);
+      console.error("20. Erro ao salvar detalhes do pagamento:", paymentDetailsError);
       // Não falha a operação, apenas loga o erro
     }
 
     // Confirmar pagamento se já estiver pago (PIX instantâneo, por exemplo)
     if (click2payResult.status === 'paid') {
-      console.log("22. Pagamento confirmado automaticamente - atualizando status da ordem...");
+      console.log("21. Pagamento confirmado automaticamente - atualizando status da ordem...");
       const { error: confirmError } = await supabase
         .from('orders')
         .update({ status: 'paid' })
@@ -684,7 +734,7 @@ serve(async (req) => {
       }
     }
 
-    console.log("23. Processamento concluído com sucesso");
+    console.log("22. Processamento concluído com sucesso");
     console.log("click2payResult object:", JSON.stringify(click2payResult, null, 2));
 
     // Preparar resposta baseada no método de pagamento
@@ -693,7 +743,9 @@ serve(async (req) => {
       orderId: order.id,
       status: click2payResult.status,
       paymentMethod,
-      tid: click2payResult.tid || click2payResult.id
+      tid: click2payResult.tid || click2payResult.id,
+      totalAmount: finalTotal,
+      discountAmount: discountAmount
     };
 
     // Adicionar dados específicos do método de pagamento
