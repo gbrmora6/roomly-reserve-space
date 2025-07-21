@@ -15,6 +15,7 @@ import Checkout from "@/pages/Checkout";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaymentInstructions from "@/pages/PaymentInstructions";
 import MyBookings from "@/pages/client/MyBookings";
+import AdminLayout from "@/components/layout/AdminLayout";
 import AdminRouter from "@/components/admin/AdminRouter";
 import PaymentInstructionsById from "@/pages/PaymentInstructionsById";
 
@@ -35,7 +36,7 @@ function App() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/my-bookings" element={<MyBookings />} />
-      <Route path="/admin/*" element={<AdminRouter />} />
+      <Route path="/admin/*" element={<AdminLayout><AdminRouter /></AdminLayout>} />
       <Route path="/payment-instructions" element={<PaymentInstructions />} />
       <Route path="/payment-instructions/:orderId" element={<PaymentInstructionsById />} />
     </Routes>
