@@ -88,7 +88,7 @@ export default function EquipmentBookings() {
             <CardTitle className="text-sm font-medium">Pagas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.pagas}</div>
+            <div className="text-2xl font-bold text-green-600">R$ {stats.paid.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -96,7 +96,7 @@ export default function EquipmentBookings() {
             <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pendentes}</div>
+            <div className="text-2xl font-bold text-yellow-600">R$ {stats.pending.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -105,7 +105,7 @@ export default function EquipmentBookings() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              R$ {stats.faturado.toFixed(2)}
+              R$ {stats.invoiced.toFixed(2)}
             </div>
           </CardContent>
         </Card>
@@ -114,11 +114,9 @@ export default function EquipmentBookings() {
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
-          <TabsTrigger value="pending">Pendentes</TabsTrigger>
-          <TabsTrigger value="confirmed">Confirmadas</TabsTrigger>
+          <TabsTrigger value="in_process">Pendentes</TabsTrigger>
           <TabsTrigger value="paid">Pagas</TabsTrigger>
           <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
-          <TabsTrigger value="completed">Concluídas</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
