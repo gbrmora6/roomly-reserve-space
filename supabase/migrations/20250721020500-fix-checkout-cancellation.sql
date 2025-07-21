@@ -15,7 +15,7 @@ BEGIN
     SELECT 1 FROM orders 
     WHERE user_id = p_user_id 
     AND created_at > now() - interval '15 minutes'
-    AND status IN ('pending', 'processing')
+    AND status IN ('pending', 'processing', 'in_process')
   );
 END;
 $function$;
@@ -39,7 +39,7 @@ BEGIN
   SELECT array_agg(DISTINCT user_id) INTO checkout_user_ids
   FROM orders 
   WHERE created_at > now() - interval '15 minutes'
-  AND status IN ('pending', 'processing');
+  AND status IN ('pending', 'processing', 'in_process');
   
   -- Primeiro, buscar IDs das reservas que serão afetadas, excluindo usuários em checkout
   BEGIN

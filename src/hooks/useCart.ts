@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -39,7 +38,7 @@ export const useCart = () => {
         .from("orders")
         .select("id")
         .eq("user_id", user.id)
-        .in("status", ["pending", "processing"])
+        .in("status", ["pending", "processing", "in_process"])
         .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString());
 
       const hasActiveCheckout = activeOrders && activeOrders.length > 0;
