@@ -79,7 +79,7 @@ serve(async (req) => {
 
       console.log("Pedido atualizado:", orderData);
 
-      // Confirmar o carrinho (confirmar bookings e equipment_bookings)
+      // Confirmar o carrinho (confirmar bookings e equipment_bookings + limpar carrinho)
       const { data: confirmResult, error: confirmError } = await supabase
         .rpc("confirm_cart_payment", { 
           p_user_id: orderData.user_id, 
@@ -91,6 +91,7 @@ serve(async (req) => {
         // Não falhar completamente aqui, pois o pedido já foi marcado como pago
       } else {
         console.log("Carrinho confirmado com sucesso para usuário:", orderData.user_id);
+        console.log("Carrinho foi limpo automaticamente pela função confirm_cart_payment");
       }
 
       // Atualizar diretamente as reservas relacionadas ao pedido se a função falhar
@@ -137,6 +138,18 @@ serve(async (req) => {
           } else {
             console.log("Equipment bookings atualizados diretamente:", equipmentBookingIds);
           }
+        }
+
+        // Como a função confirm_cart_payment falhou, limpar carrinho manualmente
+        const { error: clearCartError } = await supabase
+          .from("cart_items")
+          .delete()
+          .eq("user_id", orderData.user_id);
+
+        if (clearCartError) {
+          console.error("Erro ao limpar carrinho manualmente:", clearCartError);
+        } else {
+          console.log("Carrinho limpo manualmente após falha da função confirm_cart_payment");
         }
       }
 

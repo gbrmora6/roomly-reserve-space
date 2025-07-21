@@ -1719,6 +1719,10 @@ export type Database = {
         Args: { sql: string }
         Returns: undefined
       }
+      extend_cart_expiration: {
+        Args: { p_user_id: string; p_payment_method: string }
+        Returns: boolean
+      }
       get_cart: {
         Args: { p_user_id: string }
         Returns: {

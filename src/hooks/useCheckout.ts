@@ -120,6 +120,17 @@ export const useCheckout = () => {
 
     setLoading(true);
     try {
+      // Estender expiração do carrinho baseado no método de pagamento
+      const { error: extendError } = await supabase.rpc('extend_cart_expiration', {
+        p_user_id: user?.id,
+        p_payment_method: paymentMethod
+      });
+
+      if (extendError) {
+        console.error("Erro ao estender expiração do carrinho:", extendError);
+        // Continuar mesmo com erro, pois é uma função auxiliar
+      }
+
       // Gerar card_hash se for pagamento com cartão
       let cardHash = null;
       if (paymentMethod === "cartao") {
@@ -168,7 +179,7 @@ export const useCheckout = () => {
         await registerCouponUsage(appliedCoupon.id);
       }
 
-      clearCart();
+      // Não limpar carrinho aqui - será limpo pelo webhook após confirmação do pagamento
 
       if (paymentMethod === "pix" && data.pix) {
         navigate("/payment-instructions", {
