@@ -215,14 +215,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Categoria</label>
                 <Select
-                  value={filters.category || ""}
-                  onValueChange={(value) => updateFilter('category', value || null)}
+                  value={filters.category || "all"}
+                  onValueChange={(value) => updateFilter('category', value === "all" ? null : value)}
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}

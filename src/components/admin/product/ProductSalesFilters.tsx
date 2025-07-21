@@ -52,12 +52,12 @@ export function ProductSalesFilters({
             <CardTitle>Filtrar por Filial</CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={branchId || ""} onValueChange={(value) => setBranchId(value || null)}>
+            <Select value={branchId || "all"} onValueChange={(value) => setBranchId(value === "all" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Todas as filiais" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as filiais</SelectItem>
+                <SelectItem value="all">Todas as filiais</SelectItem>
                 {branches.map((branch) => (
                   <SelectItem key={branch.id} value={branch.id}>
                     {branch.name}
