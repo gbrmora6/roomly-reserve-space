@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CLICK2PAY_BASE_URL = "https://apisandbox.click2pay.com.br";
+const CLICK2PAY_BASE_URL = "https://api.click2pay.com.br";
 
 function createBasicAuth(clientId: string, clientSecret: string): string {
   return `Basic ${btoa(`${clientId}:${clientSecret}`)}`;

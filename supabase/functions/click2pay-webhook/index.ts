@@ -217,6 +217,50 @@ serve(async (req) => {
 
       console.log(`Pedido com TID ${transacaoId} autorizado - aguardando captura.`);
       
+    } else if (status === "captured") {
+      console.log("Pagamento capturado - processando...");
+      
+      // Pagamento capturado com sucesso após autorização
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .update({ 
+          status: "paid",
+          updated_at: new Date().toISOString()
+        })
+        .eq("click2pay_tid", transacaoId)
+        .select('id, user_id')
+        .single();
+
+      if (orderError) {
+        console.error("Erro ao atualizar pedido para pago:", orderError);
+        throw new Error("Falha ao atualizar pedido");
+      }
+
+      if (orderData) {
+        // Confirmar reservas usando a função RPC
+        const { error: confirmError } = await supabase.rpc("confirm_cart_payment", {
+          p_user_id: orderData.user_id,
+          p_order_id: orderData.id
+        });
+
+        if (confirmError) {
+          console.error("Erro ao confirmar carrinho via RPC:", confirmError);
+          // Fallback: confirmar manualmente
+          const { error: clearCartError } = await supabase
+            .from("cart_items")
+            .delete()
+            .eq("user_id", orderData.user_id);
+
+          if (clearCartError) {
+            console.error("Erro ao limpar carrinho manualmente:", clearCartError);
+          } else {
+            console.log("Carrinho limpo manualmente após falha da função confirm_cart_payment");
+          }
+        }
+      }
+
+      console.log(`Pedido com TID ${transacaoId} capturado e confirmado.`);
+      
     } else {
       console.log(`Evento não tratado: type=${tipoEvento}, status=${status}, tid=${transacaoId}`);
     }

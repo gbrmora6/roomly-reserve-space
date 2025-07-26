@@ -266,6 +266,43 @@ function prepareCustomerData(paymentData: any, userEmail: string) {
   };
 }
 
+// Função para capturar pagamento com cartão de crédito
+async function capturePayment(tid: string, totalAmount: number, clientId: string, clientSecret: string): Promise<any> {
+  console.log(`Iniciando captura para TID: ${tid}, valor: ${totalAmount}`);
+  
+  const captureData = {
+    totalAmount: totalAmount
+  };
+  
+  try {
+    const response = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/creditcard/${tid}/capture`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': createBasicAuth(clientId, clientSecret)
+      },
+      body: JSON.stringify(captureData)
+    });
+
+    const responseText = await response.text();
+    console.log("Resposta da captura (raw):", responseText);
+
+    if (!response.ok) {
+      console.error("Erro na captura - Status:", response.status);
+      return { success: false, error: `Erro HTTP ${response.status}: ${responseText}` };
+    }
+
+    const result = JSON.parse(responseText);
+    console.log("Resposta da captura (parsed):", JSON.stringify(result, null, 2));
+    
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Erro na captura:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Função para salvar dados de pagamento na tabela payment_details
 async function savePaymentDetails(supabase: any, orderId: string, paymentMethod: string, click2payResult: any) {
   console.log("Salvando dados de pagamento para pedido:", orderId);
@@ -625,7 +662,7 @@ serve(async (req) => {
         const cardData = {
           id: shortOrderId,
           totalAmount: finalTotal,
-          capture: true,
+          capture: false, // Não capturar automaticamente, fazer captura manual
           saveCard: false,
           recurrent: false,
           softDescriptor: 'Sistema de Reservas',
@@ -653,9 +690,22 @@ serve(async (req) => {
             transaction_id: click2payResult.data.tid || click2payResult.tid || null,
             authorization_code: click2payResult.data.authorization_code || click2payResult.authorization_code || null
           };
-          // Para cartão, definir status baseado na resposta
-          if (click2payResult.data.status === 'paid' || click2payResult.data.status === 'approved') {
-            click2payResult.status = 'paid';
+          
+          // Com capture: false, a transação estará como 'authorized' ou 'pending'
+          if (click2payResult.data.status === 'authorized') {
+            click2payResult.status = 'authorized';
+            
+            // Capturar automaticamente após autorização
+            console.log("18.5. Capturando pagamento automaticamente...");
+            const captureResult = await capturePayment(click2payResult.data.tid, finalTotal, clientId, clientSecret);
+            
+            if (captureResult.success) {
+              console.log("18.6. Captura realizada com sucesso");
+              click2payResult.status = 'paid';
+              click2payResult.captured = true;
+            } else {
+              console.log("18.6. Falha na captura, mantendo status authorized");
+            }
           }
         }
         break;

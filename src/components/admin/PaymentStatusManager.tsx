@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, RotateCcw } from "lucide-react";
+import { RefreshCw, RotateCcw, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { RefundModal } from "@/components/orders/RefundModal";
@@ -21,6 +21,7 @@ export const PaymentStatusManager: React.FC<PaymentStatusManagerProps> = ({
   order
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
 
   const handleCheckStatus = async () => {
@@ -46,6 +47,35 @@ export const PaymentStatusManager: React.FC<PaymentStatusManagerProps> = ({
       });
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleCapture = async () => {
+    setIsCapturing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('capture-payment', {
+        body: { orderId }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: data.success ? "Pagamento capturado" : "Erro na captura",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      
+      if (data.success) {
+        onStatusUpdate();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao capturar pagamento",
+        description: error.message || "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCapturing(false);
     }
   };
 
@@ -76,7 +106,8 @@ export const PaymentStatusManager: React.FC<PaymentStatusManagerProps> = ({
     setShowRefundModal(false);
   };
 
-  const canRefund = status === "paid" && paymentMethod && ["pix", "card"].includes(paymentMethod);
+  const canRefund = status === "paid" && paymentMethod && ["pix", "cartao"].includes(paymentMethod);
+  const canCapture = status === "authorized" && paymentMethod === "cartao";
 
   return (
     <div className="flex gap-2">
@@ -90,6 +121,19 @@ export const PaymentStatusManager: React.FC<PaymentStatusManagerProps> = ({
         <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
         {isRefreshing ? "Consultando..." : "Consultar Status"}
       </Button>
+      
+      {canCapture && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCapture}
+          disabled={isCapturing}
+          className="h-8 text-green-600 hover:text-green-700"
+        >
+          <CreditCard className={`h-3 w-3 mr-1 ${isCapturing ? 'animate-pulse' : ''}`} />
+          {isCapturing ? "Capturando..." : "Capturar"}
+        </Button>
+      )}
       
       {canRefund && (
         <Button
