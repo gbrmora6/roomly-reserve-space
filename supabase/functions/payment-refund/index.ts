@@ -68,6 +68,10 @@ serve(async (req) => {
       throw new Error("Apenas pagamentos via PIX ou cartão podem ser estornados automaticamente");
     }
 
+    if (!order.click2pay_tid) {
+      throw new Error("TID da transação não encontrado. Não é possível processar o estorno.");
+    }
+
     // Atualizar status para processing
     console.log("2. Atualizando status do estorno para processing...");
     const { error: updateError } = await supabase
@@ -92,6 +96,8 @@ serve(async (req) => {
       case 'pix':
         // PIX pago requer estorno via API específica
         console.log("4. Solicitando estorno PIX via API...");
+        console.log("TID:", order.click2pay_tid, "Valor:", order.total_amount);
+        
         const pixResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/pix/${order.click2pay_tid}/refund`, {
           method: 'POST',
           headers: {
@@ -99,22 +105,33 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: order.total_amount
+            totalAmount: Math.round(order.total_amount * 100) // Convert to cents
           })
         });
         
+        console.log("PIX Response Status:", pixResponse.status);
+        
         if (!pixResponse.ok) {
-          const errorData = await pixResponse.json();
-          throw new Error(`Erro na API Click2Pay: ${errorData.message || 'Erro desconhecido'}`);
+          const errorText = await pixResponse.text();
+          console.error("PIX Refund Error Response:", errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(`Erro na API Click2Pay PIX: ${errorData.message || errorData.error || 'Erro desconhecido'}`);
+          } catch {
+            throw new Error(`Erro na API Click2Pay PIX (${pixResponse.status}): ${errorText}`);
+          }
         }
         
         refundResult = await pixResponse.json();
-        refundResult.success = pixResponse.ok;
+        refundResult.success = true;
+        console.log("PIX Refund Success:", refundResult);
         break;
 
       case 'cartao':
         // Cartão pode ser estornado via API específica
         console.log("4. Solicitando estorno de cartão via API...");
+        console.log("TID:", order.click2pay_tid, "Valor:", order.total_amount);
+        
         const cardResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/creditcard/${order.click2pay_tid}/refund`, {
           method: 'POST',
           headers: {
@@ -122,17 +139,26 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: order.total_amount
+            totalAmount: Math.round(order.total_amount * 100) // Convert to cents
           })
         });
         
+        console.log("Card Response Status:", cardResponse.status);
+        
         if (!cardResponse.ok) {
-          const errorData = await cardResponse.json();
-          throw new Error(`Erro na API Click2Pay: ${errorData.message || 'Erro desconhecido'}`);
+          const errorText = await cardResponse.text();
+          console.error("Card Refund Error Response:", errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(`Erro na API Click2Pay Cartão: ${errorData.message || errorData.error || 'Erro desconhecido'}`);
+          } catch {
+            throw new Error(`Erro na API Click2Pay Cartão (${cardResponse.status}): ${errorText}`);
+          }
         }
         
         refundResult = await cardResponse.json();
-        refundResult.success = cardResponse.ok;
+        refundResult.success = true;
+        console.log("Card Refund Success:", refundResult);
         break;
 
       default:

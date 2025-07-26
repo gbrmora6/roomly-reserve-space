@@ -117,8 +117,16 @@ export const useBookings = (userId: string | undefined) => {
 
   const requestRefundMutation = useMutation({
     mutationFn: async ({ bookingId, reason }: { bookingId: string; reason?: string }) => {
+      // Buscar a order relacionada ao booking através dos dados já carregados
+      const allBookings = [...roomBookings, ...equipmentBookings];
+      const booking = allBookings.find(b => b.id === bookingId);
+      
+      if (!booking || !booking.orders?.[0]?.id) {
+        throw new Error("Não foi possível encontrar a ordem relacionada ao booking");
+      }
+
       const { data, error } = await supabase.functions.invoke('payment-refund', {
-        body: { bookingId, reason }
+        body: { orderId: booking.orders[0].id, reason }
       });
       if (error) throw error;
       return data;
