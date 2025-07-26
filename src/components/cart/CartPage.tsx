@@ -12,7 +12,7 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import CartTimer from "./CartTimer";
+
 import ProductSuggestions from "./ProductSuggestions";
 import { CartItemImage } from "./CartItemImage";
 import { CartItemNotes } from "./CartItemNotes";
@@ -74,25 +74,7 @@ const CartPage: React.FC = () => {
     enabled: cartItems.length > 0,
   });
 
-  // Auto refresh para verificar expiração
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetch();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [refetch]);
-
-  const handleItemExpired = () => {
-    toast({
-      variant: "destructive",
-      title: "Item expirado",
-      description: "Um item do seu carrinho expirou e foi removido automaticamente.",
-    });
-    refetch();
-  };
-
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cartItems.length === 0) {
       toast({
         variant: "destructive",
@@ -101,7 +83,59 @@ const CartPage: React.FC = () => {
       });
       return;
     }
-    navigate("/checkout");
+
+    // Verificar disponibilidade antes de prosseguir para checkout
+    try {
+      const { data: availabilityData, error } = await (supabase as any).rpc("check_availability_before_checkout", {
+        p_user_id: cartItems[0]?.user_id
+      });
+
+      if (error) {
+        console.error("Erro ao verificar disponibilidade:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro de verificação",
+          description: "Não foi possível verificar a disponibilidade dos itens.",
+        });
+        return;
+      }
+
+      // Verificar se há itens indisponíveis
+      const unavailableItems = availabilityData?.filter((item: any) => !item.is_available) || [];
+      
+      if (unavailableItems.length > 0) {
+        // Mostrar mensagem sobre itens indisponíveis
+        const itemMessages = unavailableItems.map((item: any) => item.error_message).join("; ");
+        
+        toast({
+          variant: "destructive",
+          title: "Itens não disponíveis",
+          description: `Alguns itens não estão mais disponíveis: ${itemMessages}. Removendo do carrinho...`,
+        });
+
+        // Remover itens indisponíveis do carrinho
+        for (const unavailableItem of unavailableItems) {
+          const cartItem = cartItems.find(item => item.item_id === unavailableItem.item_id);
+          if (cartItem) {
+            removeFromCart(cartItem.id);
+          }
+        }
+        
+        // Atualizar carrinho
+        setTimeout(() => refetch(), 1000);
+        return;
+      }
+
+      // Se todos os itens estão disponíveis, prosseguir para checkout
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Erro ao verificar disponibilidade:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro inesperado ao verificar disponibilidade.",
+      });
+    }
   };
 
   const renderCartItem = (item: any) => {
@@ -144,12 +178,6 @@ const CartPage: React.FC = () => {
                      'Produto'}
                   </Badge>
                   
-                  {isTimeSensitive && (
-                    <CartTimer 
-                      expiresAt={item.expires_at} 
-                      onExpired={handleItemExpired}
-                    />
-                  )}
                 </div>
               </div>
             </div>
@@ -459,10 +487,10 @@ const CartPage: React.FC = () => {
                     Finalizar Compra ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})
                   </Button>
 
-                  <div className="text-xs text-gray-500 text-center space-y-1 mt-4">
-                    <p>🔒 Salas e equipamentos reservados por 15 minutos</p>
-                    <p>📦 Produtos físicos sem limite de tempo</p>
-                  </div>
+                   <div className="text-xs text-gray-500 text-center space-y-1 mt-4">
+                     <p>🔒 Pagamento seguro protegido</p>
+                     <p>📦 Reservas confirmadas após pagamento</p>
+                   </div>
                 </div>
               </div>
             </div>

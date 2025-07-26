@@ -14,7 +14,7 @@ export interface CartItem {
   price: number;
   metadata: any;
   created_at: string;
-  expires_at: string;
+  expires_at?: string; // Opcional agora, pois não usamos mais expiração
   reserved_booking_id?: string;
   reserved_equipment_booking_id?: string;
   branch_id: string;
@@ -33,30 +33,6 @@ export const useCart = () => {
       
       console.log("Buscando carrinho para usuário:", user.id);
       
-      // Verificar se há checkout em progresso antes de limpar itens expirados
-      const { data: activeOrders } = await supabase
-        .from("orders")
-        .select("id")
-        .eq("user_id", user.id)
-        .in("status", ["pending", "processing", "in_process"])
-        .gte("created_at", new Date(Date.now() - 15 * 60 * 1000).toISOString());
-
-      const hasActiveCheckout = activeOrders && activeOrders.length > 0;
-      
-      if (!hasActiveCheckout) {
-        // Só executa limpeza se não houver checkout em progresso
-        try {
-          console.log("Executando limpeza de itens expirados...");
-          await (supabase as any).rpc("clean_expired_cart_items");
-          console.log("Limpeza automática concluída com sucesso");
-        } catch (error) {
-          console.log("Nota: Erro na limpeza automática (continuando):", error);
-          // Continue mesmo se a limpeza falhar para não bloquear o carrinho
-        }
-      } else {
-        console.log("Checkout em progresso detectado, pulando limpeza automática");
-      }
-      
       // Chama a function do Supabase para buscar o carrinho
       const { data, error } = await (supabase as any).rpc("get_cart", {
         p_user_id: user.id
@@ -68,24 +44,9 @@ export const useCart = () => {
       }
       
       console.log("Dados do carrinho recebidos:", data);
-      
-      // Filtrar itens não expirados como medida adicional de segurança
-      const now = new Date();
-      const validItems = (data as CartItem[]).filter(item => {
-        if (!item.expires_at) return true;
-        const expiresAt = new Date(item.expires_at);
-        const isValid = expiresAt > now;
-        if (!isValid) {
-          console.log("Item expirado encontrado no frontend:", item.id, "expirou em:", expiresAt);
-        }
-        return isValid;
-      });
-      
-      console.log(`Retornando ${validItems.length} itens válidos de ${(data as CartItem[]).length} totais`);
-      return validItems;
+      return data as CartItem[];
     },
     enabled: !!user,
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
   });
 
   // Mutation para adicionar item ao carrinho

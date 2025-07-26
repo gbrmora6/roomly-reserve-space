@@ -109,6 +109,57 @@ const Checkout = () => {
     setLoading(true);
     
     try {
+      // NOVA VERIFICAÇÃO: Verificar disponibilidade antes de processar pagamento
+      console.log("Verificando disponibilidade antes do pagamento...");
+      const { data: availabilityData, error: availabilityError } = await (supabase as any).rpc("check_availability_before_checkout", {
+        p_user_id: user.id
+      });
+
+      if (availabilityError) {
+        console.error("Erro ao verificar disponibilidade:", availabilityError);
+        throw new Error("Não foi possível verificar a disponibilidade dos itens.");
+      }
+
+      // Verificar se há itens indisponíveis
+      const unavailableItems = availabilityData?.filter((item: any) => !item.is_available) || [];
+      
+      if (unavailableItems.length > 0) {
+        // Mostrar erro e redirecionar para carrinho
+        const itemMessages = unavailableItems.map((item: any) => item.error_message).join("; ");
+        
+        toast({
+          variant: "destructive",
+          title: "Itens não disponíveis",
+          description: `${itemMessages} Redirecionando para o carrinho...`,
+        });
+
+        // Redirecionar para carrinho após um delay
+        setTimeout(() => {
+          navigate("/cart");
+        }, 2000);
+        
+        return;
+      }
+
+      console.log("Todos os itens estão disponíveis, prosseguindo com o pagamento...");
+
+      // NOVA ETAPA: Criar reservas temporárias agora
+      const { data: reservationData, error: reservationError } = await (supabase as any).rpc("create_reservations_for_checkout", {
+        p_user_id: user.id
+      });
+
+      if (reservationError) {
+        console.error("Erro ao criar reservas:", reservationError);
+        throw new Error("Erro ao criar reservas temporárias.");
+      }
+
+      const reservationResult = reservationData?.[0];
+      if (!reservationResult?.success) {
+        throw new Error(reservationResult?.error_message || "Erro ao criar reservas temporárias.");
+      }
+
+      console.log("Reservas temporárias criadas:", reservationResult);
+
       let processedPaymentData = { ...paymentData };
 
       // Para cartão de crédito, gerar card_hash usando cardc2p.js

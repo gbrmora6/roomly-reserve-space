@@ -1716,6 +1716,15 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      check_availability_before_checkout: {
+        Args: { p_user_id: string }
+        Returns: {
+          item_id: string
+          item_type: string
+          is_available: boolean
+          error_message: string
+        }[]
+      }
       clean_expired_cart_items: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1727,6 +1736,15 @@ export type Database = {
       confirm_cart_payment: {
         Args: { p_user_id: string; p_order_id: string }
         Returns: boolean
+      }
+      create_reservations_for_checkout: {
+        Args: { p_user_id: string }
+        Returns: {
+          success: boolean
+          room_booking_ids: string[]
+          equipment_booking_ids: string[]
+          error_message: string
+        }[]
       }
       create_user_profile: {
         Args: {
