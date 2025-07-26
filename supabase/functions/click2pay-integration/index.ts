@@ -9,6 +9,71 @@ const corsHeaders = {
 // URLs da API Click2Pay - usando API de produção
 const CLICK2PAY_BASE_URL = "https://api.click2pay.com.br";
 
+// Função para tokenizar cartão de crédito
+async function tokenizeCard(cardData: any, payerInfo: any, clientId: string, clientSecret: string): Promise<any> {
+  console.log("Iniciando tokenização do cartão...");
+  
+  const tokenizationData = {
+    payerInfo: {
+      address: {
+        place: payerInfo.address.place,
+        number: payerInfo.address.number,
+        complement: payerInfo.address.complement || '',
+        neighborhood: payerInfo.address.neighborhood,
+        city: payerInfo.address.city,
+        state: payerInfo.address.state,
+        zipcode: payerInfo.address.zipcode
+      },
+      name: payerInfo.name,
+      taxid: payerInfo.taxid,
+      phonenumber: payerInfo.phonenumber,
+      email: payerInfo.email,
+      birth_date: payerInfo.birth_date || '1990-01-01'
+    },
+    card: {
+      expires: cardData.validadeCartao,
+      holder: cardData.nomeNoCartao,
+      number: cardData.numeroCartao.replace(/\s/g, ''),
+      cvv: cardData.cvv
+    },
+    cardHash: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  };
+  
+  console.log("Dados para tokenização:", JSON.stringify(tokenizationData, null, 2));
+  
+  try {
+    const response = await fetch(`${CLICK2PAY_BASE_URL}/v2/tokenization/card`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': createBasicAuth(clientId, clientSecret)
+      },
+      body: JSON.stringify(tokenizationData)
+    });
+
+    const responseText = await response.text();
+    console.log("Resposta da tokenização (raw):", responseText);
+
+    if (!response.ok) {
+      console.error("Erro na tokenização - Status:", response.status);
+      return { success: false, error: `Erro HTTP ${response.status}: ${responseText}` };
+    }
+
+    const result = JSON.parse(responseText);
+    console.log("Resposta da tokenização (parsed):", JSON.stringify(result, null, 2));
+    
+    if (result.cardHash) {
+      return { success: true, cardHash: result.cardHash };
+    } else {
+      return { success: false, error: 'CardHash não retornado na tokenização' };
+    }
+  } catch (error) {
+    console.error("Erro na tokenização:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Função para fazer requisições HTTP para Click2Pay
 async function makeClick2PayRequest(endpoint: string, data: any, clientId: string, clientSecret: string) {
   const response = await fetch(`${CLICK2PAY_BASE_URL}${endpoint}`, {
@@ -546,7 +611,17 @@ serve(async (req) => {
         break;
 
       case "cartao":
-        console.log("18.1. Configurando dados para cartão...");
+        console.log("18.1. Tokenizando cartão de crédito...");
+        
+        // Primeiro, tokenizar o cartão
+        const tokenizationResult = await tokenizeCard(paymentData, customer.payerInfo, clientId, clientSecret);
+        
+        if (!tokenizationResult.success) {
+          throw new Error(`Erro na tokenização: ${tokenizationResult.error}`);
+        }
+        
+        console.log("18.2. Tokenização realizada com sucesso, processando transação...");
+        
         const cardData = {
           id: shortOrderId,
           totalAmount: finalTotal,
@@ -555,7 +630,7 @@ serve(async (req) => {
           recurrent: false,
           softDescriptor: 'Sistema de Reservas',
           instalments: paymentData.parcelas || 1,
-          cardHash: paymentData.card_hash,
+          cardHash: tokenizationResult.cardHash, // Usar o cardHash da tokenização
           payerInfo: {
             name: customer.payerInfo.name,
             taxid: customer.payerInfo.taxid,
@@ -567,10 +642,10 @@ serve(async (req) => {
           callbackAddress: `${Deno.env.get('SUPABASE_URL')}/functions/v1/click2pay-webhook`
         };
         
-        console.log("18.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
+        console.log("18.3. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
-        console.log("18.3. Resposta Click2Pay Cartão:", JSON.stringify(click2payResult, null, 2));
+        console.log("18.4. Resposta Click2Pay Cartão:", JSON.stringify(click2payResult, null, 2));
         
         // Mapear resposta do cartão
         if (click2payResult.success && click2payResult.data) {

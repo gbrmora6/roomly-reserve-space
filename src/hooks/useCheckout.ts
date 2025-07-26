@@ -131,19 +131,6 @@ export const useCheckout = () => {
         // Continuar mesmo com erro, pois é uma função auxiliar
       }
 
-      // Gerar card_hash se for pagamento com cartão
-      let cardHash = null;
-      if (paymentMethod === "cartao") {
-        // Simular geração de card_hash (em produção, usar biblioteca oficial)
-        cardHash = btoa(JSON.stringify({
-          number: paymentData.numeroCartao.replace(/\s/g, ""),
-          holder_name: paymentData.nomeNoCartao,
-          exp_month: paymentData.validadeCartao.split("/")[0],
-          exp_year: paymentData.validadeCartao.split("/")[1],
-          cvv: paymentData.cvv
-        }));
-      }
-
       const paymentPayload = {
         action: "create-checkout",
         userId: user?.id,
@@ -160,7 +147,11 @@ export const useCheckout = () => {
           bairro: paymentData.bairro,
           cidade: paymentData.cidade,
           estado: paymentData.estado,
-          card_hash: cardHash,
+          // Dados do cartão para tokenização (enviados apenas se for cartão)
+          numeroCartao: paymentMethod === "cartao" ? paymentData.numeroCartao : "",
+          nomeNoCartao: paymentMethod === "cartao" ? paymentData.nomeNoCartao : "",
+          validadeCartao: paymentMethod === "cartao" ? paymentData.validadeCartao : "",
+          cvv: paymentMethod === "cartao" ? paymentData.cvv : "",
           parcelas: paymentData.parcelas || 1
         }
       };
