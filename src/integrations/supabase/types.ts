@@ -1712,6 +1712,10 @@ export type Database = {
           user_id: string | null
         }
       }
+      cancel_expired_pix_reservations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cancel_order_reservations: {
         Args: { p_order_id: string }
         Returns: Json
