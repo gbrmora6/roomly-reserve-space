@@ -10,69 +10,7 @@ const corsHeaders = {
 const CLICK2PAY_BASE_URL = "https://api.click2pay.com.br";
 
 // Função para tokenizar cartão de crédito
-async function tokenizeCard(cardData: any, payerInfo: any, clientId: string, clientSecret: string): Promise<any> {
-  console.log("Iniciando tokenização do cartão...");
-  
-  const tokenizationData = {
-    payerInfo: {
-      address: {
-        place: payerInfo.address.place,
-        number: payerInfo.address.number,
-        complement: payerInfo.address.complement || '',
-        neighborhood: payerInfo.address.neighborhood,
-        city: payerInfo.address.city,
-        state: payerInfo.address.state,
-        zipcode: payerInfo.address.zipcode
-      },
-      name: payerInfo.name,
-      taxid: payerInfo.taxid,
-      phonenumber: payerInfo.phonenumber,
-      email: payerInfo.email,
-      birth_date: payerInfo.birth_date || '1990-01-01'
-    },
-    card: {
-      expires: cardData.validadeCartao,
-      holder: cardData.nomeNoCartao,
-      number: cardData.numeroCartao.replace(/\s/g, ''),
-      cvv: cardData.cvv
-    },
-    cardHash: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-  };
-  
-  console.log("Dados para tokenização:", JSON.stringify(tokenizationData, null, 2));
-  
-  try {
-    const response = await fetch(`${CLICK2PAY_BASE_URL}/v2/tokenization/card`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': createBasicAuth(clientId, clientSecret)
-      },
-      body: JSON.stringify(tokenizationData)
-    });
-
-    const responseText = await response.text();
-    console.log("Resposta da tokenização (raw):", responseText);
-
-    if (!response.ok) {
-      console.error("Erro na tokenização - Status:", response.status);
-      return { success: false, error: `Erro HTTP ${response.status}: ${responseText}` };
-    }
-
-    const result = JSON.parse(responseText);
-    console.log("Resposta da tokenização (parsed):", JSON.stringify(result, null, 2));
-    
-    if (result.cardHash) {
-      return { success: true, cardHash: result.cardHash };
-    } else {
-      return { success: false, error: 'CardHash não retornado na tokenização' };
-    }
-  } catch (error) {
-    console.error("Erro na tokenização:", error);
-    return { success: false, error: error.message };
-  }
-}
+// Função removida - tokenização agora é feita no frontend
 
 // Função para fazer requisições HTTP para Click2Pay
 async function makeClick2PayRequest(endpoint: string, data: any, clientId: string, clientSecret: string) {
@@ -649,26 +587,24 @@ serve(async (req) => {
         break;
 
       case "cartao":
-        console.log("18.1. Tokenizando cartão de crédito...");
+        console.log("18.1. Processando cartão de crédito com hash do frontend...");
         
-        // Primeiro, tokenizar o cartão
-        const tokenizationResult = await tokenizeCard(paymentData, customer.payerInfo, clientId, clientSecret);
-        
-        if (!tokenizationResult.success) {
-          throw new Error(`Erro na tokenização: ${tokenizationResult.error}`);
+        // Validar se o card_hash foi enviado
+        if (!paymentData.card_hash) {
+          throw new Error("Hash do cartão não foi gerado. Recarregue a página e tente novamente.");
         }
         
-        console.log("18.2. Tokenização realizada com sucesso, processando transação...");
+        console.log("18.2. Hash do cartão recebido, processando transação...");
         
         const cardData = {
           id: shortOrderId,
           totalAmount: finalTotal,
-          capture: false, // Não capturar automaticamente, fazer captura manual
+          capture: true, // Capturar automaticamente
           saveCard: false,
           recurrent: false,
           softDescriptor: 'Sistema de Reservas',
           instalments: paymentData.parcelas || 1,
-          cardHash: tokenizationResult.cardHash, // Usar o cardHash da tokenização
+          cardHash: paymentData.card_hash, // Usar o cardHash gerado no frontend
           payerInfo: {
             name: customer.payerInfo.name,
             taxid: customer.payerInfo.taxid,
@@ -677,13 +613,13 @@ serve(async (req) => {
             birth_date: customer.payerInfo.birth_date || '1990-01-01',
             address: customer.payerInfo.address
           },
-          callbackAddress: `${Deno.env.get('SUPABASE_URL')}/functions/v1/click2pay-webhook`
+          callbackAddress: `https://fgiidcdsvmqxdkclgety.supabase.co/functions/v1/click2pay-webhook`
         };
         
         console.log("18.3. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
-        console.log("18.4. Resposta Click2Pay Cartão:", JSON.stringify(click2payResult, null, 2));
+        console.log("18.3. Resposta Click2Pay Cartão:", JSON.stringify(click2payResult, null, 2));
         
         // Mapear resposta do cartão
         if (click2payResult.success && click2payResult.data) {
@@ -692,21 +628,13 @@ serve(async (req) => {
             authorization_code: click2payResult.data.authorization_code || click2payResult.authorization_code || null
           };
           
-          // Com capture: false, a transação estará como 'authorized' ou 'pending'
-          if (click2payResult.data.status === 'authorized') {
+          // Com capture: true, a transação já será capturada automaticamente
+          if (click2payResult.data.status === 'paid' || click2payResult.data.status === 'approved') {
+            click2payResult.status = 'paid';
+          } else if (click2payResult.data.status === 'authorized') {
             click2payResult.status = 'authorized';
-            
-            // Capturar automaticamente após autorização
-            console.log("18.5. Capturando pagamento automaticamente...");
-            const captureResult = await capturePayment(click2payResult.data.tid, finalTotal, clientId, clientSecret);
-            
-            if (captureResult.success) {
-              console.log("18.6. Captura realizada com sucesso");
-              click2payResult.status = 'paid';
-              click2payResult.captured = true;
-            } else {
-              console.log("18.6. Falha na captura, mantendo status authorized");
-            }
+          } else {
+            click2payResult.status = click2payResult.data.status || 'failed';
           }
         }
         break;
