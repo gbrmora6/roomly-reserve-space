@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.simulate-webhook]
 verify_jwt = false
+
+[functions.simulate-payment-confirmed]
+verify_jwt = false
