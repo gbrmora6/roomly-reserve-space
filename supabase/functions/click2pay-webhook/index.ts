@@ -54,7 +54,8 @@ serve(async (req) => {
 
     // Mapear eventos da Click2Pay baseado na documentação
     if (tipoEvento === "PAYMENT_RECEIVED" && status === "paid") {
-      console.log("Pagamento confirmado - processando...");
+      console.log("=== PAGAMENTO CONFIRMADO ===");
+      console.log("Processando pagamento PIX/Cartão confirmado...");
       
       // Atualizar pedido usando o tid da Click2Pay
       const { data: orderData, error: orderError } = await supabase
@@ -64,7 +65,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq("click2pay_tid", transacaoId)
-        .select('id, user_id')
+        .select('id, user_id, total_amount, payment_method')
         .single();
 
       if (orderError) {
@@ -77,9 +78,15 @@ serve(async (req) => {
         throw new Error("Pedido não encontrado");
       }
 
-      console.log("Pedido atualizado:", orderData);
+      console.log("✅ Pedido atualizado:", {
+        orderId: orderData.id,
+        userId: orderData.user_id,
+        amount: orderData.total_amount,
+        method: orderData.payment_method
+      });
 
       // Confirmar o carrinho (confirmar bookings e equipment_bookings + limpar carrinho)
+      console.log("🔄 Confirmando carrinho e reservas...");
       const { data: confirmResult, error: confirmError } = await supabase
         .rpc("confirm_cart_payment", { 
           p_user_id: orderData.user_id, 
@@ -87,11 +94,11 @@ serve(async (req) => {
         });
 
       if (confirmError) {
-        console.error("Erro ao confirmar carrinho:", confirmError);
-        // Não falhar completamente aqui, pois o pedido já foi marcado como pago
+        console.error("❌ Erro ao confirmar carrinho:", confirmError);
+        // Fallback manual se a função RPC falhar
       } else {
-        console.log("Carrinho confirmado com sucesso para usuário:", orderData.user_id);
-        console.log("Carrinho foi limpo automaticamente pela função confirm_cart_payment");
+        console.log("✅ Carrinho confirmado via RPC para usuário:", orderData.user_id);
+        console.log("✅ Reservas confirmadas e carrinho limpo automaticamente");
       }
 
       // Atualizar diretamente as reservas relacionadas ao pedido se a função falhar
@@ -262,7 +269,8 @@ serve(async (req) => {
       console.log(`Pedido com TID ${transacaoId} capturado e confirmado.`);
       
     } else if (status === "refunded" || tipoEvento === "PAYMENT_REFUNDED") {
-      console.log("Estorno confirmado - processando...");
+      console.log("=== ESTORNO CONFIRMADO ===");
+      console.log("Processando confirmação de estorno...");
       
       // Estorno confirmado
       const { data: orderData, error: orderError } = await supabase
@@ -274,27 +282,35 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq("click2pay_tid", transacaoId)
-        .select('id, user_id')
+        .select('id, user_id, total_amount, payment_method')
         .single();
 
       if (orderError) {
-        console.error("Erro ao atualizar pedido estornado:", orderError);
+        console.error("❌ Erro ao atualizar pedido estornado:", orderError);
         throw new Error("Falha ao processar estorno");
       }
 
       if (orderData) {
-        // Cancelar reservas relacionadas usando a função RPC
+        console.log("✅ Pedido marcado como estornado:", {
+          orderId: orderData.id,
+          userId: orderData.user_id,
+          amount: orderData.total_amount,
+          method: orderData.payment_method
+        });
+
+        // Cancelar reservas relacionadas usando a função RPC melhorada
+        console.log("🔄 Cancelando reservas relacionadas...");
         const { data: cancelResult, error: cancelError } = await supabase
           .rpc('cancel_order_reservations', { p_order_id: orderData.id });
         
         if (cancelError) {
-          console.error("Erro ao cancelar reservas via RPC:", cancelError);
+          console.error("❌ Erro ao cancelar reservas via RPC:", cancelError);
         } else {
-          console.log("Reservas canceladas via webhook:", cancelResult);
+          console.log("✅ Reservas canceladas via webhook:", cancelResult);
         }
       }
 
-      console.log(`Pedido com TID ${transacaoId} estornado e reservas canceladas.`);
+      console.log(`✅ Estorno processado: TID ${transacaoId} - Pedido estornado e reservas canceladas.`);
       
     } else {
       console.log(`Evento não tratado: type=${tipoEvento}, status=${status}, tid=${transacaoId}`);

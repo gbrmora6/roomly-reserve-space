@@ -124,6 +124,7 @@ export type Database = {
           invoice_uploaded_at: string | null
           invoice_uploaded_by: string | null
           invoice_url: string | null
+          order_id: string | null
           quantity: number
           start_time: string
           status: Database["public"]["Enums"]["booking_status"] | null
@@ -141,6 +142,7 @@ export type Database = {
           invoice_uploaded_at?: string | null
           invoice_uploaded_by?: string | null
           invoice_url?: string | null
+          order_id?: string | null
           quantity?: number
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -158,6 +160,7 @@ export type Database = {
           invoice_uploaded_at?: string | null
           invoice_uploaded_by?: string | null
           invoice_url?: string | null
+          order_id?: string | null
           quantity?: number
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -187,6 +190,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_equipment_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
@@ -198,6 +208,7 @@ export type Database = {
           invoice_uploaded_at: string | null
           invoice_uploaded_by: string | null
           invoice_url: string | null
+          order_id: string | null
           room_id: string
           start_time: string
           status: Database["public"]["Enums"]["booking_status"] | null
@@ -213,6 +224,7 @@ export type Database = {
           invoice_uploaded_at?: string | null
           invoice_uploaded_by?: string | null
           invoice_url?: string | null
+          order_id?: string | null
           room_id: string
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -228,6 +240,7 @@ export type Database = {
           invoice_uploaded_at?: string | null
           invoice_uploaded_by?: string | null
           invoice_url?: string | null
+          order_id?: string | null
           room_id?: string
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -241,6 +254,13 @@ export type Database = {
             columns: ["invoice_uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
