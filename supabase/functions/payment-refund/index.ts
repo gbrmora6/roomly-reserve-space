@@ -162,12 +162,32 @@ serve(async (req) => {
 
     console.log("6. Estorno processado com sucesso");
 
+    // 7. Se estorno foi bem-sucedido, cancelar reservas relacionadas
+    let cancellationResult = null;
+    if (refundResult.success) {
+      console.log("7. Cancelando reservas relacionadas...");
+      try {
+        const { data: cancelResult, error: cancelError } = await supabase
+          .rpc('cancel_order_reservations', { p_order_id: orderId });
+        
+        if (cancelError) {
+          console.error("Erro ao cancelar reservas:", cancelError);
+        } else {
+          cancellationResult = cancelResult;
+          console.log("8. Reservas canceladas:", cancelResult);
+        }
+      } catch (error) {
+        console.error("Erro ao executar cancelamento de reservas:", error);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: refundResult.success,
         message: refundResult.message || (refundResult.success ? "Estorno processado com sucesso" : "Falha no estorno"),
         refund_amount: refundAmount,
-        refund_status: finalStatus
+        refund_status: finalStatus,
+        cancelled_reservations: cancellationResult
       }),
       {
         status: 200,

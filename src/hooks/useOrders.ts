@@ -65,9 +65,20 @@ export const useOrders = (userId: string | undefined) => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["my-product-orders", userId] });
+      
+      // Se houve cancelamento de reservas, invalidar também as queries de bookings
+      if (data.success && data.cancelled_reservations) {
+        queryClient.invalidateQueries({ queryKey: ["my-room-bookings", userId] });
+        queryClient.invalidateQueries({ queryKey: ["my-equipment-bookings", userId] });
+        queryClient.invalidateQueries({ queryKey: ["bookings"] });
+        queryClient.invalidateQueries({ queryKey: ["equipment-bookings"] });
+      }
+      
       toast({
         title: data.success ? "Estorno solicitado" : "Erro no estorno",
-        description: data.message,
+        description: data.success && data.cancelled_reservations 
+          ? `${data.message}. ${data.cancelled_reservations.message}` 
+          : data.message,
         variant: data.success ? "default" : "destructive",
       });
     },

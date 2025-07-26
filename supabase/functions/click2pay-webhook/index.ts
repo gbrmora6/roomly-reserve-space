@@ -261,6 +261,41 @@ serve(async (req) => {
 
       console.log(`Pedido com TID ${transacaoId} capturado e confirmado.`);
       
+    } else if (status === "refunded" || tipoEvento === "PAYMENT_REFUNDED") {
+      console.log("Estorno confirmado - processando...");
+      
+      // Estorno confirmado
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .update({ 
+          status: "recused",
+          refund_status: "completed",
+          refund_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("click2pay_tid", transacaoId)
+        .select('id, user_id')
+        .single();
+
+      if (orderError) {
+        console.error("Erro ao atualizar pedido estornado:", orderError);
+        throw new Error("Falha ao processar estorno");
+      }
+
+      if (orderData) {
+        // Cancelar reservas relacionadas usando a função RPC
+        const { data: cancelResult, error: cancelError } = await supabase
+          .rpc('cancel_order_reservations', { p_order_id: orderData.id });
+        
+        if (cancelError) {
+          console.error("Erro ao cancelar reservas via RPC:", cancelError);
+        } else {
+          console.log("Reservas canceladas via webhook:", cancelResult);
+        }
+      }
+
+      console.log(`Pedido com TID ${transacaoId} estornado e reservas canceladas.`);
+      
     } else {
       console.log(`Evento não tratado: type=${tipoEvento}, status=${status}, tid=${transacaoId}`);
     }
