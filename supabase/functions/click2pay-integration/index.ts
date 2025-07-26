@@ -621,6 +621,7 @@ serve(async (req) => {
           totalAmount: finalTotal,
           expiration: "86400",
           returnQRCode: true,
+          callbackAddress: `https://fgiidcdsvmqxdkclgety.supabase.co/functions/v1/click2pay-webhook`,
           payerInfo: customer.payerInfo
         };
         

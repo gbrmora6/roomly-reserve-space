@@ -247,12 +247,12 @@ Deno.serve(async (req: Request) => {
       interest: { mode: 'DAILY_AMOUNT' },
       totalAmount: totalAmount,
       id: orderId,
-      callbackAddress: callbackUrl || 'https://webhook-default.requestcatcher.com/slip'
+      callbackAddress: callbackUrl || 'https://fgiidcdsvmqxdkclgety.supabase.co/functions/v1/click2pay-webhook'
     };
 
     // Fazer requisição para a API Click2Pay
     const click2payResponse = await fetch(
-      'https://apisandbox.click2pay.com.br/v1/transactions/boleto',
+      'https://api.click2pay.com.br/v1/transactions/boleto',
       {
         ...click2payOptions,
         body: JSON.stringify(boletoData)
