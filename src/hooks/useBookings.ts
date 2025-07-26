@@ -19,8 +19,7 @@ export const useBookings = (userId: string | undefined) => {
         .select(`
           *, 
           room:rooms(name, description),
-          payment_details:payment_details(*),
-          orders!left(id, payment_method, payment_data)
+          orders!left(id, payment_method, payment_data, payment_details!left(*))
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -29,6 +28,7 @@ export const useBookings = (userId: string | undefined) => {
         ...booking,
         payment_method: booking.orders?.[0]?.payment_method,
         payment_data: booking.orders?.[0]?.payment_data,
+        payment_details: booking.orders?.[0]?.payment_details?.[0],
       }));
     },
     enabled: !!userId,
@@ -43,8 +43,7 @@ export const useBookings = (userId: string | undefined) => {
         .select(`
           *, 
           equipment:equipment(name, description),
-          payment_details:payment_details(*),
-          orders!left(id, payment_method, payment_data)
+          orders!left(id, payment_method, payment_data, payment_details!left(*))
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -53,6 +52,7 @@ export const useBookings = (userId: string | undefined) => {
         ...booking,
         payment_method: booking.orders?.[0]?.payment_method,
         payment_data: booking.orders?.[0]?.payment_data,
+        payment_details: booking.orders?.[0]?.payment_details?.[0],
       }));
     },
     enabled: !!userId,
