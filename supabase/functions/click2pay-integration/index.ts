@@ -550,24 +550,38 @@ serve(async (req) => {
         const cardData = {
           id: shortOrderId,
           totalAmount: finalTotal,
-          cardHash: paymentData.card_hash,
-          installments: paymentData.parcelas || 1,
           capture: true,
           saveCard: false,
           recurrent: false,
-          payerInfo: customer.payerInfo
+          softDescriptor: 'Sistema de Reservas',
+          instalments: paymentData.parcelas || 1,
+          cardHash: paymentData.card_hash,
+          payerInfo: {
+            name: customer.payerInfo.name,
+            taxid: customer.payerInfo.taxid,
+            phonenumber: customer.payerInfo.phonenumber,
+            email: customer.payerInfo.email,
+            birth_date: customer.payerInfo.birth_date || '1990-01-01',
+            address: customer.payerInfo.address
+          },
+          callbackAddress: `${Deno.env.get('SUPABASE_URL')}/functions/v1/click2pay-webhook`
         };
         
         console.log("18.2. Dados do cartão preparados:", JSON.stringify(cardData, null, 2));
         
         click2payResult = await makeClick2PayRequest('/v1/transactions/creditcard', cardData, clientId, clientSecret);
+        console.log("18.3. Resposta Click2Pay Cartão:", JSON.stringify(click2payResult, null, 2));
         
         // Mapear resposta do cartão
-        if (click2payResult.success && click2payResult.data && click2payResult.data.card) {
+        if (click2payResult.success && click2payResult.data) {
           click2payResult.card = {
-            transaction_id: click2payResult.data.card.transaction_id || null,
-            authorization_code: click2payResult.data.card.authorization_code || null
+            transaction_id: click2payResult.data.tid || click2payResult.tid || null,
+            authorization_code: click2payResult.data.authorization_code || click2payResult.authorization_code || null
           };
+          // Para cartão, definir status baseado na resposta
+          if (click2payResult.data.status === 'paid' || click2payResult.data.status === 'approved') {
+            click2payResult.status = 'paid';
+          }
         }
         break;
 
