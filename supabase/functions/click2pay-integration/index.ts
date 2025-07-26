@@ -14,21 +14,45 @@ const CLICK2PAY_BASE_URL = "https://api.click2pay.com.br";
 
 // Função para fazer requisições HTTP para Click2Pay
 async function makeClick2PayRequest(endpoint: string, data: any, clientId: string, clientSecret: string) {
-  const response = await fetch(`${CLICK2PAY_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': createBasicAuth(clientId, clientSecret)
-    },
-    body: JSON.stringify(data)
-  });
+  console.log(`=== INICIANDO REQUISIÇÃO PARA CLICK2PAY ===`);
+  console.log("Endpoint:", endpoint);
+  console.log("URL completa:", `${CLICK2PAY_BASE_URL}${endpoint}`);
+  console.log("ClientId:", clientId ? "PRESENTE" : "AUSENTE");
+  console.log("ClientSecret:", clientSecret ? "PRESENTE" : "AUSENTE");
+  console.log("Dados enviados:", JSON.stringify(data, null, 2));
+  
+  try {
+    const response = await fetch(`${CLICK2PAY_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': createBasicAuth(clientId, clientSecret)
+      },
+      body: JSON.stringify(data)
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Click2Pay API Error: ${response.status} - ${errorText}`);
+    console.log("Status da resposta:", response.status);
+    console.log("Headers da resposta:", Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log("Resposta raw da Click2Pay:", responseText);
+
+    if (!response.ok) {
+      console.error("=== ERRO NA API CLICK2PAY ===");
+      console.error("Status:", response.status);
+      console.error("Status Text:", response.statusText);
+      console.error("Response:", responseText);
+      throw new Error(`Click2Pay API Error: ${response.status} - ${responseText}`);
+    }
+
+    const responseJson = JSON.parse(responseText);
+    console.log("Resposta JSON parseada:", JSON.stringify(responseJson, null, 2));
+    return responseJson;
+  } catch (error) {
+    console.error("=== ERRO CAPTURADO EM makeClick2PayRequest ===");
+    console.error("Erro:", error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 // Função para validar CPF
@@ -322,8 +346,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     // Credenciais de produção da Click2Pay
-    const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID") || "a84f96cf-b580-479a-9ecc-d9aa1d85b634124617090002540";
-    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET") || "260ac62f63720b4803ef5793df23605b";
+    const clientId = Deno.env.get("CLICK2PAY_CLIENT_ID");
+    const clientSecret = Deno.env.get("CLICK2PAY_CLIENT_SECRET");
 
     console.log("3. Verificando variáveis de ambiente...");
     console.log("- SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
