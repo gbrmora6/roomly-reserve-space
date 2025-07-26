@@ -282,7 +282,7 @@ async function savePaymentDetails(supabase: any, orderId: string, paymentMethod:
     paymentDetailsData.boleto_url = click2payResult.boleto.url;
     paymentDetailsData.boleto_barcode = click2payResult.boleto.barcode;
     paymentDetailsData.boleto_due_date = click2payResult.boleto.due_date;
-  } else if (paymentMethod === 'cartao' && click2payResult.card) {
+  } else if (paymentMethod === 'card' && click2payResult.card) {
     paymentDetailsData.card_transaction_id = click2payResult.card.transaction_id;
     paymentDetailsData.card_authorization_code = click2payResult.card.authorization_code;
   }
@@ -692,7 +692,9 @@ serve(async (req) => {
       .eq('id', order.id);
 
     // Salvar detalhes do pagamento na tabela payment_details
-    await savePaymentDetails(supabase, order.id, paymentMethod, click2payResult);
+    // Mapear "cartao" para "card" para compatibilidade com constraint
+    const dbPaymentMethod = paymentMethod === 'cartao' ? 'card' : paymentMethod;
+    await savePaymentDetails(supabase, order.id, dbPaymentMethod, click2payResult);
 
     // Retornar resposta de sucesso com campos mapeados
     return new Response(
