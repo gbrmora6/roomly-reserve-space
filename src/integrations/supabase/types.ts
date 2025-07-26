@@ -1807,6 +1807,10 @@ export type Database = {
           blocked_reason: string
         }[]
       }
+      has_active_checkout: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       has_permission: {
         Args: {
           p_user_id: string
