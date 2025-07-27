@@ -56,20 +56,11 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
             <span className="text-lg sm:text-xl font-semibold text-gray-900">{formatCurrency(equipment.price_per_hour)}</span>
             <span className="text-xs sm:text-sm text-gray-500">/ hour</span>
           </div>
-          {/* Tags/características */}
-          <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-            <span className="bg-gray-100 rounded px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs text-gray-700">{equipment.quantity} unidades</span>
-            {equipment.open_time && equipment.close_time && (
-              <span className="bg-gray-100 rounded px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs text-gray-700">
-                {equipment.open_time} às {equipment.close_time}
-              </span>
-            )}
-          </div>
         </div>
         {!onQuantityChange && (
           <div className="flex justify-end mt-2">
-            <Button asChild className="bg-[#23406e] hover:bg-[#1a2e4d] text-white font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm">
-              <Link to={`/equipment/${equipment.id}`}>View Details</Link>
+            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm">
+              <Link to={`/equipment/${equipment.id}`}>Reservar Equipamento</Link>
             </Button>
           </div>
         )}

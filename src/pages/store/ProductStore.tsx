@@ -58,8 +58,17 @@ const ProductStore = () => {
     (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Buscar informações da filial para cada produto
+  const productsWithBranches = filteredProducts?.map(product => {
+    // Para simplificar, vamos buscar a filial baseada no branchId do produto
+    return {
+      ...product,
+      branchName: selectedCity !== "all" ? selectedCity : "Loja"
+    };
+  });
+
   // Converter produtos para o formato do ItemCard
-  const productsForGrid = filteredProducts?.map(product => ({
+  const productsForGrid = productsWithBranches?.map(product => ({
     id: product.id,
     title: product.name,
     description: product.description,
@@ -67,13 +76,7 @@ const ProductStore = () => {
     priceLabel: "unidade",
     image: undefined, // Products don't have photos in this structure
     status: product.quantity > 0 ? 'available' as const : 'unavailable' as const,
-    features: [
-      { icon: Package, label: "Em estoque", available: product.quantity > 0 },
-    ],
-    stats: [
-      { icon: Package, label: "Estoque", value: product.quantity },
-      ...(product.model ? [{ icon: Star, label: "Modelo", value: product.model }] : []),
-    ],
+    location: `${product.branchName} - Retirada na loja`,
   })) || [];
 
   const handleItemAction = (id: string) => {
@@ -98,6 +101,21 @@ const ProductStore = () => {
           title="Loja de Produtos"
           description="Encontre os melhores produtos para suas necessidades"
         />
+        
+        {/* Aviso sobre retirada */}
+        <Card className="mb-6 border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Package className="h-5 w-5 text-orange-600" />
+              <div>
+                <h4 className="font-medium text-orange-800">Importante sobre entrega</h4>
+                <p className="text-sm text-orange-700">
+                  Não realizamos entregas. Todos os produtos devem ser retirados na loja da filial selecionada.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         
         {isCityRequired && showCityAlert && (
           <CityRequiredAlert 
@@ -136,7 +154,7 @@ const ProductStore = () => {
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSortChange={handleSortChange}
-          resultCount={filteredProducts?.length}
+          resultCount={productsWithBranches?.length}
         />
       </div>
     </MainLayout>

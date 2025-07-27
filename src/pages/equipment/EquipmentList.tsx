@@ -84,22 +84,18 @@ const EquipmentList: React.FC = () => {
     (equipment.description && equipment.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Converter equipamentos para o formato do ItemCard - removendo campo de quantidade
+  // Converter equipamentos para o formato do ItemCard
   const equipmentsForGrid = filteredEquipments?.map(equipment => ({
     id: equipment.id,
     title: equipment.name,
     description: equipment.description,
     price: equipment.price_per_hour,
     priceLabel: "por hora",
-    image: undefined, // Equipments don't have photos in this structure
+    image: equipment.equipment_photos?.[0]?.url,
     status: equipment.available > 0 ? 'available' as const : 'unavailable' as const,
-    location: formatAddress(),
-    features: [
-      { icon: Package, label: "Disponível", available: equipment.available > 0 },
-    ],
-    stats: [
-      { icon: Clock, label: "Horários", value: "Ver detalhes" },
-    ],
+    location: equipment.branches ? 
+      `${equipment.branches.name} - ${equipment.branches.city}` : 
+      formatAddress(),
   })) || [];
 
   return (

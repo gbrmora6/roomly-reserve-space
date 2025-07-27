@@ -33,17 +33,10 @@ const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
             <span className="text-xl font-semibold text-gray-900">{formatCurrency(room.price_per_hour)}</span>
             <span className="text-sm text-gray-500">/ hour</span>
           </div>
-          {/* Comodidades/Tags */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {room.has_wifi && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">Wi-Fi</span>}
-            {room.has_ac && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">A/C</span>}
-            {room.has_tv && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">TV</span>}
-            {room.has_private_bathroom && <span className="bg-gray-100 rounded px-2 py-1 text-xs text-gray-700">Banheiro</span>}
-          </div>
         </div>
         <div className="flex justify-end mt-2">
-          <Button asChild className="bg-[#23406e] hover:bg-[#1a2e4d] text-white font-semibold px-6 py-2 rounded-md">
-            <Link to={`/rooms/${room.id}`}>View Details</Link>
+          <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-2 rounded-md">
+            <Link to={`/rooms/${room.id}`}>Reservar Sala</Link>
           </Button>
         </div>
       </div>
