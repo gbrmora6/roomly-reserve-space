@@ -1,4 +1,3 @@
-
 import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -10,29 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { User, Settings, Shield, CreditCard, AlertCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
-
 const MyAccount = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const location = useLocation();
   const isFirstLogin = location.state?.isFirstLogin;
   const message = location.state?.message;
-  
-  return (
-    <MainLayout>
+  return <MainLayout>
       <div className="container mx-auto py-8 px-4">
-        <PageHeader 
-          title="Minha Conta"
-          description="Gerencie suas informações pessoais e preferências"
-        />
+        <PageHeader title="Minha Conta" description="Gerencie suas informações pessoais e preferências" />
         
-        {isFirstLogin && message && (
-          <Alert className="mb-6 border-orange-200 bg-orange-50">
+        {isFirstLogin && message && <Alert className="mb-6 border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
               <strong>Bem-vindo ao Roomly!</strong> {message}
             </AlertDescription>
-          </Alert>
-        )}
+          </Alert>}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Profile Summary Card */}
@@ -71,15 +64,7 @@ const MyAccount = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-accent/10">
-                    <CreditCard className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Plano Atual</p>
-                    <p className="text-xs text-muted-foreground">Cliente Padrão</p>
-                  </div>
-                </div>
+                
               </div>
             </CardContent>
           </Card>
@@ -106,8 +91,6 @@ const MyAccount = () => {
           </Card>
         </div>
       </div>
-    </MainLayout>
-  );
+    </MainLayout>;
 };
-
 export default MyAccount;
