@@ -82,6 +82,30 @@ const StatsSection: React.FC = () => {
     suffix: "+",
     color: "from-purple-500 to-purple-600"
   }];
-  return;
+
+  return (
+    <section ref={sectionRef} className="py-16 bg-gradient-to-br from-background to-secondary/10">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="text-center p-6 rounded-lg bg-card border border-border/50 shadow-sm hover:shadow-md transition-all duration-300"
+            >
+              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r ${stat.color} text-white mb-4`}>
+                {stat.icon}
+              </div>
+              <div className="text-3xl font-bold text-foreground mb-2">
+                {stat.value}{stat.suffix}
+              </div>
+              <div className="text-muted-foreground">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 };
 export default StatsSection;
