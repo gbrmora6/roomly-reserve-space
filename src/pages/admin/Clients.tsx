@@ -38,10 +38,11 @@ const Clients: React.FC = () => {
     const fetchClients = async () => {
       try {
         console.log("Fetching client profiles...");
-        // Busca os perfis primeiro com todos os campos incluindo endereço
+        // Busca apenas os perfis com role de client
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id,first_name,last_name,email,phone,crp,specialty,cpf,cnpj,cep,street,house_number,neighborhood,city,state,role,created_at');
+          .select('id,first_name,last_name,email,phone,crp,specialty,cpf,cnpj,cep,street,house_number,neighborhood,city,state,role,created_at')
+          .eq('role', 'client');
         
         if (profilesError) {
           console.error("Error fetching profiles:", profilesError);

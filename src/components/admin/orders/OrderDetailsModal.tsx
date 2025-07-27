@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -56,6 +57,7 @@ interface OrderDetailsModalProps {
       last_name: string;
       email: string;
     };
+    invoice_url?: string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -259,16 +261,30 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                           <div className="font-medium">
                             {formatCurrency(item.quantity * item.price_per_unit)}
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+                         </div>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               </CardContent>
+             </Card>
+           )}
+
+          {/* Upload de Nota Fiscal */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Nota Fiscal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InvoiceUpload
+                recordId={order.id}
+                recordType="order"
+                currentInvoiceUrl={order.invoice_url}
+              />
+            </CardContent>
+          </Card>
+         </div>
+       </DialogContent>
+     </Dialog>
+   );
+ };

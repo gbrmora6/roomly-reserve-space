@@ -54,23 +54,66 @@ export const InvoiceUpload = ({
       const tableName = recordType === 'equipment_booking' ? 'booking_equipment' : 
                        recordType === 'booking' ? 'bookings' : 'orders';
       
-      const { error: updateError } = await supabase
+      const { error: updateError, data: recordData } = await supabase
         .from(tableName)
         .update({
           invoice_url: publicUrl,
           invoice_uploaded_at: new Date().toISOString(),
           invoice_uploaded_by: user.id
         })
-        .eq('id', recordId);
+        .eq('id', recordId)
+        .select('user_id')
+        .single();
 
       if (updateError) {
         throw updateError;
       }
 
-      toast({
-        title: "Nota fiscal enviada",
-        description: "A nota fiscal foi enviada com sucesso.",
-      });
+      // Buscar dados do cliente para envio do email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('email, first_name, last_name')
+        .eq('id', recordData.user_id)
+        .single();
+
+      if (userError) {
+        console.warn('Erro ao buscar dados do usuário para email:', userError);
+      } else {
+        // Enviar email com a nota fiscal
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-invoice-email', {
+            body: {
+              customerEmail: userData.email,
+              customerName: `${userData.first_name} ${userData.last_name}`,
+              orderId: recordId,
+              invoiceUrl: publicUrl,
+              orderType: recordType === 'equipment_booking' ? 'Reserva de Equipamento' : 
+                        recordType === 'booking' ? 'Reserva de Sala' : 'Pedido'
+            }
+          });
+
+          if (emailError) {
+            console.error('Erro ao enviar email:', emailError);
+            toast({
+              variant: "destructive",
+              title: "Email não enviado",
+              description: "Nota fiscal salva, mas houve erro no envio do email.",
+            });
+          } else {
+            toast({
+              title: "Nota fiscal enviada",
+              description: "A nota fiscal foi salva e enviada por email para o cliente.",
+            });
+          }
+        } catch (emailErr) {
+          console.error('Erro na função de email:', emailErr);
+          toast({
+            variant: "destructive",
+            title: "Email não enviado",
+            description: "Nota fiscal salva, mas houve erro no envio do email.",
+          });
+        }
+      }
       
       setPdfFile(null);
       queryClient.invalidateQueries({ queryKey: [recordType + 's'] });
