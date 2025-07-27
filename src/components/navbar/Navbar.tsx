@@ -54,55 +54,67 @@ const Navbar = () => {
           <nav className="hidden lg:flex flex-1 justify-center gap-6 xl:gap-8">
             <Link
               to="/rooms"
-              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`group relative px-4 xl:px-6 py-3 text-sm xl:text-base font-semibold tracking-wide transition-all duration-500 rounded-xl overflow-hidden ${
                 isActive("/rooms") 
-                  ? "text-primary bg-white/10" 
-                  : "text-gray-700 hover:text-primary"
+                  ? "text-white bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30" 
+                  : "text-gray-700 hover:text-white hover:scale-105"
               }`}
             >
-              Salas
+              <span className="relative z-10">Salas</span>
+              {!isActive("/rooms") && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/90 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+              )}
               {isActive("/rooms") && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white/80 rounded-full shadow-glow animate-pulse"></div>
               )}
             </Link>
             <Link
               to="/equipment"
-              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`group relative px-4 xl:px-6 py-3 text-sm xl:text-base font-semibold tracking-wide transition-all duration-500 rounded-xl overflow-hidden ${
                 isActive("/equipment") 
-                  ? "text-primary bg-white/10" 
-                  : "text-gray-700 hover:text-primary"
+                  ? "text-white bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30" 
+                  : "text-gray-700 hover:text-white hover:scale-105"
               }`}
             >
-              Equipamentos
+              <span className="relative z-10">Equipamentos</span>
+              {!isActive("/equipment") && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/90 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+              )}
               {isActive("/equipment") && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white/80 rounded-full shadow-glow animate-pulse"></div>
               )}
             </Link>
             <Link
               to="/products"
-              className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+              className={`group relative px-4 xl:px-6 py-3 text-sm xl:text-base font-semibold tracking-wide transition-all duration-500 rounded-xl overflow-hidden ${
                 location.pathname.startsWith("/products") 
-                  ? "text-primary bg-white/10" 
-                  : "text-gray-700 hover:text-primary"
+                  ? "text-white bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30" 
+                  : "text-gray-700 hover:text-white hover:scale-105"
               }`}
             >
-              Produtos
+              <span className="relative z-10">Produtos</span>
+              {!location.pathname.startsWith("/products") && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/90 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+              )}
               {location.pathname.startsWith("/products") && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white/80 rounded-full shadow-glow animate-pulse"></div>
               )}
             </Link>
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`relative px-3 xl:px-4 py-2 text-sm xl:text-base font-medium transition-all duration-300 rounded-lg hover:bg-white/20 ${
+                className={`group relative px-4 xl:px-6 py-3 text-sm xl:text-base font-semibold tracking-wide transition-all duration-500 rounded-xl overflow-hidden ${
                   location.pathname.startsWith("/admin") 
-                    ? "text-primary bg-white/10" 
-                    : "text-gray-700 hover:text-primary"
+                    ? "text-white bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/30" 
+                    : "text-gray-700 hover:text-white hover:scale-105"
                 }`}
               >
-                Painel Admin
+                <span className="relative z-10">Painel Admin</span>
+                {!location.pathname.startsWith("/admin") && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/90 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
+                )}
                 {location.pathname.startsWith("/admin") && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white/80 rounded-full shadow-glow animate-pulse"></div>
                 )}
               </Link>
             )}
