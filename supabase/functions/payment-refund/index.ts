@@ -97,23 +97,15 @@ serve(async (req) => {
     let refundResult;
     const authHeader = createBasicAuth(clientId, clientSecret);
     
-    // O valor já está em reais, então multiplicamos por 100 para converter para centavos
-    // Mas primeiro verificamos se já está no formato correto
+    // Teste: enviando valor direto sem conversão
     const orderAmount = parseFloat(order.total_amount);
-    const totalAmountCents = Math.round(orderAmount * 100);
-    console.log("Valor original (reais):", orderAmount, "Valor convertido (centavos):", totalAmountCents);
-    
-    // Validação adicional: se o valor em centavos for maior que 999999 (R$9999,99), 
-    // provavelmente já está em centavos
-    if (totalAmountCents > 999999) {
-      console.log("⚠️ AVISO: Valor muito alto, pode já estar em centavos:", totalAmountCents);
-    }
+    console.log("Valor original do pedido:", orderAmount, "Enviando diretamente para API:", orderAmount);
 
     switch (order.payment_method) {
       case 'pix':
         // PIX pago requer estorno via API específica
         console.log("4. Solicitando estorno PIX via API...");
-        console.log("TID:", order.click2pay_tid, "Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
+        console.log("TID:", order.click2pay_tid, "Valor enviado:", orderAmount);
         
         const pixResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/pix/${order.click2pay_tid}/refund`, {
           method: 'POST',
@@ -122,7 +114,7 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: totalAmountCents
+            totalAmount: orderAmount
           })
         });
         
@@ -147,7 +139,7 @@ serve(async (req) => {
       case 'cartao':
         // Cartão pode ser estornado via API específica
         console.log("4. Solicitando estorno de cartão via API...");
-        console.log("TID:", order.click2pay_tid, "Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
+        console.log("TID:", order.click2pay_tid, "Valor enviado:", orderAmount);
         
         const cardResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/creditcard/${order.click2pay_tid}/refund`, {
           method: 'POST',
@@ -156,7 +148,7 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: totalAmountCents
+            totalAmount: orderAmount
           })
         });
         
@@ -165,7 +157,7 @@ serve(async (req) => {
         if (!cardResponse.ok) {
           const errorText = await cardResponse.text();
           console.error("Card Refund Error Response:", errorText);
-          console.error("Request Body was:", JSON.stringify({ totalAmount: totalAmountCents }));
+          console.error("Request Body was:", JSON.stringify({ totalAmount: orderAmount }));
           
           try {
             const errorData = JSON.parse(errorText);
