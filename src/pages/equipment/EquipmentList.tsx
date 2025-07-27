@@ -61,8 +61,8 @@ const EquipmentList: React.FC = () => {
     searchTerm,
     selectedCity,
     selectedDate: filters.date,
-    startTime: filters.startTime,
-    endTime: filters.endTime,
+    startTime: filters.startTime || "all",
+    endTime: filters.endTime || "all",
   });
 
   // Handler para aplicar filtros

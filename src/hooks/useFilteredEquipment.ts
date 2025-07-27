@@ -151,8 +151,8 @@ export const useFilteredEquipment = ({
         })
       );
 
-      // Se não há filtros de horário específico, retorna os equipamentos filtrados
-      if (!selectedDate || (startTime === "all" && endTime === "all")) {
+      // Se não há data selecionada OU não há filtros de horário específico, retorna todos os equipamentos
+      if (!selectedDate || (startTime === "all" && endTime === "all") || (!startTime && !endTime)) {
         console.log("Retornando todos os equipamentos - sem filtros de data/horário");
         return equipmentWithBranches;
       }
