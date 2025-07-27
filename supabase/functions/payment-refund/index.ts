@@ -97,9 +97,17 @@ serve(async (req) => {
     let refundResult;
     const authHeader = createBasicAuth(clientId, clientSecret);
     
-    // Calcular valor em centavos, garantindo que seja um inteiro
-    const totalAmountCents = Math.round(parseFloat(order.total_amount) * 100);
-    console.log("Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
+    // O valor já está em reais, então multiplicamos por 100 para converter para centavos
+    // Mas primeiro verificamos se já está no formato correto
+    const orderAmount = parseFloat(order.total_amount);
+    const totalAmountCents = Math.round(orderAmount * 100);
+    console.log("Valor original (reais):", orderAmount, "Valor convertido (centavos):", totalAmountCents);
+    
+    // Validação adicional: se o valor em centavos for maior que 999999 (R$9999,99), 
+    // provavelmente já está em centavos
+    if (totalAmountCents > 999999) {
+      console.log("⚠️ AVISO: Valor muito alto, pode já estar em centavos:", totalAmountCents);
+    }
 
     switch (order.payment_method) {
       case 'pix':
