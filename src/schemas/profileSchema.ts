@@ -16,6 +16,7 @@ export const profileSchema = z.object({
   neighborhood: z.string().min(2, "Bairro inválido"),
   street: z.string().min(2, "Rua inválida"),
   house_number: z.string().min(1, "Número inválido"),
+  complemento: z.string().optional(),
 }).refine(data => !data.cpf || !data.cnpj, {
   message: "Você deve preencher apenas CPF ou CNPJ, não ambos",
   path: ["cpf"]

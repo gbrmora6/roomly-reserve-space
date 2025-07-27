@@ -1,4 +1,5 @@
 
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,22 +12,28 @@ export const useProfile = () => {
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: async () => {
-      if (!user) return {
-        first_name: "",
-        last_name: "",
-        phone: "",
-        crp: "",
-        specialty: "",
-        cpf: "",
-        cnpj: "",
-        cep: "",
-        state: "",
-        city: "",
-        neighborhood: "",
-        street: "",
-        house_number: ""
-      };
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone: "",
+      crp: "",
+      specialty: "",
+      cpf: "",
+      cnpj: "",
+      cep: "",
+      state: "",
+      city: "",
+      neighborhood: "",
+      street: "",
+      house_number: "",
+      complemento: ""
+    }
+  });
+
+  // Load profile data separately to avoid controlled/uncontrolled input issues
+  React.useEffect(() => {
+    const loadProfileData = async () => {
+      if (!user) return;
       
       try {
         const { data, error } = await supabase
@@ -37,10 +44,10 @@ export const useProfile = () => {
         
         if (error) {
           console.error("Erro ao buscar perfil:", error);
-          throw error;
+          return;
         }
         
-        return {
+        form.reset({
           first_name: data?.first_name || "",
           last_name: data?.last_name || "",
           phone: data?.phone || "",
@@ -53,8 +60,9 @@ export const useProfile = () => {
           city: data?.city || "",
           neighborhood: data?.neighborhood || "",
           street: data?.street || "",
-          house_number: data?.house_number || ""
-        };
+          house_number: data?.house_number || "",
+          complemento: data?.complemento || ""
+        });
       } catch (error) {
         console.error('Erro ao buscar dados do perfil:', error);
         toast({
@@ -62,25 +70,11 @@ export const useProfile = () => {
           title: "Erro ao carregar perfil",
           description: "Não foi possível carregar suas informações. Tente novamente mais tarde.",
         });
-        
-        return {
-          first_name: "",
-          last_name: "",
-          phone: "",
-          crp: "",
-          specialty: "",
-          cpf: "",
-          cnpj: "",
-          cep: "",
-          state: "",
-          city: "",
-          neighborhood: "",
-          street: "",
-          house_number: ""
-        };
       }
-    }
-  });
+    };
+
+    loadProfileData();
+  }, [user, form]);
 
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) {
