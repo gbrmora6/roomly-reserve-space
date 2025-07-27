@@ -41,45 +41,8 @@ export function useAuthOperations() {
       // Clear any failed attempt records on successful login
       clearFailedLoginAttempts(email);
       
-      // Check if this is a special admin account
-      if (data?.user) {
-        const isSuperAdmin = 
-          data.user.email === "admin@example.com" || 
-          data.user.email === "cpd@sapiens-psi.com.br";
-        
-        if (isSuperAdmin) {
-          devLog("Special admin account detected, setting full admin privileges");
-          
-          try {
-            const { error: updateError } = await supabase.auth.updateUser({
-              data: {
-                role: "admin",
-                is_admin: true,
-                is_super_admin: true
-              }
-            });
-            
-            if (updateError) {
-              errorLog("Error setting admin privileges", updateError);
-            } else {
-              devLog("Admin privileges successfully set for", data.user.email);
-              
-              // Force refresh the session
-              const { error: refreshError } = await supabase.auth.refreshSession();
-              if (refreshError) {
-                errorLog("Error refreshing session after admin privileges update", refreshError);
-              } else {
-                devLog("Session refreshed with admin privileges");
-                // Securely store admin status in session
-                secureSessionStore("admin_access_validated", "true");
-                secureSessionStore("admin_email", data.user.email || "");
-              }
-            }
-          } catch (adminError) {
-            errorLog("Error in admin privileges update", adminError);
-          }
-        }
-      }
+      // SECURITY FIX: Removed automatic admin privilege assignment
+      // Admin privileges must be set through database roles, not client-side logic
       
       // Toast de sucesso
       toast({
@@ -99,10 +62,22 @@ export function useAuthOperations() {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, branchId: string) => {
     try {
+      // SECURITY FIX: Add password strength validation
+      if (password.length < 8) {
+        throw new Error("A senha deve ter pelo menos 8 caracteres");
+      }
+      
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        throw new Error("A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número");
+      }
+
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -146,35 +121,7 @@ export function useAuthOperations() {
   };
 
   const createSuperAdmin = async () => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email: "cpd@sapiens-psi.com.br",
-        password: "123456789",
-        options: {
-          data: {
-            first_name: "CPD",
-            last_name: "Admin",
-            role: "admin",
-            is_admin: true,
-            is_super_admin: true
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "SuperAdmin criado com sucesso!",
-        description: "SuperAdmin criado com as credenciais especificadas.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro ao criar SuperAdmin",
-        description: error.message,
-      });
-      throw error;
-    }
+    throw new Error("SECURITY: Direct super admin creation disabled. Use database functions for admin account creation.");
   };
 
   const signOut = async () => {
