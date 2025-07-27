@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -14,9 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefundButton } from "@/components/admin/RefundButton";
 import { OrderDetailsModal } from "./OrderDetailsModal";
+import { OrdersFilters } from "./OrdersFilters";
 import { Eye } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Order {
@@ -68,6 +69,13 @@ interface Order {
 export const OrdersTable: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  
+  // Filtros
+  const [clientSearch, setClientSearch] = useState("");
+  const [orderIdSearch, setOrderIdSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState<Date | null>(null);
 
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
@@ -174,6 +182,62 @@ export const OrdersTable: React.FC = () => {
     setDetailsModalOpen(true);
   };
 
+  const handleClearFilters = () => {
+    setClientSearch("");
+    setOrderIdSearch("");
+    setStatusFilter("all");
+    setPaymentMethodFilter("all");
+    setDateFilter(null);
+  };
+
+  // Filtrar pedidos
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+    
+    return orders.filter(order => {
+      // Filtro por cliente
+      if (clientSearch) {
+        const clientName = `${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}`.toLowerCase();
+        const clientEmail = order.profiles?.email?.toLowerCase() || '';
+        const searchTerm = clientSearch.toLowerCase();
+        
+        if (!clientName.includes(searchTerm) && !clientEmail.includes(searchTerm)) {
+          return false;
+        }
+      }
+      
+      // Filtro por ID do pedido
+      if (orderIdSearch) {
+        if (!order.id.toLowerCase().includes(orderIdSearch.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      // Filtro por status
+      if (statusFilter !== "all") {
+        if (order.status !== statusFilter) {
+          return false;
+        }
+      }
+      
+      // Filtro por forma de pagamento
+      if (paymentMethodFilter !== "all") {
+        if (order.payment_method !== paymentMethodFilter) {
+          return false;
+        }
+      }
+      
+      // Filtro por data
+      if (dateFilter) {
+        if (!isSameDay(new Date(order.created_at), dateFilter)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [orders, clientSearch, orderIdSearch, statusFilter, paymentMethodFilter, dateFilter]);
+
   if (isLoading) {
     return (
       <Card>
@@ -200,9 +264,30 @@ export const OrdersTable: React.FC = () => {
 
   return (
     <>
+      <OrdersFilters
+        clientSearch={clientSearch}
+        setClientSearch={setClientSearch}
+        orderIdSearch={orderIdSearch}
+        setOrderIdSearch={setOrderIdSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        paymentMethodFilter={paymentMethodFilter}
+        setPaymentMethodFilter={setPaymentMethodFilter}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+        onClearFilters={handleClearFilters}
+      />
+      
       <Card>
         <CardHeader>
-          <CardTitle>Todos os Pedidos</CardTitle>
+          <CardTitle>
+            Todos os Pedidos 
+            {filteredOrders.length !== orders.length && (
+              <span className="text-sm text-muted-foreground ml-2">
+                ({filteredOrders.length} de {orders.length})
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -218,7 +303,7 @@ export const OrdersTable: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell>
                     {format(new Date(order.created_at), "dd/MM/yyyy HH:mm", {
@@ -269,10 +354,10 @@ export const OrdersTable: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {orders.length === 0 && (
+              {filteredOrders.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    Nenhum pedido encontrado
+                    {orders.length === 0 ? "Nenhum pedido encontrado" : "Nenhum pedido corresponde aos filtros"}
                   </TableCell>
                 </TableRow>
               )}

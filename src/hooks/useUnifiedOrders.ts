@@ -101,7 +101,8 @@ export const useUnifiedOrders = (userId: string | undefined) => {
             *,
             equipment:equipment(name, description)
           ),
-          profiles!fk_orders_profiles(first_name, last_name, email)
+          profiles!fk_orders_profiles(first_name, last_name, email),
+          branch:branches(name, city, street, number, neighborhood, complement, zip_code, state, phone, email)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });

@@ -109,15 +109,26 @@ const MyBookings = () => {
     return (
       <Card className="border-border/50 hover:shadow-md transition-shadow">
         <CardContent className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg">Pedido #{order.id.slice(-8)}</h3>
-                {getStatusBadge(order.status, order.refund_status)}
+            <div className="flex justify-between items-start mb-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">Pedido #{order.id.slice(-8)}</h3>
+                  {getStatusBadge(order.status, order.refund_status)}
+                </div>
+                <p className="text-sm text-muted-foreground">{getOrderSummary()}</p>
+                <p className="text-sm text-muted-foreground">Data: {formatDate(order.created_at)}</p>
+                {order.branch && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span>
+                      {order.branch.street && order.branch.number ? 
+                        `${order.branch.street}, ${order.branch.number} - ${order.branch.neighborhood}, ${order.branch.city}` :
+                        `${order.branch.name} - ${order.branch.city}`
+                      }
+                    </span>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">{getOrderSummary()}</p>
-              <p className="text-sm text-muted-foreground">Data: {formatDate(order.created_at)}</p>
-            </div>
             <div className="text-right">
               <p className="text-2xl font-bold">{formatCurrency(order.total_amount)}</p>
               {order.payment_method && (
