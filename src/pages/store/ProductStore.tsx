@@ -38,17 +38,7 @@ const ProductStore = () => {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select(`
-          *,
-          branches!inner(
-            id,
-            name,
-            city,
-            street,
-            number,
-            neighborhood
-          )
-        `)
+        .select("*")
         .eq("is_active", true)
         .order(sortBy, { ascending: sortOrder === "asc" });
 
@@ -58,10 +48,26 @@ const ProductStore = () => {
         query = query.eq('branch_id', branchId);
       }
 
-      const { data, error } = await query;
+      const { data: products, error } = await query;
 
       if (error) throw error;
-      return data || [];
+      
+      // Buscar dados das filiais separadamente
+      if (products && products.length > 0) {
+        const branchIds = [...new Set(products.map(p => p.branch_id))];
+        const { data: branches } = await supabase
+          .from("branches")
+          .select("id, name, city, street, number, neighborhood")
+          .in("id", branchIds);
+          
+        // Combinar dados
+        return products.map(product => ({
+          ...product,
+          branches: branches?.find(b => b.id === product.branch_id)
+        }));
+      }
+      
+      return products || [];
     },
   });
 
