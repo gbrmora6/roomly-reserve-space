@@ -38,7 +38,17 @@ const ProductStore = () => {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*")
+        .select(`
+          *,
+          branches!inner(
+            id,
+            name,
+            city,
+            street,
+            number,
+            neighborhood
+          )
+        `)
         .eq("is_active", true)
         .order(sortBy, { ascending: sortOrder === "asc" });
 
@@ -62,10 +72,12 @@ const ProductStore = () => {
 
   // Buscar informações da filial para cada produto
   const productsWithBranches = filteredProducts?.map(product => {
-    // Para simplificar, vamos buscar a filial baseada no branchId do produto
+    // Produtos já vêm com dados da filial através do join
     return {
       ...product,
-      branchName: selectedCity !== "all" ? selectedCity : "Loja"
+      branchAddress: product.branches 
+        ? `${product.branches.street}, ${product.branches.number} - ${product.branches.neighborhood}, ${product.branches.city}`
+        : "Endereço não disponível"
     };
   });
 
@@ -78,7 +90,7 @@ const ProductStore = () => {
     priceLabel: "unidade",
     image: undefined, // Products don't have photos in this structure
     status: product.quantity > 0 ? 'available' as const : 'unavailable' as const,
-    location: `${product.branchName} - Retirada na loja`,
+    location: `${product.branchAddress} - Retirada na loja`,
   })) || [];
 
   const handleItemAction = (id: string) => {

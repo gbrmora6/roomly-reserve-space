@@ -6,7 +6,14 @@ import { format } from "date-fns";
 type Weekday = Database["public"]["Enums"]["weekday"];
 type Room = Database["public"]["Tables"]["rooms"]["Row"] & {
   room_photos: { id: string; url: string }[];
-  branches?: { id: string; name: string; city: string };
+  branches?: { 
+    id: string; 
+    name: string; 
+    city: string; 
+    street: string; 
+    number: string; 
+    neighborhood: string; 
+  };
 };
 
 interface UseFilteredRoomsParams {
@@ -147,7 +154,7 @@ export const useFilteredRooms = ({
         filteredRooms.map(async (room) => {
           const { data: branch } = await supabase
             .from("branches")
-            .select("id, name, city")
+            .select("id, name, city, street, number, neighborhood")
             .eq("id", room.branch_id)
             .single();
           

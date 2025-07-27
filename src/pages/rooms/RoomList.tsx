@@ -140,7 +140,7 @@ const RoomList: React.FC = () => {
     image: room.room_photos?.[0]?.url,
     status: 'available' as const,
     location: room.branches ? 
-      `${room.branches.name} - ${room.branches.city}` : 
+      `${room.branches.street}, ${room.branches.number} - ${room.branches.neighborhood}, ${room.branches.city}` : 
       formatAddress(),
   })) || [];
 

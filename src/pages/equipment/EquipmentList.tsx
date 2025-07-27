@@ -96,7 +96,7 @@ const EquipmentList: React.FC = () => {
     image: equipment.equipment_photos?.[0]?.url,
     status: equipment.available > 0 ? 'available' as const : 'unavailable' as const,
     location: equipment.branches ? 
-      `${equipment.branches.name} - ${equipment.branches.city}` : 
+      `${equipment.branches.street}, ${equipment.branches.number} - ${equipment.branches.neighborhood}, ${equipment.branches.city}` : 
       formatAddress(),
   })) || [];
 

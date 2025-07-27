@@ -6,7 +6,14 @@ import { format } from "date-fns";
 type Weekday = Database["public"]["Enums"]["weekday"];
 type Equipment = Database["public"]["Tables"]["equipment"]["Row"] & {
   equipment_photos: { id: string; url: string }[];
-  branches?: { id: string; name: string; city: string };
+  branches?: { 
+    id: string; 
+    name: string; 
+    city: string; 
+    street: string; 
+    number: string; 
+    neighborhood: string; 
+  };
   available: number;
 };
 
@@ -132,7 +139,7 @@ export const useFilteredEquipment = ({
         filteredEquipment.map(async (equip) => {
           const { data: branch } = await supabase
             .from("branches")
-            .select("id, name, city")
+            .select("id, name, city, street, number, neighborhood")
             .eq("id", equip.branch_id)
             .single();
           
