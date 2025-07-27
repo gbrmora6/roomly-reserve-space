@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, CreditCard, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatCurrency';
-import { RefundButton } from '@/components/admin/RefundButton';
+
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProductOrder {
@@ -184,14 +184,6 @@ export function ProductSalesTable({
                           </Button>
                         )}
                         
-                        {order.status === 'paid' && (
-                          <RefundButton
-                            orderId={order.id}
-                            paymentMethod={order.payment_method}
-                            status={order.status}
-                            onRefundSuccess={() => window.location.reload()}
-                          />
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>

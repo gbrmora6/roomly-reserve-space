@@ -158,16 +158,6 @@ export const EquipmentBookingTable: React.FC<EquipmentBookingTableProps> = ({
                         <Eye className="h-4 w-4 mr-1" />
                         Ver
                       </Button>
-                      {booking.status === "paid" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRefund(booking.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          Estornar
-                        </Button>
-                      )}
                       {booking.status === "in_process" && (
                         <Button
                           size="sm"

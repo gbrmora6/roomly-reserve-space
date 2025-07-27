@@ -37,9 +37,6 @@ interface Order {
       price: number;
     };
   }>;
-  payment_details: Array<{
-    payment_method: string;
-  }>;
   bookings: Array<{
     id: string;
     room_id: string;
@@ -83,7 +80,6 @@ export const OrdersTable: React.FC = () => {
             *,
             product:products(name, price)
           ),
-          payment_details(*),
           bookings(
             *,
             room:rooms(name)
