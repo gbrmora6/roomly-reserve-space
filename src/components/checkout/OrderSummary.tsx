@@ -4,14 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Shield, Lock, Truck, Clock } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatCurrency';
-
 interface CartItem {
   id: string;
   price: number;
   quantity: number;
   metadata?: any;
 }
-
 interface OrderSummaryProps {
   cartItems: CartItem[];
   cartTotal: number;
@@ -22,17 +20,15 @@ interface OrderSummaryProps {
   discountAmount?: number;
   finalTotal?: number;
 }
-
-const OrderSummary = ({ 
-  cartItems, 
-  cartTotal, 
-  appliedCoupon, 
-  discountAmount = 0, 
-  finalTotal 
+const OrderSummary = ({
+  cartItems,
+  cartTotal,
+  appliedCoupon,
+  discountAmount = 0,
+  finalTotal
 }: OrderSummaryProps) => {
   const displayTotal = finalTotal !== undefined ? finalTotal : cartTotal;
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <Card className="sticky top-4">
         <CardHeader className="pb-4">
           <CardTitle className="text-lg flex items-center justify-between">
@@ -44,8 +40,7 @@ const OrderSummary = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            {cartItems.map((item, index) => (
-              <div key={item.id || index} className="flex justify-between items-center">
+            {cartItems.map((item, index) => <div key={item.id || index} className="flex justify-between items-center">
                 <div className="flex-1">
                   <div className="text-sm font-medium">
                     {item.metadata?.name || 'Produto'}
@@ -57,8 +52,7 @@ const OrderSummary = ({
                 <div className="text-sm font-medium">
                   {formatCurrency(item.price * item.quantity)}
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
           
           <Separator />
@@ -69,17 +63,12 @@ const OrderSummary = ({
               <span>{formatCurrency(cartTotal)}</span>
             </div>
             
-            {appliedCoupon && discountAmount > 0 && (
-              <div className="flex justify-between text-sm text-green-600">
+            {appliedCoupon && discountAmount > 0 && <div className="flex justify-between text-sm text-green-600">
                 <span>Desconto ({appliedCoupon.couponCode})</span>
                 <span>-{formatCurrency(discountAmount)}</span>
-              </div>
-            )}
+              </div>}
             
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Frete</span>
-              <span>Grátis</span>
-            </div>
+            
           </div>
           
           <Separator />
@@ -89,14 +78,12 @@ const OrderSummary = ({
             <span className="text-lg">{formatCurrency(displayTotal)}</span>
           </div>
           
-          {appliedCoupon && discountAmount > 0 && (
-            <div className="text-xs text-muted-foreground text-center">
+          {appliedCoupon && discountAmount > 0 && <div className="text-xs text-muted-foreground text-center">
               <span className="line-through">{formatCurrency(cartTotal)}</span>
               <span className="ml-2 text-green-600 font-medium">
                 Economia: {formatCurrency(discountAmount)}
               </span>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -112,10 +99,7 @@ const OrderSummary = ({
               <Lock className="w-4 h-4 text-green-600" />
               <span className="text-muted-foreground">Dados protegidos SSL</span>
             </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <Truck className="w-4 h-4 text-blue-600" />
-              <span className="text-muted-foreground">Frete grátis</span>
-            </div>
+            
             <div className="flex items-center space-x-3 text-sm">
               <Clock className="w-4 h-4 text-blue-600" />
               <span className="text-muted-foreground">Processamento rápido</span>
@@ -123,8 +107,6 @@ const OrderSummary = ({
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default OrderSummary;
