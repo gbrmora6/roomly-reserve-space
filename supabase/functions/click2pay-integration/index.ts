@@ -506,17 +506,25 @@ serve(async (req) => {
       }
     }
 
-    // Para reservas, elas já existem como bookings/booking_equipment
-    // Apenas atualizar o status conforme necessário
-    console.log("17. Processando reservas...");
-    for (const item of reservationItems) {
-      if (item.item_type === 'room' && item.reserved_booking_id) {
-        console.log("17.1. Processando reserva de sala:", item.reserved_booking_id);
-        // A reserva já existe, apenas confirmar que está no carrinho
-      } else if (item.item_type === 'equipment' && item.reserved_equipment_booking_id) {
-        console.log("17.2. Processando reserva de equipamento:", item.reserved_equipment_booking_id);
-        // A reserva já existe, apenas confirmar que está no carrinho
+    // Criar reservas temporárias com o order_id
+    if (reservationItems.length > 0) {
+      console.log("17. Criando reservas temporárias com order_id:", order.id);
+      const { data: reservationData, error: reservationError } = await supabase.rpc("create_reservations_for_checkout", {
+        p_user_id: userId,
+        p_order_id: order.id
+      });
+
+      if (reservationError) {
+        console.error("Erro ao criar reservas:", reservationError);
+        throw new Error(`Erro ao criar reservas temporárias: ${reservationError.message}`);
       }
+
+      const reservationResult = reservationData?.[0];
+      if (!reservationResult?.success) {
+        throw new Error(reservationResult?.error_message || "Erro ao criar reservas temporárias");
+      }
+
+      console.log("17.1. Reservas criadas com sucesso:", reservationResult);
     }
 
     // Preparar dados para Click2Pay

@@ -143,23 +143,6 @@ const Checkout = () => {
 
       console.log("Todos os itens estão disponíveis, prosseguindo com o pagamento...");
 
-      // NOVA ETAPA: Criar reservas temporárias agora
-      const { data: reservationData, error: reservationError } = await (supabase as any).rpc("create_reservations_for_checkout", {
-        p_user_id: user.id
-      });
-
-      if (reservationError) {
-        console.error("Erro ao criar reservas:", reservationError);
-        throw new Error("Erro ao criar reservas temporárias.");
-      }
-
-      const reservationResult = reservationData?.[0];
-      if (!reservationResult?.success) {
-        throw new Error(reservationResult?.error_message || "Erro ao criar reservas temporárias.");
-      }
-
-      console.log("Reservas temporárias criadas:", reservationResult);
-
       let processedPaymentData = { ...paymentData };
 
       // Para cartão de crédito, gerar card_hash usando cardc2p.js
