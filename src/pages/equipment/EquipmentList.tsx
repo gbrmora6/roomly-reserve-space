@@ -117,45 +117,22 @@ const EquipmentList: React.FC = () => {
           />
         )}
 
-        {/* Filtros modernizados */}
-        <Card className="mb-6 md:mb-8 card-3d bg-white/90 backdrop-blur-sm border-primary/20 shadow-3d hover:shadow-3d-hover transition-all duration-300">
-          <CardContent className="p-4 md:p-6">
-            <div className="space-y-4">
-              {/* Título da seção */}
-              <div className="flex items-center gap-2 mb-2">
-                <Wrench className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold text-primary">Filtrar Equipamentos</h3>
-              </div>
-              
-              {/* Barra de busca */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar equipamentos por nome ou descrição..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-11 text-base bg-white/80 backdrop-blur-sm border-secondary/30 focus:border-primary/50 focus:shadow-soft focus:bg-white transition-all duration-200 placeholder:text-muted-foreground/70"
-                />
-              </div>
-              
-              {/* Grid de filtros usando FilterBar modernizado */}
-              <FilterBar
-                filters={{ ...filters, city: selectedCity }}
-                onFiltersChange={(newFilters) => {
-                  setFilters(newFilters);
-                  if (newFilters.city !== selectedCity) {
-                    setSelectedCity(newFilters.city || "all");
-                  }
-                }}
-                onFilter={handleFilter}
-                onClear={handleClearFilters}
-                showDateTimeFilters
-                showLocationFilter
-                className="mb-0 bg-transparent border-none shadow-none p-0"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={{ ...filters, city: selectedCity }}
+          onFiltersChange={(newFilters) => {
+            setFilters(newFilters);
+            if (newFilters.city !== selectedCity) {
+              setSelectedCity(newFilters.city || "all");
+            }
+          }}
+          onFilter={handleFilter}
+          onClear={handleClearFilters}
+          showDateTimeFilters
+          showLocationFilter
+          placeholder="Buscar equipamentos..."
+        />
 
         <ListingGrid
           items={equipmentsForGrid}
