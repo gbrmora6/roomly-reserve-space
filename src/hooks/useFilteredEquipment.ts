@@ -141,7 +141,7 @@ export const useFilteredEquipment = ({
             .from("branches")
             .select("id, name, city, street, number, neighborhood")
             .eq("id", equip.branch_id)
-            .single();
+            .maybeSingle();
           
           return {
             ...equip,
@@ -152,8 +152,8 @@ export const useFilteredEquipment = ({
       );
 
       // Se não há filtros de horário específico, retorna os equipamentos filtrados
-      if ((startTime === "all" && endTime === "all")) {
-        console.log("Retornando todos os equipamentos - sem filtros de horário");
+      if (!selectedDate || (startTime === "all" && endTime === "all")) {
+        console.log("Retornando todos os equipamentos - sem filtros de data/horário");
         return equipmentWithBranches;
       }
 
