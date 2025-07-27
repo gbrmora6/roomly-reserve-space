@@ -5,17 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Calendar, CheckCircle, Clock, User, Sparkles, Shield, Star, Award, Target } from "lucide-react";
 import HeroSection from "@/components/home/HeroSection";
 import StatsSection from "@/components/home/StatsSection";
-
 const Index: React.FC = () => {
   const navigate = useNavigate();
   const [heroImageUrl, setHeroImageUrl] = useState<string>("/inicial.png");
-
   useEffect(() => {
     setHeroImageUrl("/inicial.png");
   }, []);
-
-  return (
-    <MainLayout>
+  return <MainLayout>
       <HeroSection heroImageUrl={heroImageUrl} />
       
       <StatsSection />
@@ -39,41 +35,33 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "Salas Especializadas",
-                description: "Ambientes com isolamento acústico e mobiliário adequado",
-                icon: <User className="w-8 h-8" />,
-                color: "from-blue-500 to-blue-600",
-                bgColor: "from-blue-50 to-blue-100"
-              },
-              {
-                title: "Materiais para Testes",
-                description: "Biblioteca completa de testes psicológicos e materiais",
-                icon: <CheckCircle className="w-8 h-8" />,
-                color: "from-green-500 to-green-600",
-                bgColor: "from-green-50 to-green-100"
-              },
-              {
-                title: "Equipamentos Premium",
-                description: "Recursos tecnológicos de última geração",
-                icon: <Target className="w-8 h-8" />,
-                color: "from-purple-500 to-purple-600",
-                bgColor: "from-purple-50 to-purple-100"
-              },
-              {
-                title: "Agendamento Flexível",
-                description: "Sistema inteligente de reservas por hora",
-                icon: <Calendar className="w-8 h-8" />,
-                color: "from-orange-500 to-orange-600",
-                bgColor: "from-orange-50 to-orange-100"
-              }
-            ].map((service, index) => (
-              <div
-                key={index}
-                className="group relative animate-float"
-                style={{ animationDelay: `${index * 0.2}s` }}
-              >
+            {[{
+            title: "Salas Especializadas",
+            description: "Ambientes com isolamento acústico e mobiliário adequado",
+            icon: <User className="w-8 h-8" />,
+            color: "from-blue-500 to-blue-600",
+            bgColor: "from-blue-50 to-blue-100"
+          }, {
+            title: "Materiais para Testes",
+            description: "Biblioteca completa de testes psicológicos e materiais",
+            icon: <CheckCircle className="w-8 h-8" />,
+            color: "from-green-500 to-green-600",
+            bgColor: "from-green-50 to-green-100"
+          }, {
+            title: "Equipamentos Premium",
+            description: "Recursos tecnológicos de última geração",
+            icon: <Target className="w-8 h-8" />,
+            color: "from-purple-500 to-purple-600",
+            bgColor: "from-purple-50 to-purple-100"
+          }, {
+            title: "Agendamento Flexível",
+            description: "Sistema inteligente de reservas por hora",
+            icon: <Calendar className="w-8 h-8" />,
+            color: "from-orange-500 to-orange-600",
+            bgColor: "from-orange-50 to-orange-100"
+          }].map((service, index) => <div key={index} className="group relative animate-float" style={{
+            animationDelay: `${index * 0.2}s`
+          }}>
                 <div className={`absolute inset-0 bg-gradient-to-br ${service.bgColor} rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-700 opacity-60 group-hover:opacity-80`}></div>
                 
                 <div className="relative bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/60 group-hover:border-white/80 h-full">
@@ -89,8 +77,7 @@ const Index: React.FC = () => {
                   
                   <div className={`mt-4 h-1 w-8 bg-gradient-to-r ${service.color} rounded-full transition-all duration-500 group-hover:w-12`}></div>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -106,36 +93,28 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                step: "01",
-                title: "Cadastre-se",
-                description: "Crie sua conta gratuita em poucos minutos",
-                icon: <User className="h-6 w-6" />
-              },
-              {
-                step: "02", 
-                title: "Escolha uma sala",
-                description: "Encontre o espaço ideal para seu atendimento",
-                icon: <Target className="h-6 w-6" />
-              },
-              {
-                step: "03",
-                title: "Reserve",
-                description: "Selecione data, horário e confirme sua reserva",
-                icon: <Calendar className="h-6 w-6" />
-              },
-              {
-                step: "04",
-                title: "Atenda",
-                description: "Chegue e aproveite nosso espaço preparado",
-                icon: <CheckCircle className="h-6 w-6" />
-              }
-            ].map((step, index) => (
-              <div key={index} className="relative group">
-                {index < 3 && (
-                  <div className="absolute top-10 left-full w-full h-0.5 bg-gradient-to-r from-primary to-transparent -z-10 hidden md:block" />
-                )}
+            {[{
+            step: "01",
+            title: "Cadastre-se",
+            description: "Crie sua conta gratuita em poucos minutos",
+            icon: <User className="h-6 w-6" />
+          }, {
+            step: "02",
+            title: "Escolha uma sala",
+            description: "Encontre o espaço ideal para seu atendimento",
+            icon: <Target className="h-6 w-6" />
+          }, {
+            step: "03",
+            title: "Reserve",
+            description: "Selecione data, horário e confirme sua reserva",
+            icon: <Calendar className="h-6 w-6" />
+          }, {
+            step: "04",
+            title: "Atenda",
+            description: "Chegue e aproveite nosso espaço preparado",
+            icon: <CheckCircle className="h-6 w-6" />
+          }].map((step, index) => <div key={index} className="relative group">
+                {index < 3 && <div className="absolute top-10 left-full w-full h-0.5 bg-gradient-to-r from-primary to-transparent -z-10 hidden md:block" />}
                 <div className="flex flex-col items-center text-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 mb-6 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                     <span className="text-xl font-bold text-white">{step.step}</span>
@@ -147,8 +126,7 @@ const Index: React.FC = () => {
                     {step.description}
                   </p>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -164,20 +142,10 @@ const Index: React.FC = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 px-4">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px] shadow-lg"
-              onClick={() => navigate("/register")}
-            >
+            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px] shadow-lg" onClick={() => navigate("/register")}>
               Criar uma Conta
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px]"
-              onClick={() => navigate("/rooms")}
-            >
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto sm:min-w-[200px]" onClick={() => navigate("/rooms")}>
               Ver Salas
             </Button>
           </div>
@@ -185,59 +153,7 @@ const Index: React.FC = () => {
       </section>
       
       {/* Modern Testimonials */}
-      <section className="py-12 md:py-20 bg-muted/30">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-12 md:mb-16">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-4 px-4">O Que Dizem Nossos Clientes</h2>
-            <p className="text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-              Profissionais que confiam em nossos espaços para seus atendimentos
-            </p>
-          </div>
-          
-          <div className="grid gap-6 md:gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                name: "Ana Silva",
-                role: "Psicóloga Clínica",
-                testimonial: "As salas são excelentes, com ótimo isolamento acústico e móveis confortáveis. Perfeito para meus atendimentos."
-              },
-              {
-                name: "Carlos Mendes", 
-                role: "Neuropsicólogo",
-                testimonial: "Os equipamentos disponíveis facilitam muito meu trabalho. Recomendo para todos os profissionais da área."
-              },
-              {
-                name: "Maria Oliveira",
-                role: "Psicanalista", 
-                testimonial: "A flexibilidade de horários é o que mais me atrai. Posso agendar apenas o tempo que preciso, sem desperdícios."
-              }
-            ].map((testimonial, index) => (
-              <div
-                key={index}
-                className="group rounded-2xl bg-white/70 backdrop-blur-sm p-8 shadow-lg hover:shadow-xl transition-all duration-500 border border-white/60 hover:border-white/80 animate-float"
-                style={{ animationDelay: `${index * 0.3}s` }}
-              >
-                <div className="flex flex-col h-full">
-                  <div className="mb-4">
-                    <svg className="h-8 w-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                    </svg>
-                  </div>
-                  <p className="flex-grow text-muted-foreground italic mb-6 text-lg leading-relaxed">
-                    "{testimonial.testimonial}"
-                  </p>
-                  <div>
-                    <h4 className="font-semibold text-foreground text-lg">{testimonial.name}</h4>
-                    <p className="text-primary font-medium">{testimonial.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    </MainLayout>
-  );
+      
+    </MainLayout>;
 };
-
 export default Index;
