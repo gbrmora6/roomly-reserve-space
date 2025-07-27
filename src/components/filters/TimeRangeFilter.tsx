@@ -46,15 +46,14 @@ export const TimeRangeFilter = ({
   };
 
   return (
-    <div className="flex gap-4 items-end">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="start-time">Horário de Início</Label>
+    <div className="flex gap-2 items-center">
+      <div className="flex flex-col gap-1">
         <Select value={startTime} onValueChange={handleStartTimeChange}>
-          <SelectTrigger className="w-[140px]" id="start-time">
+          <SelectTrigger className="w-[120px] h-10 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200" id="start-time">
             <SelectValue placeholder="Início" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Qualquer horário</SelectItem>
+            <SelectItem value="all">Qualquer</SelectItem>
             {timeOptions.map((time) => (
               <SelectItem key={time} value={time}>
                 {time}
@@ -64,18 +63,19 @@ export const TimeRangeFilter = ({
         </Select>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="end-time">Horário de Fim</Label>
+      <span className="text-muted-foreground text-sm">até</span>
+
+      <div className="flex flex-col gap-1">
         <Select 
           value={endTime} 
           onValueChange={onEndTimeChange}
           disabled={!startTime || startTime === "all"}
         >
-          <SelectTrigger className="w-[140px]" id="end-time">
+          <SelectTrigger className="w-[120px] h-10 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200" id="end-time">
             <SelectValue placeholder="Fim" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Qualquer horário</SelectItem>
+            <SelectItem value="all">Qualquer</SelectItem>
             {getEndTimeOptions().map((time) => (
               <SelectItem key={time} value={time}>
                 {time}

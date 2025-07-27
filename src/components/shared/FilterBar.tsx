@@ -95,7 +95,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   return (
-    <Card className={cn("mb-8 glass-intense border-primary/20 shadow-3d hover:shadow-3d-hover transition-all duration-300", className)}>
+    <Card className={cn("mb-8 card-3d bg-white/90 backdrop-blur-sm border-primary/20 shadow-3d hover:shadow-3d-hover transition-all duration-300", className)}>
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Search bar */}
@@ -105,7 +105,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               placeholder={placeholder}
               value={searchTerm}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              className="pl-10 h-11 text-base glass-intense border-primary/20 focus:border-electric-blue/50 focus:shadow-glow transition-all duration-200"
+              className="pl-10 h-11 text-base bg-white/80 backdrop-blur-sm border-secondary/30 focus:border-primary/50 focus:shadow-soft focus:bg-white transition-all duration-200 placeholder:text-muted-foreground/70"
             />
           </div>
 
@@ -114,7 +114,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* City filter */}
             {showLocationFilter && (
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1">
+                <label className="text-sm font-medium flex items-center gap-2 text-primary">
                   <MapPin className="h-3 w-3" />
                   Cidade
                 </label>
@@ -129,13 +129,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Date filter */}
             {showDateTimeFilters && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Data</label>
+                <label className="text-sm font-medium text-primary">Data</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal h-11",
+                        "w-full justify-start text-left font-normal h-11 bg-white/80 border-secondary/40 hover:bg-secondary/10 hover:border-primary/50 transition-all duration-200",
                         !filters.date && "text-muted-foreground"
                       )}
                     >
@@ -164,12 +164,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Start time filter */}
             {showDateTimeFilters && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Início</label>
+                <label className="text-sm font-medium text-primary">Início</label>
                 <Select
                   value={filters.startTime || ""}
                   onValueChange={(value) => updateFilter('startTime', value || null)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200">
                     <Clock className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Horário" />
                   </SelectTrigger>
@@ -187,13 +187,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* End time filter */}
             {showDateTimeFilters && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fim</label>
+                <label className="text-sm font-medium text-primary">Fim</label>
                 <Select
                   value={filters.endTime || ""}
                   onValueChange={(value) => updateFilter('endTime', value || null)}
                   disabled={!filters.startTime}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200">
                     <Clock className="mr-2 h-4 w-4" />
                     <SelectValue placeholder="Horário" />
                   </SelectTrigger>
@@ -213,12 +213,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* Category filter */}
             {showCategoryFilter && categories.length > 0 && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Categoria</label>
+                <label className="text-sm font-medium text-primary">Categoria</label>
                 <Select
                   value={filters.category || "all"}
                   onValueChange={(value) => updateFilter('category', value === "all" ? null : value)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200">
                     <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
@@ -237,8 +237,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <div className="flex gap-2 lg:col-span-2">
               <Button
                 onClick={onFilter}
-                variant="premium"
-                className="flex-1 h-11"
+                className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground shadow-soft hover:shadow-medium transition-all duration-200"
                 disabled={showDateTimeFilters && (!filters.date || !filters.startTime || !filters.endTime)}
               >
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
@@ -248,7 +247,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <Button
                   variant="outline"
                   onClick={clearAllFilters}
-                  className="h-11 px-3 glass-intense hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive"
+                  className="h-11 px-3 bg-white/80 border-secondary/40 hover:bg-secondary/10 hover:border-secondary/60 transition-all duration-200"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -260,50 +259,50 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {hasActiveFilters && (
             <div className="flex flex-wrap gap-2 pt-2 border-t">
               <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <SlidersHorizontal className="h-3 w-3" />
+                <SlidersHorizontal className="h-3 w-3 text-primary" />
                 Filtros ativos ({activeFilterCount}):
               </span>
               {filters.city && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="bg-secondary/15 text-secondary-foreground border-secondary/40 gap-1 px-3 py-1">
                   {filters.city}
                   <X 
-                    className="h-3 w-3 cursor-pointer" 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
                     onClick={() => updateFilter('city', null)}
                   />
                 </Badge>
               )}
               {filters.date && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
                   {format(filters.date, "dd/MM/yyyy")}
                   <X 
-                    className="h-3 w-3 cursor-pointer" 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
                     onClick={() => updateFilter('date', null)}
                   />
                 </Badge>
               )}
               {filters.startTime && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
                   {filters.startTime}
                   <X 
-                    className="h-3 w-3 cursor-pointer" 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
                     onClick={() => updateFilter('startTime', null)}
                   />
                 </Badge>
               )}
               {filters.endTime && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
                   {filters.endTime}
                   <X 
-                    className="h-3 w-3 cursor-pointer" 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
                     onClick={() => updateFilter('endTime', null)}
                   />
                 </Badge>
               )}
               {filters.category && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
                   {filters.category}
                   <X 
-                    className="h-3 w-3 cursor-pointer" 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors" 
                     onClick={() => updateFilter('category', null)}
                   />
                 </Badge>

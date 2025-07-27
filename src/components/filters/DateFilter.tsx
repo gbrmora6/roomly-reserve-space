@@ -22,7 +22,7 @@ export const DateFilter = ({ selectedDate, onDateChange }: DateFilterProps) => {
         <Button
           variant={"outline"}
           className={cn(
-            "w-[240px] justify-start text-left font-normal",
+            "w-[240px] h-11 justify-start text-left font-normal bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200",
             !selectedDate && "text-muted-foreground"
           )}
         >

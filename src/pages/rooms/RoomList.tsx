@@ -24,8 +24,13 @@ import {
   Coffee, 
   Car, 
   Clock,
-  Search
+  Search,
+  MapPin,
+  SlidersHorizontal
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 
 
@@ -155,56 +160,92 @@ const RoomList: React.FC = () => {
           />
         )}
         
-        {/* Filtros simplificados */}
-        <Card className="mb-6 md:mb-8 glass-intense border-primary/20 shadow-3d">
+        {/* Filtros modernizados */}
+        <Card className="mb-6 md:mb-8 card-3d bg-white/90 backdrop-blur-sm border-primary/20 shadow-3d hover:shadow-3d-hover transition-all duration-300">
           <CardContent className="p-4 md:p-6">
             <div className="space-y-4">
+              {/* Título da seção */}
+              <div className="flex items-center gap-2 mb-2">
+                <Search className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-primary">Filtrar Salas</h3>
+              </div>
+              
               {/* Barra de busca */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar salas por nome..."
+                  placeholder="Buscar salas por nome ou descrição..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-10 md:h-11 text-sm md:text-base glass-intense border-primary/20 focus:border-electric-blue/50 focus:shadow-glow transition-all duration-200"
+                  className="pl-10 h-11 text-base bg-white/80 backdrop-blur-sm border-secondary/30 focus:border-primary/50 focus:shadow-soft focus:bg-white transition-all duration-200 placeholder:text-muted-foreground/70"
                 />
               </div>
               
-              {/* Filtros */}
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 md:gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                  <label className="text-sm font-medium whitespace-nowrap">Cidade:</label>
-                  <div className="w-full sm:w-48">
-                    <CityFilter
-                      selectedCity={selectedCity}
-                      onCityChange={setSelectedCity}
-                      placeholder="Todas as cidades"
-                    />
-                  </div>
+              {/* Grid de filtros */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <MapPin className="h-3 w-3" />
+                    Cidade
+                  </label>
+                  <CityFilter
+                    selectedCity={selectedCity}
+                    onCityChange={setSelectedCity}
+                    placeholder="Todas as cidades"
+                  />
                 </div>
                 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                  <label className="text-sm font-medium whitespace-nowrap">Data:</label>
-                  <div className="w-full sm:w-auto">
-                    <DateFilter
-                      selectedDate={selectedDate}
-                      onDateChange={setSelectedDate}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-primary">Data</label>
+                  <DateFilter
+                    selectedDate={selectedDate}
+                    onDateChange={setSelectedDate}
+                  />
                 </div>
                 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                  <label className="text-sm font-medium whitespace-nowrap">Horário:</label>
-                  <div className="w-full sm:w-auto">
-                    <TimeRangeFilter
-                      startTime={startTime}
-                      endTime={endTime}
-                      onStartTimeChange={setStartTime}
-                      onEndTimeChange={setEndTime}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <Clock className="h-3 w-3" />
+                    Horário
+                  </label>
+                  <TimeRangeFilter
+                    startTime={startTime}
+                    endTime={endTime}
+                    onStartTimeChange={setStartTime}
+                    onEndTimeChange={setEndTime}
+                  />
                 </div>
               </div>
+              
+              {/* Indicador de filtros ativos */}
+              {(searchTerm || selectedCity !== "all" || selectedDate || startTime !== "all" || endTime !== "all") && (
+                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/50">
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <SlidersHorizontal className="h-3 w-3 text-primary" />
+                    Filtros aplicados:
+                  </span>
+                  {searchTerm && (
+                    <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
+                      Busca: "{searchTerm}"
+                    </Badge>
+                  )}
+                  {selectedCity !== "all" && (
+                    <Badge className="bg-secondary/15 text-secondary-foreground border-secondary/40 gap-1 px-3 py-1">
+                      {selectedCity}
+                    </Badge>
+                  )}
+                  {selectedDate && (
+                    <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
+                      {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                    </Badge>
+                  )}
+                  {(startTime !== "all" || endTime !== "all") && (
+                    <Badge className="bg-accent/15 text-accent-foreground border-accent/40 gap-1 px-3 py-1">
+                      {startTime !== "all" ? startTime : "?"} - {endTime !== "all" ? endTime : "?"}
+                    </Badge>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

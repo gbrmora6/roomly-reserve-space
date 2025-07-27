@@ -42,7 +42,7 @@ export const CityFilter: React.FC<CityFilterProps> = ({
 
   return (
     <Select value={selectedCity} onValueChange={onCityChange}>
-      <SelectTrigger className="w-[200px]">
+      <SelectTrigger className="w-[200px] h-11 bg-white/80 border-secondary/40 hover:border-primary/50 transition-all duration-200">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

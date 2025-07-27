@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, Package, Star } from "lucide-react";
+import { ShoppingBag, Search, Package, Star, Tags } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterBar } from "@/components/shared/FilterBar";
@@ -13,6 +13,8 @@ import { CityFilter } from "@/components/shared/CityFilter";
 import { useBranchByCity } from "@/hooks/useBranchByCity";
 import { useCityValidation } from "@/hooks/useCityValidation";
 import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 const ProductStore = () => {
   const navigate = useNavigate();
@@ -104,18 +106,41 @@ const ProductStore = () => {
           />
         )}
 
-        <FilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filters={{ city: selectedCity }}
-          onFiltersChange={(newFilters) => {
-            if (newFilters.city !== selectedCity) {
-              setSelectedCity(newFilters.city || "all");
-            }
-          }}
-          showLocationFilter
-          placeholder="Buscar produtos..."
-        />
+        {/* Filtros modernizados */}
+        <Card className="mb-6 md:mb-8 card-3d bg-white/90 backdrop-blur-sm border-primary/20 shadow-3d hover:shadow-3d-hover transition-all duration-300">
+          <CardContent className="p-4 md:p-6">
+            <div className="space-y-4">
+              {/* Título da seção */}
+              <div className="flex items-center gap-2 mb-2">
+                <Tags className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold text-primary">Filtrar Produtos</h3>
+              </div>
+              
+              {/* Barra de busca */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar produtos por nome ou descrição..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11 text-base bg-white/80 backdrop-blur-sm border-secondary/30 focus:border-primary/50 focus:shadow-soft focus:bg-white transition-all duration-200 placeholder:text-muted-foreground/70"
+                />
+              </div>
+              
+              {/* Filtro de cidade usando FilterBar simplificado */}
+              <FilterBar
+                filters={{ city: selectedCity }}
+                onFiltersChange={(newFilters) => {
+                  if (newFilters.city !== selectedCity) {
+                    setSelectedCity(newFilters.city || "all");
+                  }
+                }}
+                showLocationFilter
+                className="mb-0 bg-transparent border-none shadow-none p-0"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <ListingGrid
           items={productsForGrid}
