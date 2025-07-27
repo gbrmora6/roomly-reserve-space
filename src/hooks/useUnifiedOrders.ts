@@ -83,64 +83,37 @@ export const useUnifiedOrders = (userId: string | undefined) => {
     queryFn: async () => {
       if (!userId) return [];
       
-      // Primeiro fazer uma query simples para testar
-      const { data: simpleData, error: simpleError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("user_id", userId)
-        .limit(5);
-        
-      console.log("Simple query result:", simpleData, simpleError);
+      console.log("🔍 Fazendo consulta de pedidos para usuário:", userId);
       
       const { data, error } = await supabase
         .from("orders")
         .select(`
           *,
           order_items(
-            id,
-            quantity,
-            price_per_unit,
+            *,
             product:products(name, price)
           ),
           bookings(
-            id,
-            start_time,
-            end_time,
-            total_price,
-            status,
+            *,
             room:rooms(name, description)
           ),
           booking_equipment(
-            id,
-            start_time,
-            end_time,
-            quantity,
-            total_price,
-            status,
+            *,
             equipment:equipment(name, description)
           ),
-          profiles(
-            first_name,
-            last_name,
-            email
-          ),
-          branch:branches(
-            name,
-            city,
-            street,
-            number,
-            neighborhood,
-            complement,
-            zip_code,
-            state,
-            phone,
-            email
-          )
+          profiles!fk_orders_profiles(first_name, last_name, email)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar pedidos:", error);
+        throw error;
+      }
+      
+      console.log("✅ Pedidos carregados:", data?.length || 0, "pedidos");
+      console.log("📄 Dados:", data);
+      
       return data as UnifiedOrder[];
     },
     enabled: !!userId,
