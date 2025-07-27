@@ -8,7 +8,7 @@ interface CheckoutProgressProps {
 const CheckoutProgress = ({ currentStep }: CheckoutProgressProps) => {
   const steps = [
     { number: 1, title: 'Dados Pessoais', desc: 'Informações básicas' },
-    { number: 2, title: 'Endereço', desc: 'Endereço de faturamento' },
+    { number: 2, title: 'Endereço', desc: 'Local de entrega' },
     { number: 3, title: 'Pagamento', desc: 'Finalizar pedido' }
   ];
 
