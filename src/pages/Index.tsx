@@ -37,7 +37,7 @@ const Index: React.FC = () => {
           <div className="grid gap-6 md:gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {[{
             title: "Salas Especializadas",
-            description: "Ambientes com isolamento acústico e mobiliário adequado",
+            description: "Ambientes climatizados e mobiliário adequado",
             icon: <User className="w-8 h-8" />,
             color: "from-blue-500 to-blue-600",
             bgColor: "from-blue-50 to-blue-100"
@@ -48,8 +48,8 @@ const Index: React.FC = () => {
             color: "from-green-500 to-green-600",
             bgColor: "from-green-50 to-green-100"
           }, {
-            title: "Equipamentos Premium",
-            description: "Recursos tecnológicos de última geração",
+            title: "Equipamentos",
+            description: "Manuais e testes para uso do psicólogo",
             icon: <Target className="w-8 h-8" />,
             color: "from-purple-500 to-purple-600",
             bgColor: "from-purple-50 to-purple-100"
