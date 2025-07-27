@@ -50,52 +50,8 @@ const Checkout = () => {
   // Verificar se há cupom ativo
   const hasActiveCoupon = appliedCoupon && discountAmount > 0;
 
-  // Hook para carregar dados do usuário
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error("Erro ao buscar perfil do usuário:", error);
-          return;
-        }
-
-        if (data) {
-          setPaymentData(prev => ({
-            ...prev,
-            nomeCompleto: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
-            cpfCnpj: data.cpf || data.cnpj || "",
-            telefone: data.phone || "",
-            email: user.email || "",
-            // Pré-preencher endereço
-            rua: data.street || "",
-            numero: data.house_number || "",
-            bairro: data.neighborhood || "",
-            cidade: data.city || "",
-            estado: data.state || "",
-            cep: data.cep || "",
-          }));
-          setProfileLoaded(true);
-          
-          toast({
-            title: "Dados carregados",
-            description: "Seus dados foram pré-preenchidos automaticamente a partir do seu perfil.",
-          });
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados do perfil:', error);
-      }
-    };
-
-    loadUserProfile();
-  }, [user]);
+  // O carregamento de dados do usuário agora é feito no hook useCheckout
+  // Removido código duplicado para evitar conflitos
 
   if (!user) {
     return <Navigate to="/login" replace />;

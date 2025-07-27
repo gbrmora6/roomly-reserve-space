@@ -42,12 +42,50 @@ export const useCheckout = () => {
       return;
     }
 
+    // Buscar dados completos do perfil do usuário
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Erro ao buscar perfil do usuário:", error);
+          // Usar dados básicos do user se houver erro
+          setPaymentData(prev => ({
+            ...prev,
+            nome: user.user_metadata?.full_name || "",
+            email: user.email || ""
+          }));
+          return;
+        }
+
+        if (data) {
+          setPaymentData(prev => ({
+            ...prev,
+            nome: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+            email: user.email || "",
+            cpf: data.cpf || data.cnpj || "",
+            telefone: data.phone || ""
+          }));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do perfil:', error);
+        // Usar dados básicos do user em caso de erro
+        setPaymentData(prev => ({
+          ...prev,
+          nome: user.user_metadata?.full_name || "",
+          email: user.email || ""
+        }));
+      }
+    };
+
     if (user) {
-      setPaymentData(prev => ({
-        ...prev,
-        nome: user.user_metadata?.full_name || "",
-        email: user.email || ""
-      }));
+      loadUserProfile();
     }
   }, [cartItems, navigate, user]);
 

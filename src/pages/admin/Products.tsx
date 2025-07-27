@@ -50,6 +50,7 @@ import * as z from "zod";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
+import { PhotoManager } from "@/components/admin/shared/PhotoManager";
 
 const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -69,6 +70,8 @@ const AdminProducts = () => {
   const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
   const { user } = useAuth();
   const { logCreate, logUpdate, logDelete } = useAdminCRUDLogger();
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -140,6 +143,34 @@ const AdminProducts = () => {
 
         // Log da atualização
         await (logUpdate as any)('product', editingProductId, productData, data);
+        
+        // Upload de fotos para produto editado
+        if (photoFiles.length > 0) {
+          for (const file of photoFiles) {
+            const fileName = `${editingProductId}_${Date.now()}_${file.name}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('product-photos')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Erro ao fazer upload da foto do produto:', uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('product-photos')
+              .getPublicUrl(fileName);
+
+            await supabase
+              .from("product_photos")
+              .insert({
+                product_id: editingProductId,
+                url: publicUrl,
+                branch_id: branchId,
+              });
+          }
+        }
+        
         return data;
       } else {
         // Create new product
@@ -152,6 +183,34 @@ const AdminProducts = () => {
 
         // Log da criação
         await (logCreate as any)('product', data.id, { ...productData, branch_id: branchId }, data);
+        
+        // Upload de fotos para novo produto
+        if (photoFiles.length > 0) {
+          for (const file of photoFiles) {
+            const fileName = `${data.id}_${Date.now()}_${file.name}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('product-photos')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Erro ao fazer upload da foto do produto:', uploadError);
+              continue;
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+              .from('product-photos')
+              .getPublicUrl(fileName);
+
+            await supabase
+              .from("product_photos")
+              .insert({
+                product_id: data.id,
+                url: publicUrl,
+                branch_id: branchId,
+              });
+          }
+        }
+        
         return data;
       }
     },
@@ -226,9 +285,43 @@ const AdminProducts = () => {
       equipment_id: null,
     });
     setEditingProductId(null);
+    setPhotos([]);
+    setPhotoFiles([]);
   };
 
-  const handleEditProduct = (product: any) => {
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setPhotoFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemovePhotoFile = (index: number) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemovePhoto = async (photoId: string) => {
+    try {
+      const { error } = await supabase
+        .from("product_photos")
+        .delete()
+        .eq("id", photoId);
+
+      if (error) throw error;
+
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      
+      toast({
+        title: "Foto removida com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao remover foto",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleEditProduct = async (product: any) => {
     form.reset({
       name: product.name,
       description: product.description || "",
@@ -238,6 +331,21 @@ const AdminProducts = () => {
       equipment_id: product.equipment_id || null,
     });
     setEditingProductId(product.id);
+    
+    // Carregar fotos do produto
+    try {
+      const { data: photoData } = await supabase
+        .from("product_photos")
+        .select("*")
+        .eq("product_id", product.id);
+      
+      if (photoData) {
+        setPhotos(photoData);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar fotos:", error);
+    }
+    
     setOpenDialog(true);
   };
 
@@ -482,9 +590,19 @@ const AdminProducts = () => {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-              </div>
-              <DialogFooter>
+                 />
+               </div>
+               
+               <PhotoManager
+                 photos={photos}
+                 files={photoFiles}
+                 onFileChange={handlePhotoChange}
+                 onRemoveFile={handleRemovePhotoFile}
+                 onRemovePhoto={handleRemovePhoto}
+                 title="Fotos do Produto"
+               />
+               
+               <DialogFooter>
                 <Button
                   variant="outline"
                   type="button"

@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminCRUDLogger } from "@/hooks/useAdminCRUDLogger";
 import { WeeklyScheduleForm, WeeklyScheduleItem } from "@/components/admin/shared/WeeklyScheduleForm";
+import { PhotoManager } from "@/components/admin/shared/PhotoManager";
 
 interface Equipment {
   id: string;
@@ -39,6 +40,8 @@ const AdminEquipmentForm: React.FC = () => {
   });
   
   const [schedules, setSchedules] = useState<WeeklyScheduleItem[]>([]);
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   
   const { data: equipmentData } = useQuery({
     queryKey: ["equipment", id],
@@ -57,6 +60,11 @@ const AdminEquipmentForm: React.FC = () => {
         .select("*")
         .eq("equipment_id", id);
       
+      const { data: photoData } = await supabase
+        .from("equipment_photos")
+        .select("*")
+        .eq("equipment_id", id);
+      
       setEquipment(equipmentInfo || {});
       
       if (scheduleData) {
@@ -67,7 +75,11 @@ const AdminEquipmentForm: React.FC = () => {
         })));
       }
       
-      return { equipment: equipmentInfo, schedules: scheduleData };
+      if (photoData) {
+        setPhotos(photoData);
+      }
+      
+      return { equipment: equipmentInfo, schedules: scheduleData, photos: photoData };
     },
   });
   
@@ -77,6 +89,38 @@ const AdminEquipmentForm: React.FC = () => {
       ...prev, 
       [name]: name === 'price_per_hour' || name === 'quantity' ? Number(value) : value 
     }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setPhotoFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemovePhotoFile = (index: number) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemovePhoto = async (photoId: string) => {
+    try {
+      const { error } = await supabase
+        .from("equipment_photos")
+        .delete()
+        .eq("id", photoId);
+
+      if (error) throw error;
+
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      
+      toast({
+        title: "Foto removida com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao remover foto",
+        description: error.message,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,6 +213,33 @@ const AdminEquipmentForm: React.FC = () => {
 
         if (errorInsertSchedules) {
           throw new Error(errorInsertSchedules.message || "Erro ao inserir horários");
+        }
+      }
+
+      // Upload de fotos
+      if (photoFiles.length > 0) {
+        for (const file of photoFiles) {
+          const fileName = `${equipmentId}_${Date.now()}_${file.name}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('equipment-photos')
+            .upload(fileName, file);
+
+          if (uploadError) {
+            console.error('Erro ao fazer upload da foto:', uploadError);
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('equipment-photos')
+            .getPublicUrl(fileName);
+
+          await supabase
+            .from("equipment_photos")
+            .insert({
+              equipment_id: equipmentId,
+              url: publicUrl,
+              branch_id: branchId,
+            });
         }
       }
       
@@ -271,6 +342,15 @@ const AdminEquipmentForm: React.FC = () => {
             schedules={schedules}
             onChange={setSchedules}
             title="Horários de Disponibilidade"
+          />
+
+          <PhotoManager
+            photos={photos}
+            files={photoFiles}
+            onFileChange={handlePhotoChange}
+            onRemoveFile={handleRemovePhotoFile}
+            onRemovePhoto={handleRemovePhoto}
+            title="Fotos do Equipamento"
           />
           
           <div className="flex justify-end gap-4">
