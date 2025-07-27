@@ -151,9 +151,9 @@ export const useFilteredEquipment = ({
         })
       );
 
-      // Se não há data/hora selecionada, retorna os equipamentos filtrados com quantidade total disponível
-      if (!selectedDate || (startTime === "all" && endTime === "all")) {
-        console.log("Retornando todos os equipamentos - sem filtros de data/hora");
+      // Se não há filtros de horário específico, retorna os equipamentos filtrados
+      if ((startTime === "all" && endTime === "all")) {
+        console.log("Retornando todos os equipamentos - sem filtros de horário");
         return equipmentWithBranches;
       }
 
