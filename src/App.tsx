@@ -18,6 +18,7 @@ import MyBookings from "@/pages/client/MyBookings";
 import AdminLayout from "@/components/layout/AdminLayout";
 import AdminRouter from "@/components/admin/AdminRouter";
 import PaymentInstructionsById from "@/pages/PaymentInstructionsById";
+import PaymentError from "@/pages/PaymentError";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
       <Route path="/admin/*" element={<AdminLayout><AdminRouter /></AdminLayout>} />
       <Route path="/payment-instructions" element={<PaymentInstructions />} />
       <Route path="/payment-instructions/:orderId" element={<PaymentInstructionsById />} />
+      <Route path="/payment-error" element={<PaymentError />} />
     </Routes>
   );
 }

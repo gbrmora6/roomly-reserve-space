@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, FileText, Copy, CheckCircle } from "lucide-react";
+import { QrCode, FileText, Copy, CheckCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import PixQRCode from "@/components/checkout/PixQRCode";
@@ -28,13 +28,38 @@ const PaymentInstructions: React.FC = () => {
   if (!paymentMethod || !paymentData) {
     return (
       <MainLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Dados de pagamento não encontrados</h1>
-            <Button asChild>
-              <Link to="/cart">Voltar ao carrinho</Link>
-            </Button>
-          </div>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="max-w-md w-full border-l-4 border-l-destructive">
+            <CardHeader className="text-center">
+              <AlertTriangle className="mx-auto h-16 w-16 text-destructive mb-4" />
+              <CardTitle className="text-destructive">Dados de Pagamento Não Encontrados</CardTitle>
+              <p className="text-muted-foreground">
+                Não foi possível carregar os dados do pagamento.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  💡 Sugestão:
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Isso pode acontecer se você recarregou a página ou se a sessão expirou. 
+                  Tente refazer o checkout.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button asChild>
+                  <Link to="/checkout">Refazer Checkout</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/cart">Voltar ao Carrinho</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link to="/">Página Inicial</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </MainLayout>
     );

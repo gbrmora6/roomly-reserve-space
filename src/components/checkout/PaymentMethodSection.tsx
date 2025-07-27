@@ -3,6 +3,7 @@ import { FormattedInput } from "@/components/ui/formatted-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PaymentMethodCards } from "@/components/ui/payment-method-cards";
 import { CreditCardPreview } from "@/components/ui/credit-card-preview";
+import { PaymentMethodErrorHandler } from "./PaymentMethodErrorHandler";
 import { PaymentData } from "@/types/payment";
 import { formatCurrency } from "@/utils/formatCurrency";
 
@@ -12,6 +13,7 @@ interface PaymentMethodSectionProps {
   paymentData: PaymentData;
   onPaymentDataChange: (field: keyof PaymentData, value: any) => void;
   finalTotal: number;
+  error?: string | null;
 }
 
 export const PaymentMethodSection = ({ 
@@ -19,7 +21,8 @@ export const PaymentMethodSection = ({
   onPaymentMethodChange, 
   paymentData, 
   onPaymentDataChange, 
-  finalTotal 
+  finalTotal,
+  error 
 }: PaymentMethodSectionProps) => {
   return (
     <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
@@ -33,6 +36,11 @@ export const PaymentMethodSection = ({
         <PaymentMethodCards 
           selectedMethod={paymentMethod} 
           onMethodChange={onPaymentMethodChange} 
+        />
+
+        <PaymentMethodErrorHandler 
+          paymentMethod={paymentMethod}
+          error={error}
         />
 
         {/* Campos específicos para cartão */}
