@@ -5,43 +5,44 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    /* Paleta Psicologia Moderna e Digital */
+    --background: 0 0% 100%; /* Branco - fundo principal */
+    --foreground: 208 36% 25%; /* Azul petróleo escuro para textos */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%; /* Branco para cards */
+    --card-foreground: 208 36% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 208 36% 25%;
 
-    --primary: 220 100% 55%;
+    --primary: 208 36% 35%; /* Azul petróleo (#2B4F60) - botões e cabeçalhos */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 33% 77%; /* Azul claro (#A6C9E2) - elementos secundários */
+    --secondary-foreground: 208 36% 25%;
 
-    --muted: 210 40% 96%;
+    --muted: 0 0% 96%; /* Cinza suave (#F5F5F5) - fundos de cards */
     --muted-foreground: 215 16% 47%;
 
-    --accent: 280 100% 65%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 119 23% 77%; /* Verde menta (#C4E1C1) - destaques */
+    --accent-foreground: 208 36% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 220 100% 55%;
+    --border: 210 20% 88%; /* Borda suave */
+    --input: 0 0% 96%; /* Input com cinza suave */
+    --ring: 208 36% 35%; /* Ring com azul petróleo */
 
     --radius: 0.75rem;
 
-    /* Modern vivid colors */
-    --electric-blue: 220 100% 55%;
-    --vibrant-purple: 280 100% 65%;
-    --neon-green: 160 100% 45%;
-    --electric-orange: 25 100% 55%;
-    --hot-pink: 320 100% 65%;
-    --cyber-yellow: 50 100% 55%;
+    /* Cores da Paleta Psicologia Moderna */
+    --electric-blue: 210 33% 77%; /* Azul claro harmonioso */
+    --vibrant-purple: 208 36% 35%; /* Azul petróleo */
+    --neon-green: 119 23% 77%; /* Verde menta */
+    --electric-orange: 35 40% 85%; /* Tom quente suave */
+    --hot-pink: 340 25% 85%; /* Rosa suave */
+    --cyber-yellow: 50 30% 85%; /* Amarelo suave */
 
     /* 3D effect shadows */
     --shadow-soft: 0 2px 8px hsl(var(--primary) / 0.15);
@@ -50,61 +51,62 @@
     --shadow-neon: 0 0 20px hsl(var(--electric-blue) / 0.5), 0 0 40px hsl(var(--vibrant-purple) / 0.3);
     --shadow-glow: 0 0 30px hsl(var(--primary) / 0.4), inset 0 1px 0 hsl(0 0% 100% / 0.2);
 
-    --sidebar-background: 210 33% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 220 100% 55%;
+    --sidebar-background: 0 0% 98%; /* Fundo branco suave */
+    --sidebar-foreground: 208 36% 25%; /* Azul petróleo para texto */
+    --sidebar-primary: 208 36% 35%; /* Azul petróleo */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 280 100% 95%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 220 100% 60%;
+    --sidebar-accent: 119 23% 95%; /* Verde menta claro */
+    --sidebar-accent-foreground: 208 36% 25%;
+    --sidebar-border: 210 20% 88%; /* Borda suave */
+    --sidebar-ring: 208 36% 35%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* Dark mode adaptado para Psicologia Moderna */
+    --background: 208 36% 8%; /* Azul petróleo muito escuro */
+    --foreground: 210 33% 90%; /* Azul claro para texto */
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 208 36% 12%; /* Card escuro com tom azul */
+    --card-foreground: 210 33% 90%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 208 36% 12%;
+    --popover-foreground: 210 33% 90%;
 
-    --primary: 220 100% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 210 33% 65%; /* Azul claro no dark mode */
+    --primary-foreground: 208 36% 15%;
 
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 208 36% 15%; /* Azul petróleo mais claro */
+    --secondary-foreground: 210 33% 90%;
 
-    --muted: 217 33% 18%;
+    --muted: 208 36% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 280 100% 70%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 119 23% 60%; /* Verde menta adaptado */
+    --accent-foreground: 208 36% 15%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 220 100% 60%;
+    --border: 208 36% 18%;
+    --input: 208 36% 15%;
+    --ring: 210 33% 65%;
 
-    /* Dark mode vivid colors */
-    --electric-blue: 220 100% 60%;
-    --vibrant-purple: 280 100% 70%;
-    --neon-green: 160 100% 50%;
-    --electric-orange: 25 100% 60%;
-    --hot-pink: 320 100% 70%;
-    --cyber-yellow: 50 100% 60%;
+    /* Dark mode - Paleta Psicologia Moderna */
+    --electric-blue: 210 33% 65%; /* Azul claro adaptado */
+    --vibrant-purple: 210 33% 55%; /* Azul petróleo médio */
+    --neon-green: 119 23% 60%; /* Verde menta adaptado */
+    --electric-orange: 35 40% 70%; /* Tom quente adaptado */
+    --hot-pink: 340 25% 70%; /* Rosa adaptado */
+    --cyber-yellow: 50 30% 70%; /* Amarelo adaptado */
     
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 96%;
-    --sidebar-primary: 220 100% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 240 5% 96%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 220 100% 60%;
+    --sidebar-background: 208 36% 10%; /* Azul petróleo escuro */
+    --sidebar-foreground: 210 33% 90%; /* Azul claro */
+    --sidebar-primary: 210 33% 65%; /* Azul claro para primary */
+    --sidebar-primary-foreground: 208 36% 15%;
+    --sidebar-accent: 208 36% 18%; /* Azul petróleo médio */
+    --sidebar-accent-foreground: 210 33% 90%;
+    --sidebar-border: 208 36% 18%;
+    --sidebar-ring: 210 33% 65%;
   }
 }
 

@@ -76,15 +76,15 @@ const MyBookings = () => {
     
     switch (status) {
       case "paid":
-        return <Badge variant="default" className="bg-green-500">Pago</Badge>;
+        return <Badge className="bg-accent text-accent-foreground border-accent/30">Pago</Badge>;
       case "pending":
-        return <Badge variant="secondary">Pendente</Badge>;
+        return <Badge variant="secondary" className="bg-secondary/20 text-secondary-foreground border-secondary/40">Pendente</Badge>;
       case "cancelled":
         return <Badge variant="destructive">Cancelado</Badge>;
       case "processing":
-        return <Badge variant="outline">Processando</Badge>;
+        return <Badge variant="outline" className="border-primary/40 text-primary">Processando</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary" className="bg-muted text-muted-foreground">{status}</Badge>;
     }
   };
 
@@ -107,19 +107,19 @@ const MyBookings = () => {
     const canRefund = order.status === "paid" && !order.refund_status;
 
     return (
-      <Card className="border-border/50 hover:shadow-md transition-shadow">
+      <Card className="card-3d bg-card/80 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300">
         <CardContent className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-lg">Pedido #{order.id.slice(-8)}</h3>
+                  <h3 className="font-semibold text-lg text-foreground">Pedido #{order.id.slice(-8)}</h3>
                   {getStatusBadge(order.status, order.refund_status)}
                 </div>
                 <p className="text-sm text-muted-foreground">{getOrderSummary()}</p>
                 <p className="text-sm text-muted-foreground">Data: {formatDate(order.created_at)}</p>
               </div>
             <div className="text-right">
-              <p className="text-2xl font-bold">{formatCurrency(order.total_amount)}</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(order.total_amount)}</p>
               {order.payment_method && (
                 <p className="text-sm text-muted-foreground">
                   {order.payment_method === "pix" ? "PIX" : 
@@ -135,6 +135,7 @@ const MyBookings = () => {
               variant="outline"
               size="sm"
               onClick={() => handleViewDetails(order)}
+              className="border-primary/30 text-primary hover:bg-primary/10"
             >
               <Eye className="mr-2 h-4 w-4" />
               Ver Detalhes
@@ -146,6 +147,7 @@ const MyBookings = () => {
                 size="sm"
                 onClick={() => handleRefreshStatus(order.id)}
                 disabled={checkPaymentStatus.isPending}
+                className="border-secondary/40 text-secondary-foreground hover:bg-secondary/10"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${checkPaymentStatus.isPending ? 'animate-spin' : ''}`} />
                 Atualizar Status
@@ -158,7 +160,7 @@ const MyBookings = () => {
                 size="sm"
                 onClick={() => handleRequestRefund(order.id)}
                 disabled={requestRefund.isPending}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Solicitar Estorno
@@ -224,56 +226,56 @@ const MyBookings = () => {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-border/50">
+          <Card className="card-3d bg-white/80 backdrop-blur-sm border-primary/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-primary/10">
                   <ShoppingCart className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{allOrders.length}</p>
-                  <p className="text-sm text-muted-foreground">Pedidos Totais</p>
+                  <p className="text-2xl font-bold text-primary">{allOrders.length}</p>
+                  <p className="text-sm text-muted-foreground font-medium">Pedidos Totais</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="border-border/50">
+          <Card className="card-3d bg-white/80 backdrop-blur-sm border-secondary/30">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-accent/10">
-                  <Calendar className="h-6 w-6 text-accent" />
+                <div className="p-3 rounded-xl bg-secondary/15">
+                  <Calendar className="h-6 w-6 text-secondary-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{roomOrders.length + equipmentOrders.length}</p>
-                  <p className="text-sm text-muted-foreground">Reservas Ativas</p>
+                  <p className="text-2xl font-bold text-secondary-foreground">{roomOrders.length + equipmentOrders.length}</p>
+                  <p className="text-sm text-muted-foreground font-medium">Reservas Ativas</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border/50">
+          <Card className="card-3d bg-white/80 backdrop-blur-sm border-accent/30">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-green-500/10">
-                  <TrendingUp className="h-6 w-6 text-green-500" />
+                <div className="p-3 rounded-xl bg-accent/15">
+                  <TrendingUp className="h-6 w-6 text-accent-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-accent-foreground">
                     {allOrders.filter(o => o.status === 'paid').length}
                   </p>
-                  <p className="text-sm text-muted-foreground">Pedidos Pagos</p>
+                  <p className="text-sm text-muted-foreground font-medium">Pedidos Pagos</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
         
-        <Card className="border-border/50">
+        <Card className="card-3d bg-white/90 backdrop-blur-sm border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Todos os Pedidos</h2>
-              <Badge variant="secondary" className="text-sm">
+              <h2 className="text-xl font-semibold text-primary">Todos os Pedidos</h2>
+              <Badge className="bg-primary/10 text-primary border-primary/30 text-sm">
                 {allOrders.length} {allOrders.length === 1 ? 'pedido' : 'pedidos'}
               </Badge>
             </div>

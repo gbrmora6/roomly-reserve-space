@@ -66,6 +66,19 @@ export default {
 					900: '#183d85',
 					950: '#14275a',
 				},
+				// Paleta Psicologia Moderna e Digital
+				psico: {
+					'azul-claro': '#A6C9E2',
+					'verde-menta': '#C4E1C1', 
+					'cinza-suave': '#F5F5F5',
+					'azul-petroleo': '#2B4F60',
+					'branco': '#FFFFFF',
+					// Variações
+					'azul-petroleo-light': '#4A6B7A',
+					'azul-petroleo-dark': '#1A3240',
+					'verde-menta-light': '#D4E8D1',
+					'verde-menta-dark': '#A4C1A1',
+				},
 				'electric-blue': 'hsl(var(--electric-blue))',
 				'vibrant-purple': 'hsl(var(--vibrant-purple))',
 				'neon-green': 'hsl(var(--neon-green))',
