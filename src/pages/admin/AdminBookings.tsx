@@ -18,9 +18,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
-
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
-
 interface BookingWithDetails {
   id: string;
   user_id: string;
@@ -42,7 +40,6 @@ interface BookingWithDetails {
     price_per_hour: number;
   } | null;
 }
-
 const AdminBookings = () => {
   const [activeTab, setActiveTab] = useState<BookingStatus | "all">("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
@@ -50,18 +47,25 @@ const AdminBookings = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const perPage = 10;
-  
-  const { branchId, setBranchId, branches, isSuperAdmin } = useBranchFilter();
-  const { toast } = useToast();
-
-  const { data: bookings = [], isLoading, error, refetch } = useQuery({
+  const {
+    branchId,
+    setBranchId,
+    branches,
+    isSuperAdmin
+  } = useBranchFilter();
+  const {
+    toast
+  } = useToast();
+  const {
+    data: bookings = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
     queryKey: ["admin-room-bookings", activeTab, branchId],
     queryFn: async () => {
       if (!branchId) return [];
-      
-      let query = supabase
-        .from("bookings")
-        .select(`
+      let query = supabase.from("bookings").select(`
           id,
           user_id,
           room_id,
@@ -74,46 +78,47 @@ const AdminBookings = () => {
           invoice_uploaded_at,
           invoice_uploaded_by,
           room:rooms(name, price_per_hour)
-        `)
-        .eq("branch_id", branchId)
-        .order("created_at", { ascending: false });
-
+        `).eq("branch_id", branchId).order("created_at", {
+        ascending: false
+      });
       if (activeTab !== "all") {
         query = query.eq("status", activeTab);
       }
-
-      const { data, error } = await query;
+      const {
+        data,
+        error
+      } = await query;
       if (error) throw error;
 
       // Fetch user profiles separately
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(booking => booking.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name")
-          .in("id", userIds);
-
+        const {
+          data: profiles
+        } = await supabase.from("profiles").select("id, first_name, last_name").in("id", userIds);
         return data.map(booking => ({
           ...booking,
           user: profiles?.find(profile => profile.id === booking.user_id) || null
         })) as BookingWithDetails[];
       }
-
       return data as BookingWithDetails[] || [];
     },
     enabled: !!branchId,
-    refetchInterval: 30000,
+    refetchInterval: 30000
   });
 
   // Cálculos de resumo
   const stats = useMemo(() => {
-    if (!bookings) return { total: 0, pagas: 0, pendentes: 0, canceladas: 0 };
-    
+    if (!bookings) return {
+      total: 0,
+      pagas: 0,
+      pendentes: 0,
+      canceladas: 0
+    };
     let total = bookings.length;
     let pagas = 0;
     let pendentes = 0;
     let canceladas = 0;
-
     bookings.forEach(booking => {
       if (booking.status === "paid") {
         pagas++;
@@ -123,8 +128,12 @@ const AdminBookings = () => {
         canceladas++;
       }
     });
-
-    return { total, pagas, pendentes, canceladas };
+    return {
+      total,
+      pagas,
+      pendentes,
+      canceladas
+    };
   }, [bookings]);
 
   // Filtro de busca
@@ -146,30 +155,26 @@ const AdminBookings = () => {
     const start = (page - 1) * perPage;
     return filteredBookings.slice(start, start + perPage);
   }, [filteredBookings, page]);
-
   const handleUpdateStatus = async (id: string, newStatus: BookingStatus) => {
     try {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: newStatus })
-        .eq("id", id);
-      
+      const {
+        error
+      } = await supabase.from("bookings").update({
+        status: newStatus
+      }).eq("id", id);
       if (error) throw error;
-      
       toast({
-        title: "Status atualizado com sucesso",
+        title: "Status atualizado com sucesso"
       });
-      
       refetch();
     } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Erro ao atualizar status",
-        description: err.message,
+        description: err.message
       });
     }
   };
-
   const downloadReport = () => {
     if (!bookings || bookings.length === 0) {
       toast({
@@ -178,17 +183,13 @@ const AdminBookings = () => {
       });
       return;
     }
-
     try {
       const exportData = bookings.map(booking => {
         const startDate = new Date(booking.start_time);
         const endDate = new Date(booking.end_time);
-        
         return {
           "ID": booking.id,
-          "Cliente": booking.user 
-            ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
-            : "-",
+          "Cliente": booking.user ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() : "-",
           "Sala": booking.room?.name || "-",
           "Data": format(startDate, "dd/MM/yyyy"),
           "Horário Início": format(startDate, "HH:mm"),
@@ -197,14 +198,11 @@ const AdminBookings = () => {
           "Status": booking.status
         };
       });
-
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Reservas de Salas");
-      
       const fileName = `Relatório_Reservas_Salas_${format(new Date(), "dd-MM-yyyy")}.xlsx`;
       XLSX.writeFile(workbook, fileName);
-      
       toast({
         title: "Relatório gerado com sucesso",
         description: `O arquivo ${fileName} foi baixado.`
@@ -217,23 +215,17 @@ const AdminBookings = () => {
       });
     }
   };
-
-  return (
-    <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
-      {isSuperAdmin && branches && (
-        <div className="mb-4 max-w-xs">
+  return <div className="space-y-8 max-w-7xl mx-auto px-4 pb-10">
+      {isSuperAdmin && branches && <div className="mb-4 max-w-xs">
           <Select value={branchId || undefined} onValueChange={setBranchId}>
             <SelectTrigger>
               <SelectValue placeholder="Filial" />
             </SelectTrigger>
             <SelectContent>
-              {branches.map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
+              {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
             </SelectContent>
           </Select>
-        </div>
-      )}
+        </div>}
 
       {/* Título e ação */}
       <Card className="shadow-lg rounded-2xl border-0 bg-white">
@@ -261,12 +253,7 @@ const AdminBookings = () => {
 
       {/* Campo de busca */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-        <Input
-          placeholder="Buscar por cliente ou sala..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="max-w-xs"
-        />
+        <Input placeholder="Buscar por cliente ou sala..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
         <div className="flex items-center gap-2 mt-2 md:mt-0">
           <span className="text-sm text-muted-foreground">{filteredBookings.length} reservas</span>
           <Button variant="ghost" size="icon" disabled={page === 1} onClick={() => setPage(1)}>&laquo;</Button>
@@ -278,7 +265,7 @@ const AdminBookings = () => {
       </div>
 
       {/* Tabs e tabela */}
-      <Tabs defaultValue="all" value={activeTab} onValueChange={(value) => setActiveTab(value as BookingStatus | "all")}>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={value => setActiveTab(value as BookingStatus | "all")}>
         <TabsList>
           <TabsTrigger value="all">Todas</TabsTrigger>
           <TabsTrigger value="paid">Pagas</TabsTrigger>
@@ -286,29 +273,22 @@ const AdminBookings = () => {
           <TabsTrigger value="recused">Canceladas</TabsTrigger>
         </TabsList>
         <TabsContent value={activeTab} className="mt-6">
-          {isLoading ? (
-            <div className="space-y-3">
+          {isLoading ? <div className="space-y-3">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
-            </div>
-          ) : error ? (
-            <div className="rounded-lg bg-destructive/10 p-6 text-center">
+            </div> : error ? <div className="rounded-lg bg-destructive/10 p-6 text-center">
               <p className="text-destructive font-medium">Erro ao carregar reservas</p>
               <p className="text-sm text-muted-foreground mt-2">
                 {(error as Error).message || "Ocorreu um erro ao carregar as reservas."}
               </p>
-            </div>
-          ) : !bookings || bookings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
+            </div> : !bookings || bookings.length === 0 ? <div className="flex flex-col items-center justify-center py-16 border rounded-lg bg-muted/20">
               <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhuma reserva de sala encontrada</h3>
               <p className="text-muted-foreground text-center max-w-md">
                 Quando houver reservas de salas, elas aparecerão aqui para você gerenciar.
               </p>
-            </div>
-          ) : (
-            <Card>
+            </div> : <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
@@ -323,13 +303,10 @@ const AdminBookings = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedBookings.map((booking) => (
-                        <TableRow key={booking.id}>
+                      {paginatedBookings.map(booking => <TableRow key={booking.id}>
                           <TableCell className="py-3 px-4">
                             <div className="font-medium">
-                              {booking.user 
-                                ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() 
-                                : booking.user_id}
+                              {booking.user ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() : booking.user_id}
                             </div>
                           </TableCell>
                           <TableCell className="py-3 px-4">
@@ -351,85 +328,24 @@ const AdminBookings = () => {
                           </TableCell>
                           <TableCell className="py-3 px-4 text-sm">
                             <div className="flex gap-2 flex-col lg:flex-row">
-                              <Button size="sm" variant="outline" onClick={() => { setSelectedBooking(booking); setShowDetails(true); }}>
+                              <Button size="sm" variant="outline" onClick={() => {
+                          setSelectedBooking(booking);
+                          setShowDetails(true);
+                        }}>
                                 <Eye className="h-4 w-4 mr-1" />
                                 Ver
                               </Button>
                               {/* Botões específicos para reservas de salas */}
-                              {booking.status === "paid" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    try {
-                                      const { error } = await supabase
-                                        .from("bookings")
-                                        .update({ status: "partial_refunded" })
-                                        .eq("id", booking.id);
-                                      
-                                      if (error) throw error;
-                                      
-                                      toast({
-                                        title: "Estorno realizado",
-                                        description: "A reserva foi cancelada e o estorno foi processado.",
-                                      });
-                                      
-                                      refetch();
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Erro ao processar estorno",
-                                        description: error.message || "Erro desconhecido",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  Estornar
-                                </Button>
-                              )}
-                              {booking.status === "in_process" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    try {
-                                      const { error } = await supabase
-                                        .from("bookings")
-                                        .update({ status: "paid" })
-                                        .eq("id", booking.id);
-                                      
-                                      if (error) throw error;
-                                      
-                                      toast({
-                                        title: "Reserva confirmada",
-                                        description: "A reserva foi confirmada com sucesso.",
-                                      });
-                                      
-                                      refetch();
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Erro ao confirmar reserva",
-                                        description: error.message || "Erro desconhecido",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                  className="text-green-600 hover:text-green-700"
-                                >
-                                  Confirmar
-                                </Button>
-                              )}
+                              {booking.status === "paid"}
+                              {booking.status === "in_process"}
                             </div>
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
                   </Table>
                 </div>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </TabsContent>
       </Tabs>
 
@@ -440,8 +356,7 @@ const AdminBookings = () => {
             <DialogTitle>Detalhes da Reserva</DialogTitle>
             <DialogDescription>Informações completas sobre a reserva selecionada</DialogDescription>
           </DialogHeader>
-          {selectedBooking && (
-            <div className="space-y-6">
+          {selectedBooking && <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-semibold mb-2">Informações do Cliente</h3>
@@ -463,19 +378,11 @@ const AdminBookings = () => {
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Nota Fiscal</h3>
-                <InvoiceUpload
-                  recordId={selectedBooking.id}
-                  recordType="booking"
-                  currentInvoiceUrl={selectedBooking.invoice_url}
-                  onSuccess={() => refetch()}
-                />
+                <InvoiceUpload recordId={selectedBooking.id} recordType="booking" currentInvoiceUrl={selectedBooking.invoice_url} onSuccess={() => refetch()} />
               </div>
-            </div>
-          )}
+            </div>}
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default AdminBookings;
