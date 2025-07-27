@@ -83,6 +83,15 @@ export const useUnifiedOrders = (userId: string | undefined) => {
     queryFn: async () => {
       if (!userId) return [];
       
+      // Primeiro fazer uma query simples para testar
+      const { data: simpleData, error: simpleError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId)
+        .limit(5);
+        
+      console.log("Simple query result:", simpleData, simpleError);
+      
       const { data, error } = await supabase
         .from("orders")
         .select(`
