@@ -1742,7 +1742,7 @@ export type Database = {
         Returns: boolean
       }
       create_reservations_for_checkout: {
-        Args: { p_user_id: string } | { p_user_id: string; p_order_id?: string }
+        Args: { p_user_id: string; p_order_id?: string }
         Returns: {
           success: boolean
           room_booking_ids: string[]
