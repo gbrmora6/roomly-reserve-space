@@ -26,6 +26,7 @@ import Clients from '@/pages/admin/Clients';
 import Admins from '@/pages/admin/Admins';
 import Coupons from '@/pages/admin/Coupons';
 import Inventory from '@/pages/admin/Inventory';
+import Orders from '@/pages/admin/Orders';
 
 const AdminRouter: React.FC = () => {
   return (
@@ -47,6 +48,7 @@ const AdminRouter: React.FC = () => {
       <Route path="payment-settings" element={<PaymentSettings />} />
       <Route path="products" element={<Products />} />
       <Route path="product-sales" element={<ProductSales />} />
+      <Route path="orders" element={<Orders />} />
       <Route path="change-history" element={<ChangeHistory />} />
       <Route path="notifications" element={<Notifications />} />
       <Route path="expiration-settings" element={<ExpirationSettings />} />

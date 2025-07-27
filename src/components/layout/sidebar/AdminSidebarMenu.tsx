@@ -25,6 +25,7 @@ import {
   Archive,
   CreditCard,
   Clock,
+  Receipt,
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -116,6 +117,9 @@ export const AdminSidebarMenu: React.FC = () => {
           </MenuLink>
           <MenuLink to="/admin/product-sales" icon={ShoppingBag}>
             Vendas de Produtos
+          </MenuLink>
+          <MenuLink to="/admin/orders" icon={Receipt}>
+            Pedidos Completos
           </MenuLink>
 
         </SidebarMenu>
