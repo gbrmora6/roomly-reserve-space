@@ -152,7 +152,7 @@ const Navbar = () => {
                     </div>
                     <button
                       className="w-full text-left px-4 py-3 hover:bg-white/20 text-gray-800 text-sm transition-colors duration-200"
-                      onClick={() => { setDropdownOpen(false); navigate("/my-account"); }}
+                      onClick={() => { setDropdownOpen(false); navigate("/profile"); }}
                     >
                       Minha Conta
                     </button>
@@ -260,7 +260,7 @@ const Navbar = () => {
                       </div>
                     </div>
                     <Link
-                      to="/my-account"
+                      to="/profile"
                       className="block px-4 py-3 text-gray-700 hover:text-primary hover:bg-white/20 rounded-lg transition-all duration-200 font-medium"
                       onClick={() => setMobileMenuOpen(false)}
                     >

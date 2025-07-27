@@ -2,40 +2,37 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
-import { useBookings } from "@/hooks/useBookings";
+import { useUnifiedOrders } from "@/hooks/useUnifiedOrders";
 import { useCompanyProfile } from "@/hooks/useCompanyProfile";
-import { useOrders } from "@/hooks/useOrders";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { BookingCardList } from "./components/BookingCardList";
 import { CompanyAddressDialog } from "./components/CompanyAddressDialog";
 import { LoadingBookings } from "@/components/bookings/LoadingBookings";
-import { PaymentCard } from "@/components/orders/PaymentCard";
-import { PaymentStats } from "@/components/orders/PaymentStats";
-import { Card, CardContent } from "@/components/ui/card";
+import { UnifiedOrderDetailsModal } from "@/components/orders/UnifiedOrderDetailsModal";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Calendar, ShoppingCart, MapPin, TrendingUp, Clock, Table, HardDrive } from "lucide-react";
+import { Package, Calendar, ShoppingCart, MapPin, TrendingUp, Clock, Table, HardDrive, Eye, RefreshCw, AlertCircle } from "lucide-react";
+import { formatCurrency } from "@/utils/formatCurrency";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import type { UnifiedOrder } from "@/hooks/useUnifiedOrders";
 
 const MyBookings = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"products" | "rooms" | "equipment">("products");
+  const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   
   const {
-    roomBookings,
-    equipmentBookings,
-    isLoading: isLoadingBookings,
-    handleCancelBooking,
-    checkPaymentStatus: checkBookingPaymentStatus,
-    requestRefund: requestBookingRefund
-  } = useBookings(user?.id);
-
-  const { 
-    productOrders, 
-    isLoading: isLoadingOrders,
-    checkPaymentStatus: checkOrderPaymentStatus,
-    requestRefund: requestOrderRefund
-  } = useOrders(user?.id);
+    allOrders,
+    productOrders,
+    roomOrders,
+    equipmentOrders,
+    isLoading,
+    checkPaymentStatus,
+    requestRefund
+  } = useUnifiedOrders(user?.id);
 
   const {
     companyProfile,
@@ -44,21 +41,21 @@ const MyBookings = () => {
     handleShowAddress
   } = useCompanyProfile();
 
-  // Wrapper functions to match the expected signatures
-  const handleCancelWrapper = (bookingId: string, type: "room" | "equipment") => {
-    handleCancelBooking(bookingId, type);
+  const handleViewDetails = (order: UnifiedOrder) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
   };
 
-  const handleRefreshStatus = (bookingId: string) => {
-    checkBookingPaymentStatus.mutate(bookingId);
+  const handleRefreshStatus = (orderId: string) => {
+    checkPaymentStatus.mutate(orderId);
   };
 
-  const handleRequestRefund = (bookingId: string, reason?: string) => {
-    requestBookingRefund.mutate({ bookingId, reason });
+  const handleRequestRefund = (orderId: string, reason?: string) => {
+    requestRefund.mutate({ orderId, reason });
   };
 
   // Show loading state
-  if ((isLoadingBookings && !roomBookings && !equipmentBookings) || isLoadingOrders) {
+  if (isLoading) {
     return (
       <MainLayout>
         <div className="container mx-auto py-8">
@@ -67,6 +64,147 @@ const MyBookings = () => {
       </MainLayout>
     );
   }
+
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const getStatusBadge = (status: string, refundStatus?: string) => {
+    if (refundStatus === "refunded") {
+      return <Badge variant="destructive">Estornado</Badge>;
+    }
+    
+    switch (status) {
+      case "paid":
+        return <Badge variant="default" className="bg-green-500">Pago</Badge>;
+      case "pending":
+        return <Badge variant="secondary">Pendente</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive">Cancelado</Badge>;
+      case "processing":
+        return <Badge variant="outline">Processando</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const OrderCard = ({ order, type }: { order: UnifiedOrder; type: "products" | "rooms" | "equipment" }) => {
+    const getOrderSummary = () => {
+      if (type === "products" && order.order_items) {
+        const itemCount = order.order_items.reduce((sum, item) => sum + item.quantity, 0);
+        return `${itemCount} ${itemCount === 1 ? 'produto' : 'produtos'}`;
+      }
+      if (type === "rooms" && order.bookings) {
+        return `${order.bookings.length} ${order.bookings.length === 1 ? 'sala reservada' : 'salas reservadas'}`;
+      }
+      if (type === "equipment" && order.booking_equipment) {
+        const totalQty = order.booking_equipment.reduce((sum, eq) => sum + eq.quantity, 0);
+        return `${totalQty} ${totalQty === 1 ? 'equipamento' : 'equipamentos'}`;
+      }
+      return "Pedido";
+    };
+
+    const canRefund = order.status === "paid" && !order.refund_status;
+
+    return (
+      <Card className="border-border/50 hover:shadow-md transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-lg">Pedido #{order.id.slice(-8)}</h3>
+                {getStatusBadge(order.status, order.refund_status)}
+              </div>
+              <p className="text-sm text-muted-foreground">{getOrderSummary()}</p>
+              <p className="text-sm text-muted-foreground">Data: {formatDate(order.created_at)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold">{formatCurrency(order.total_amount)}</p>
+              {order.payment_method && (
+                <p className="text-sm text-muted-foreground">
+                  {order.payment_method === "pix" ? "PIX" : 
+                   order.payment_method === "cartao" ? "Cartão" : 
+                   order.payment_method === "boleto" ? "Boleto" : order.payment_method}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleViewDetails(order)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Ver Detalhes
+            </Button>
+            
+            {order.status === "pending" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleRefreshStatus(order.id)}
+                disabled={checkPaymentStatus.isPending}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${checkPaymentStatus.isPending ? 'animate-spin' : ''}`} />
+                Atualizar Status
+              </Button>
+            )}
+            
+            {canRefund && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleRequestRefund(order.id)}
+                disabled={requestRefund.isPending}
+                className="text-red-600 hover:text-red-700"
+              >
+                <AlertCircle className="mr-2 h-4 w-4" />
+                Solicitar Estorno
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const EmptyState = ({ type }: { type: "products" | "rooms" | "equipment" }) => {
+    const getEmptyMessage = () => {
+      switch (type) {
+        case "products":
+          return "Nenhum pedido de produto encontrado";
+        case "rooms":
+          return "Nenhuma reserva de sala encontrada";
+        case "equipment":
+          return "Nenhuma reserva de equipamento encontrada";
+      }
+    };
+
+    const getIcon = () => {
+      switch (type) {
+        case "products":
+          return <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />;
+        case "rooms":
+          return <Table className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />;
+        case "equipment":
+          return <HardDrive className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />;
+      }
+    };
+
+    return (
+      <Card className="border-border/30">
+        <CardContent className="text-center py-16">
+          {getIcon()}
+          <h3 className="text-lg font-medium mb-2">{getEmptyMessage()}</h3>
+          <p className="text-muted-foreground mb-6">
+            Quando você fizer um pedido, ele aparecerá aqui.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <MainLayout>
@@ -93,7 +231,7 @@ const MyBookings = () => {
                   <ShoppingCart className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{productOrders?.length || 0}</p>
+                  <p className="text-2xl font-bold">{allOrders.length}</p>
                   <p className="text-sm text-muted-foreground">Pedidos Totais</p>
                 </div>
               </div>
@@ -107,7 +245,7 @@ const MyBookings = () => {
                   <Calendar className="h-6 w-6 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{(roomBookings?.length || 0) + (equipmentBookings?.length || 0)}</p>
+                  <p className="text-2xl font-bold">{roomOrders.length + equipmentOrders.length}</p>
                   <p className="text-sm text-muted-foreground">Reservas Ativas</p>
                 </div>
               </div>
@@ -122,7 +260,7 @@ const MyBookings = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {productOrders?.filter(o => o.status === 'paid').length || 0}
+                    {allOrders.filter(o => o.status === 'paid').length}
                   </p>
                   <p className="text-sm text-muted-foreground">Pedidos Pagos</p>
                 </div>
@@ -138,7 +276,7 @@ const MyBookings = () => {
                 <TabsTrigger value="products" className="flex items-center gap-2 data-[state=active]:bg-primary/10">
                   <ShoppingCart className="h-4 w-4" />
                   Pedidos de Produtos
-                  {productOrders?.length > 0 && (
+                  {productOrders.length > 0 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
                       {productOrders.length}
                     </Badge>
@@ -147,74 +285,51 @@ const MyBookings = () => {
                 <TabsTrigger value="rooms" className="flex items-center gap-2 data-[state=active]:bg-accent/10">
                   <Table className="h-4 w-4" />
                   Reservas de Salas
-                  {roomBookings?.length > 0 && (
+                  {roomOrders.length > 0 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      {roomBookings.length}
+                      {roomOrders.length}
                     </Badge>
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="equipment" className="flex items-center gap-2 data-[state=active]:bg-secondary/10">
                   <HardDrive className="h-4 w-4" />
                   Reservas de Equipamentos
-                  {equipmentBookings?.length > 0 && (
+                  {equipmentOrders.length > 0 && (
                     <Badge variant="secondary" className="ml-2 text-xs">
-                      {equipmentBookings.length}
+                      {equipmentOrders.length}
                     </Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="products" className="mt-6 space-y-6">
-                <PaymentStats orders={productOrders || []} />
-                {productOrders && productOrders.length > 0 ? (
-                  <div className="space-y-4">
-                    {productOrders.map((order) => (
-                      <PaymentCard
-                        key={order.id}
-                        order={order}
-                        onRefresh={(orderId) => checkOrderPaymentStatus.mutate(orderId)}
-                        onRefund={(orderId, reason) => requestOrderRefund.mutate({ orderId, reason })}
-                        isRefreshing={checkOrderPaymentStatus.isPending}
-                      />
-                    ))}
-                  </div>
+              <TabsContent value="products" className="mt-6 space-y-4">
+                {productOrders.length > 0 ? (
+                  productOrders.map((order) => (
+                    <OrderCard key={order.id} order={order} type="products" />
+                  ))
                 ) : (
-                  <Card className="border-border/30">
-                    <CardContent className="text-center py-16">
-                      <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-medium mb-2">Nenhum pedido encontrado</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Quando você fizer um pedido, ele aparecerá aqui.
-                      </p>
-                      <Button variant="default">
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Fazer Primeiro Pedido
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <EmptyState type="products" />
                 )}
               </TabsContent>
 
-              <TabsContent value="rooms" className="mt-6 space-y-6">
-                <BookingCardList
-                  bookings={roomBookings || []}
-                  type="room"
-                  onRefresh={handleRefreshStatus}
-                  onCancel={handleCancelWrapper}
-                  onRefund={handleRequestRefund}
-                  isRefreshing={checkBookingPaymentStatus.isPending}
-                />
+              <TabsContent value="rooms" className="mt-6 space-y-4">
+                {roomOrders.length > 0 ? (
+                  roomOrders.map((order) => (
+                    <OrderCard key={order.id} order={order} type="rooms" />
+                  ))
+                ) : (
+                  <EmptyState type="rooms" />
+                )}
               </TabsContent>
 
-              <TabsContent value="equipment" className="mt-6 space-y-6">
-                <BookingCardList
-                  bookings={equipmentBookings || []}
-                  type="equipment"
-                  onRefresh={handleRefreshStatus}
-                  onCancel={handleCancelWrapper}
-                  onRefund={handleRequestRefund}
-                  isRefreshing={checkBookingPaymentStatus.isPending}
-                />
+              <TabsContent value="equipment" className="mt-6 space-y-4">
+                {equipmentOrders.length > 0 ? (
+                  equipmentOrders.map((order) => (
+                    <OrderCard key={order.id} order={order} type="equipment" />
+                  ))
+                ) : (
+                  <EmptyState type="equipment" />
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -224,6 +339,12 @@ const MyBookings = () => {
           open={showAddressDialog}
           onOpenChange={setShowAddressDialog}
           companyProfile={companyProfile}
+        />
+
+        <UnifiedOrderDetailsModal
+          order={selectedOrder}
+          open={showDetailsModal}
+          onOpenChange={setShowDetailsModal}
         />
       </div>
     </MainLayout>
