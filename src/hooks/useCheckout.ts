@@ -70,7 +70,14 @@ export const useCheckout = () => {
             nome: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
             email: user.email || "",
             cpf: data.cpf || data.cnpj || "",
-            telefone: data.phone || ""
+            telefone: data.phone || "",
+            cep: data.cep || "",
+            rua: data.street || "",
+            numero: data.house_number || "",
+            complemento: data.complemento || "",
+            bairro: data.neighborhood || "",
+            cidade: data.city || "",
+            estado: data.state || "",
           }));
         }
       } catch (error) {
