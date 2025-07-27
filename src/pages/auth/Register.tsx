@@ -1,24 +1,23 @@
-
 import React, { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthNavbar from "@/components/navbar/AuthNavbar";
-
 const Register: React.FC = () => {
-  const { signUp, user } = useAuth();
+  const {
+    signUp,
+    user
+  } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    confirmPassword: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-
   if (user) {
     return <Navigate to="/rooms" replace />;
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -29,9 +28,7 @@ const Register: React.FC = () => {
     await signUp(formData.email, formData.password, formData.firstName, formData.lastName, "64a43fed-587b-415c-aeac-0abfd7867566");
     setIsLoading(false);
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  return <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <AuthNavbar showLoginButton={true} />
       <div className="flex min-h-screen items-center justify-center pt-16 px-4 sm:px-6">
         <div className="w-full max-w-4xl bg-white rounded-xl md:rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
@@ -43,66 +40,41 @@ const Register: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-xs sm:text-sm font-medium mb-1">Nome</label>
-                <input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  placeholder="Nome"
-                  required
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                />
+                <input id="firstName" value={formData.firstName} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  firstName: e.target.value
+                }))} placeholder="Nome" required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
               </div>
               <div>
                 <label htmlFor="lastName" className="block text-xs sm:text-sm font-medium mb-1">Sobrenome</label>
-                <input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  placeholder="Sobrenome"
-                  required
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                />
+                <input id="lastName" value={formData.lastName} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  lastName: e.target.value
+                }))} placeholder="Sobrenome" required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
               </div>
             </div>
             <div>
               <label htmlFor="email" className="block text-xs sm:text-sm font-medium mb-1">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="Email"
-                required
-                className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              />
+              <input id="email" type="email" value={formData.email} onChange={e => setFormData(prev => ({
+                ...prev,
+                email: e.target.value
+              }))} placeholder="Email" required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
             </div>
             <div>
               <label htmlFor="password" className="block text-xs sm:text-sm font-medium mb-1">Senha</label>
-              <input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                required
-                className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              />
+              <input id="password" type="password" value={formData.password} onChange={e => setFormData(prev => ({
+                ...prev,
+                password: e.target.value
+              }))} required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
             </div>
             <div>
               <label htmlFor="confirmPassword" className="block text-xs sm:text-sm font-medium mb-1">Confirmar senha</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                required
-                className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-              />
+              <input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={e => setFormData(prev => ({
+                ...prev,
+                confirmPassword: e.target.value
+              }))} required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm md:text-base py-2.5 md:py-3 rounded-md transition-all duration-300 shadow-lg hover:shadow-xl"
-              disabled={isLoading}
-            >
+            <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-sm md:text-base py-2.5 md:py-3 rounded-md transition-all duration-300 shadow-lg hover:shadow-xl" disabled={isLoading}>
               {isLoading ? "Criando conta..." : "Criar conta"}
             </button>
             <div className="flex items-center my-3 md:my-4">
@@ -110,14 +82,7 @@ const Register: React.FC = () => {
               <span className="mx-3 text-gray-400 text-xs">Ou</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 md:py-2.5 bg-white hover:bg-gray-50 font-medium text-gray-700 text-sm md:text-base"
-              // onClick={handleGoogleLogin} // implementar se necessário
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4 md:w-5 md:h-5" />
-              Cadastre-se com o Google
-            </button>
+            
             <div className="text-center text-xs md:text-sm mt-3 md:mt-4">
               Já tem uma conta? <Link to="/login" className="text-primary hover:underline font-medium">Faça login</Link>
             </div>
@@ -133,7 +98,7 @@ const Register: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 flex items-center gap-2 lg:gap-3">
                   <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="text-left">
@@ -144,7 +109,7 @@ const Register: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 flex items-center gap-2 lg:gap-3">
                   <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="text-left">
@@ -155,7 +120,7 @@ const Register: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 lg:p-4 flex items-center gap-2 lg:gap-3">
                   <div className="w-8 h-8 lg:w-10 lg:h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="text-left">
@@ -169,8 +134,6 @@ const Register: React.FC = () => {
         </div>
       </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Register;
