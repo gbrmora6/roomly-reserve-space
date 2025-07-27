@@ -1807,6 +1807,10 @@ export type Database = {
           blocked_reason: string
         }[]
       }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_active_checkout: {
         Args: { p_user_id: string }
         Returns: boolean
@@ -1821,6 +1825,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

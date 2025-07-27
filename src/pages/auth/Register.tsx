@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthNavbar from "@/components/navbar/AuthNavbar";
+import { usePasswordValidation } from "@/hooks/usePasswordValidation";
+import { toast } from "@/hooks/use-toast";
 const Register: React.FC = () => {
-  const {
-    signUp,
-    user
-  } = useAuth();
+  const { signUp, user } = useAuth();
+  const { validation, validatePassword } = usePasswordValidation();
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -15,18 +16,47 @@ const Register: React.FC = () => {
     confirmPassword: ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
   if (user) {
     return <Navigate to="/rooms" replace />;
   }
+  const handlePasswordChange = (password: string) => {
+    setFormData(prev => ({ ...prev, password }));
+    validatePassword(password);
+    setShowPasswordValidation(password.length > 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Senha inválida",
+        description: "Por favor, corrija os problemas na senha antes de continuar.",
+        variant: "destructive"
+      });
       return;
     }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Senhas não coincidem",
+        description: "Por favor, verifique se as senhas são idênticas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
-    // Use uma branch padrão para novos registros
-    await signUp(formData.email, formData.password, formData.firstName, formData.lastName, "64a43fed-587b-415c-aeac-0abfd7867566");
-    setIsLoading(false);
+    try {
+      await signUp(formData.email, formData.password, formData.firstName, formData.lastName, "64a43fed-587b-415c-aeac-0abfd7867566");
+    } catch (error) {
+      console.error("Registration error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   return <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <AuthNavbar showLoginButton={true} />
@@ -62,10 +92,49 @@ const Register: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="block text-xs sm:text-sm font-medium mb-1">Senha</label>
-              <input id="password" type="password" value={formData.password} onChange={e => setFormData(prev => ({
-                ...prev,
-                password: e.target.value
-              }))} required className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" />
+              <input 
+                id="password" 
+                type="password" 
+                value={formData.password} 
+                onChange={e => handlePasswordChange(e.target.value)}
+                required 
+                className="w-full rounded-md border border-gray-300 px-3 py-2 md:py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200" 
+              />
+              {showPasswordValidation && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-full h-1 rounded-full ${
+                      validation.strength === 'weak' ? 'bg-red-200' :
+                      validation.strength === 'medium' ? 'bg-yellow-200' :
+                      'bg-green-200'
+                    }`}>
+                      <div className={`h-full rounded-full transition-all duration-300 ${
+                        validation.strength === 'weak' ? 'w-1/3 bg-red-500' :
+                        validation.strength === 'medium' ? 'w-2/3 bg-yellow-500' :
+                        'w-full bg-green-500'
+                      }`} />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      validation.strength === 'weak' ? 'text-red-600' :
+                      validation.strength === 'medium' ? 'text-yellow-600' :
+                      'text-green-600'
+                    }`}>
+                      {validation.strength === 'weak' ? 'Fraca' :
+                       validation.strength === 'medium' ? 'Média' : 'Forte'}
+                    </span>
+                  </div>
+                  {validation.errors.length > 0 && (
+                    <ul className="text-xs text-red-600 space-y-1">
+                      {validation.errors.map((error, index) => (
+                        <li key={index} className="flex items-center gap-1">
+                          <span className="text-red-500">•</span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label htmlFor="confirmPassword" className="block text-xs sm:text-sm font-medium mb-1">Confirmar senha</label>

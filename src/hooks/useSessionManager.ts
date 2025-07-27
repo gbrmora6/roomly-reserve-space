@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { secureSessionStore } from "@/utils/encryption";
+import { secureSessionStoreV2, getSecureSessionItemV2 } from "@/utils/secureEncryption";
 import { devLog, errorLog } from "@/utils/logger";
 
 export function useSessionManager() {
@@ -43,18 +43,12 @@ export function useSessionManager() {
           setUser({ ...currentSession.user, user_metadata: newMetadata });
         })();
         
-        // Store session info securely
+        // Store session info securely using proper encryption
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          const isAdmin = 
-            currentSession.user.user_metadata?.is_admin === true || 
-            currentSession.user.user_metadata?.role === "admin" ||
-            currentSession.user.email === "admin@example.com" ||
-            currentSession.user.email === "cpd@sapiens-psi.com.br";
-            
-          if (isAdmin) {
-            secureSessionStore("admin_access_validated", "true");
-            secureSessionStore("admin_email", currentSession.user.email || "");
-          }
+          setTimeout(async () => {
+            await secureSessionStoreV2("session_validated", "true");
+            await secureSessionStoreV2("user_email", currentSession.user.email || "");
+          }, 0);
         }
       } else {
         devLog("No user in session");
@@ -68,63 +62,8 @@ export function useSessionManager() {
         setLoading(false);
       }
       
-      // Process special admin accounts
-      if (currentSession?.user) {
-        setTimeout(async () => {
-          try {
-            const userEmail = currentSession.user.email;
-            
-            // Check if this is one of our special admin emails
-            const isSpecialAdmin = 
-              userEmail === "admin@example.com" || 
-              userEmail === "cpd@sapiens-psi.com.br";
-              
-            if (isSpecialAdmin) {
-              devLog("Special admin account detected", userEmail);
-              
-              try {
-                // Get the current user's profile from the database
-                const { data: profile, error: profileError } = await supabase
-                  .from('profiles')
-                  .select('role')
-                  .eq('id', currentSession.user.id)
-                  .maybeSingle();
-                
-                if (profileError) {
-                  errorLog("Error fetching admin profile", profileError);
-                }
-                
-                // If profile doesn't exist or doesn't have admin role, update it
-                if (profileError || !profile || profile?.role !== 'admin') {
-                  // Create or update profile with admin role
-                  const { error: upsertError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                      id: currentSession.user.id,
-                      role: 'admin',
-                      first_name: currentSession.user.user_metadata.first_name || 'Admin',
-                      last_name: currentSession.user.user_metadata.last_name || 'User'
-                    });
-                  
-                  if (upsertError) {
-                    errorLog("Error updating admin profile", upsertError);
-                  } else {
-                    devLog("Admin profile updated for special account");
-                  }
-                } else {
-                  devLog("Admin profile already exists for special account");
-                }
-              } catch (updateError) {
-                errorLog("Error in admin profile update", updateError);
-              }
-            }
-          } catch (error) {
-            errorLog("Error processing user session", error);
-          } finally {
-            setLoading(false);
-          }
-        }, 0);
-      } else if (event === 'SIGNED_OUT') {
+      // Set loading state for clear events
+      if (event === 'SIGNED_OUT') {
         setLoading(false);
       }
     });
@@ -166,17 +105,11 @@ export function useSessionManager() {
             setUser({ ...currentSession.user, user_metadata: newMetadata });
           })();
           
-          // Check if user is admin and store securely
-          const isAdmin = 
-            currentSession.user.user_metadata?.is_admin === true || 
-            currentSession.user.user_metadata?.role === "admin" ||
-            currentSession.user.email === "admin@example.com" ||
-            currentSession.user.email === "cpd@sapiens-psi.com.br";
-            
-          if (isAdmin) {
-            secureSessionStore("admin_access_validated", "true");
-            secureSessionStore("admin_email", currentSession.user.email || "");
-          }
+          // Store session info securely using proper encryption
+          setTimeout(async () => {
+            await secureSessionStoreV2("session_validated", "true");
+            await secureSessionStoreV2("user_email", currentSession.user.email || "");
+          }, 0);
           
           setLoading(false);
         } else {
