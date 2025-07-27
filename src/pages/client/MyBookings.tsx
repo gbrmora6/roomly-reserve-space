@@ -20,7 +20,7 @@ import type { UnifiedOrder } from "@/hooks/useUnifiedOrders";
 
 const MyBookings = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"products" | "rooms" | "equipment">("products");
+  // Removido activeTab - agora é uma aba única
   const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   
@@ -271,67 +271,35 @@ const MyBookings = () => {
         
         <Card className="border-border/50">
           <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "products" | "rooms" | "equipment")}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="products" className="flex items-center gap-2 data-[state=active]:bg-primary/10">
-                  <ShoppingCart className="h-4 w-4" />
-                  Pedidos de Produtos
-                  {productOrders.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {productOrders.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="rooms" className="flex items-center gap-2 data-[state=active]:bg-accent/10">
-                  <Table className="h-4 w-4" />
-                  Reservas de Salas
-                  {roomOrders.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {roomOrders.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="equipment" className="flex items-center gap-2 data-[state=active]:bg-secondary/10">
-                  <HardDrive className="h-4 w-4" />
-                  Reservas de Equipamentos
-                  {equipmentOrders.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {equipmentOrders.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="products" className="mt-6 space-y-4">
-                {productOrders.length > 0 ? (
-                  productOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} type="products" />
-                  ))
-                ) : (
-                  <EmptyState type="products" />
-                )}
-              </TabsContent>
-
-              <TabsContent value="rooms" className="mt-6 space-y-4">
-                {roomOrders.length > 0 ? (
-                  roomOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} type="rooms" />
-                  ))
-                ) : (
-                  <EmptyState type="rooms" />
-                )}
-              </TabsContent>
-
-              <TabsContent value="equipment" className="mt-6 space-y-4">
-                {equipmentOrders.length > 0 ? (
-                  equipmentOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} type="equipment" />
-                  ))
-                ) : (
-                  <EmptyState type="equipment" />
-                )}
-              </TabsContent>
-            </Tabs>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Todos os Pedidos</h2>
+              <Badge variant="secondary" className="text-sm">
+                {allOrders.length} {allOrders.length === 1 ? 'pedido' : 'pedidos'}
+              </Badge>
+            </div>
+            
+            <div className="space-y-4">
+              {allOrders.length > 0 ? (
+                allOrders.map((order) => {
+                  // Determinar tipo do pedido baseado no conteúdo
+                  const type = order.order_items?.length > 0 ? 'products' : 
+                               order.bookings?.length > 0 ? 'rooms' : 'equipment';
+                  return (
+                    <OrderCard key={order.id} order={order} type={type} />
+                  );
+                })
+              ) : (
+                <Card className="border-border/30">
+                  <CardContent className="text-center py-16">
+                    <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum pedido encontrado</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Quando você fizer um pedido, ele aparecerá aqui.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </CardContent>
         </Card>
 
