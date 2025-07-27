@@ -88,7 +88,7 @@ export const OrdersTable: React.FC = () => {
             *,
             equipment:equipment(name)
           ),
-          profiles(first_name, last_name, email)
+          profiles!fk_orders_profiles(first_name, last_name, email)
         `)
         .order("created_at", { ascending: false });
       
