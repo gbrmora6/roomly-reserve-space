@@ -89,14 +89,23 @@ serve(async (req) => {
     // Verificar método de pagamento e processar estorno
     console.log("3. Processando estorno para método:", order.payment_method);
     
+    // Validar valor mínimo para estorno
+    if (order.total_amount < 0.01) {
+      throw new Error("Valor mínimo para estorno é R$ 0,01");
+    }
+    
     let refundResult;
     const authHeader = createBasicAuth(clientId, clientSecret);
+    
+    // Calcular valor em centavos, garantindo que seja um inteiro
+    const totalAmountCents = Math.round(parseFloat(order.total_amount) * 100);
+    console.log("Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
 
     switch (order.payment_method) {
       case 'pix':
         // PIX pago requer estorno via API específica
         console.log("4. Solicitando estorno PIX via API...");
-        console.log("TID:", order.click2pay_tid, "Valor:", order.total_amount);
+        console.log("TID:", order.click2pay_tid, "Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
         
         const pixResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/pix/${order.click2pay_tid}/refund`, {
           method: 'POST',
@@ -105,7 +114,7 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: Math.round(order.total_amount * 100) // Convert to cents
+            totalAmount: totalAmountCents
           })
         });
         
@@ -130,7 +139,7 @@ serve(async (req) => {
       case 'cartao':
         // Cartão pode ser estornado via API específica
         console.log("4. Solicitando estorno de cartão via API...");
-        console.log("TID:", order.click2pay_tid, "Valor:", order.total_amount);
+        console.log("TID:", order.click2pay_tid, "Valor original:", order.total_amount, "Valor em centavos:", totalAmountCents);
         
         const cardResponse = await fetch(`${CLICK2PAY_BASE_URL}/v1/transactions/creditcard/${order.click2pay_tid}/refund`, {
           method: 'POST',
@@ -139,7 +148,7 @@ serve(async (req) => {
             'Authorization': authHeader
           },
           body: JSON.stringify({
-            totalAmount: Math.round(order.total_amount * 100) // Convert to cents
+            totalAmount: totalAmountCents
           })
         });
         
@@ -148,9 +157,11 @@ serve(async (req) => {
         if (!cardResponse.ok) {
           const errorText = await cardResponse.text();
           console.error("Card Refund Error Response:", errorText);
+          console.error("Request Body was:", JSON.stringify({ totalAmount: totalAmountCents }));
+          
           try {
             const errorData = JSON.parse(errorText);
-            throw new Error(`Erro na API Click2Pay Cartão: ${errorData.message || errorData.error || 'Erro desconhecido'}`);
+            throw new Error(`Erro na API Click2Pay Cartão (${cardResponse.status}): ${errorData.errorDescription || errorData.message || errorData.error || 'Erro desconhecido'}`);
           } catch {
             throw new Error(`Erro na API Click2Pay Cartão (${cardResponse.status}): ${errorText}`);
           }

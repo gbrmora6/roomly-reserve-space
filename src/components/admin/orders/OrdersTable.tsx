@@ -69,9 +69,11 @@ export const OrdersTable: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  const { data: orders = [], isLoading, refetch } = useQuery({
+  const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
+      console.log("🔍 Fazendo consulta de pedidos...");
+      
       const { data, error } = await supabase
         .from("orders")
         .select(`
@@ -92,7 +94,14 @@ export const OrdersTable: React.FC = () => {
         `)
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erro ao buscar pedidos:", error);
+        throw error;
+      }
+      
+      console.log("✅ Pedidos carregados:", data?.length || 0, "pedidos");
+      console.log("📄 Dados completos:", data);
+      
       return data as Order[];
     },
     refetchInterval: 30000,
@@ -170,6 +179,20 @@ export const OrdersTable: React.FC = () => {
       <Card>
         <CardContent className="p-6">
           <div className="text-center">Carregando pedidos...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    console.error("❌ Erro na renderização da tabela:", error);
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Erro ao carregar pedidos:</p>
+            <p className="text-sm mt-2">{error.message}</p>
+          </div>
         </CardContent>
       </Card>
     );

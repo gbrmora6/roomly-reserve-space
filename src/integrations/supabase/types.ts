@@ -1859,6 +1859,10 @@ export type Database = {
           error_message: string
         }[]
       }
+      validate_refund_amount: {
+        Args: { p_amount: number }
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status:
