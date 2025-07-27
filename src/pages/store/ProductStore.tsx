@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShoppingBag, Search, Package, Star } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -15,6 +15,7 @@ import { useCityValidation } from "@/hooks/useCityValidation";
 import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
 
 const ProductStore = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -79,8 +80,8 @@ const ProductStore = () => {
       return;
     }
     
-    // Navigate to product detail page
-    window.location.href = `/store/product/${id}`;
+    // Navigate to product detail page usando React Router
+    navigate(`/product/${id}`);
   };
 
   const handleSortChange = (newSortBy: string, newOrder: "asc" | "desc") => {
