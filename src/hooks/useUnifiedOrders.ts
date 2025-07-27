@@ -58,20 +58,6 @@ export interface UnifiedOrder {
     last_name: string;
     email: string;
   };
-  
-  // Branch info
-  branch?: {
-    name: string;
-    city: string;
-    street?: string;
-    number?: string;
-    neighborhood?: string;
-    complement?: string;
-    zip_code?: string;
-    state?: string;
-    phone?: string;
-    email?: string;
-  };
 }
 
 export const useUnifiedOrders = (userId: string | undefined) => {
@@ -101,8 +87,7 @@ export const useUnifiedOrders = (userId: string | undefined) => {
             *,
             equipment:equipment(name, description)
           ),
-          profiles!fk_orders_profiles(first_name, last_name, email),
-          branch:branches(name, city, street, number, neighborhood, complement, zip_code, state, phone, email)
+          profiles!fk_orders_profiles(first_name, last_name, email)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });

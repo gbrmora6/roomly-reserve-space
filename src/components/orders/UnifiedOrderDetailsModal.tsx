@@ -117,36 +117,6 @@ export const UnifiedOrderDetailsModal: React.FC<UnifiedOrderDetailsModalProps> =
             </CardContent>
           </Card>
 
-          {/* Endereço da Filial */}
-          {order.branch && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Endereço da Filial
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="font-medium">{order.branch.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.branch.street} {order.branch.number && `, ${order.branch.number}`}
-                    {order.branch.complement && ` - ${order.branch.complement}`}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.branch.neighborhood}, {order.branch.city} - {order.branch.state}
-                  </p>
-                  {order.branch.zip_code && (
-                    <p className="text-sm text-muted-foreground">CEP: {order.branch.zip_code}</p>
-                  )}
-                  {order.branch.phone && (
-                    <p className="text-sm text-muted-foreground">Telefone: {order.branch.phone}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Produtos */}
           {order.order_items && order.order_items.length > 0 && (
             <Card>
