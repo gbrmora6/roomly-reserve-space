@@ -10,6 +10,7 @@ import { ReserveEquipmentModal } from "@/components/equipment/ReserveEquipmentMo
 import { useFilteredEquipment } from "@/hooks/useFilteredEquipment";
 import { useCityValidation } from "@/hooks/useCityValidation";
 import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
+import { CityValidationModal } from "@/components/shared/CityValidationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { 
@@ -34,6 +35,7 @@ const EquipmentList: React.FC = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<any | null>(null);
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [showCityAlert, setShowCityAlert] = useState(true);
+  const [showCityModal, setShowCityModal] = useState(false);
 
   const { isCityRequired, validateCitySelection } = useCityValidation({
     selectedCity,
@@ -137,7 +139,8 @@ const EquipmentList: React.FC = () => {
           onItemAction={(id) => {
             if (user) {
               // Validar se a cidade foi selecionada antes de permitir a reserva
-              if (!validateCitySelection()) {
+              if (selectedCity === "all" || !selectedCity) {
+                setShowCityModal(true);
                 return;
               }
               
@@ -164,6 +167,13 @@ const EquipmentList: React.FC = () => {
           onOpenChange={setIsReserveModalOpen}
           selectedEquipment={selectedEquipment}
           filters={filters}
+        />
+
+        {/* Modal de validação de cidade */}
+        <CityValidationModal
+          isOpen={showCityModal}
+          onClose={() => setShowCityModal(false)}
+          pageName="equipamentos"
         />
       </div>
     </MainLayout>

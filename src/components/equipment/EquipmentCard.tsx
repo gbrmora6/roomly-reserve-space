@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Clock, Plus, Minus } from "lucide-react";
+import { MapPin, Plus, Minus } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { useCompanyAddress } from "@/hooks/useCompanyAddress";
 
 interface Equipment {
   id: string;
@@ -29,6 +30,8 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
   selectedQuantity = 0, 
   onQuantityChange 
 }) => {
+  const { formatAddress } = useCompanyAddress();
+  
   const handleQuantityChange = (change: number) => {
     if (onQuantityChange) {
       const newQuantity = Math.max(0, Math.min(equipment.quantity, selectedQuantity + change));
@@ -54,8 +57,14 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
           <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2">{equipment.description || "Equipamento disponível para reserva"}</p>
           <div className="flex items-center gap-1 sm:gap-2 mb-2">
             <span className="text-lg sm:text-xl font-semibold text-gray-900">{formatCurrency(equipment.price_per_hour)}</span>
-            <span className="text-xs sm:text-sm text-gray-500">/ hour</span>
+            <span className="text-xs sm:text-sm text-gray-500">/ hora</span>
           </div>
+          {formatAddress() && (
+            <div className="flex items-center gap-1 mb-2">
+              <MapPin className="h-3 w-3 text-gray-400" />
+              <span className="text-xs text-gray-500">{formatAddress()}</span>
+            </div>
+          )}
         </div>
         {!onQuantityChange && (
           <div className="flex justify-end mt-2">

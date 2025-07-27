@@ -13,6 +13,7 @@ import { CityFilter } from "@/components/shared/CityFilter";
 import { useBranchByCity } from "@/hooks/useBranchByCity";
 import { useCityValidation } from "@/hooks/useCityValidation";
 import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
+import { CityValidationModal } from "@/components/shared/CityValidationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -23,6 +24,7 @@ const ProductStore = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [selectedCity, setSelectedCity] = useState("all");
   const [showCityAlert, setShowCityAlert] = useState(true);
+  const [showCityModal, setShowCityModal] = useState(false);
 
   const { isCityRequired, validateCitySelection } = useCityValidation({
     selectedCity,
@@ -81,7 +83,8 @@ const ProductStore = () => {
 
   const handleItemAction = (id: string) => {
     // Validar se a cidade foi selecionada antes de permitir a navegação
-    if (!validateCitySelection()) {
+    if (selectedCity === "all" || !selectedCity) {
+      setShowCityModal(true);
       return;
     }
     
@@ -155,6 +158,13 @@ const ProductStore = () => {
           sortOrder={sortOrder}
           onSortChange={handleSortChange}
           resultCount={productsWithBranches?.length}
+        />
+
+        {/* Modal de validação de cidade */}
+        <CityValidationModal
+          isOpen={showCityModal}
+          onClose={() => setShowCityModal(false)}
+          pageName="produtos"
         />
       </div>
     </MainLayout>

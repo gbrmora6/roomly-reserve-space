@@ -21,6 +21,7 @@ import { FilterActions } from "@/components/shared/FilterActions";
 import { Database } from "@/integrations/supabase/types";
 import { useCityValidation } from "@/hooks/useCityValidation";
 import CityRequiredAlert from "@/components/shared/CityRequiredAlert";
+import { CityValidationModal } from "@/components/shared/CityValidationModal";
 import { 
   Wifi, 
   Monitor, 
@@ -48,6 +49,7 @@ const RoomList: React.FC = () => {
   const [startTime, setStartTime] = useState<string>("all");
   const [endTime, setEndTime] = useState<string>("all");
   const [showCityAlert, setShowCityAlert] = useState(true);
+  const [showCityModal, setShowCityModal] = useState(false);
 
   const { isCityRequired, validateCitySelection } = useCityValidation({
     selectedCity,
@@ -105,7 +107,8 @@ const RoomList: React.FC = () => {
   const handleReserve = (id: string) => {
     if (user) {
       // Validar se a cidade foi selecionada antes de permitir a reserva
-      if (!validateCitySelection()) {
+      if (selectedCity === "all" || !selectedCity) {
+        setShowCityModal(true);
         return;
       }
       
@@ -190,7 +193,6 @@ const RoomList: React.FC = () => {
           </FilterGrid>
           
           <FilterActions
-            onFilter={() => {}}
             onClear={() => {
               setSearchTerm("");
               setSelectedCity("all");
@@ -199,6 +201,7 @@ const RoomList: React.FC = () => {
               setEndTime("all");
             }}
             hasActiveFilters={!!(searchTerm || selectedCity !== "all" || selectedDate || startTime !== "all" || endTime !== "all")}
+            activeFilterCount={[searchTerm, selectedCity !== "all", selectedDate, startTime !== "all", endTime !== "all"].filter(Boolean).length}
           />
         </FilterContainer>
 
@@ -229,6 +232,13 @@ const RoomList: React.FC = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Modal de validação de cidade */}
+        <CityValidationModal
+          isOpen={showCityModal}
+          onClose={() => setShowCityModal(false)}
+          pageName="salas"
+        />
       </div>
     </MainLayout>
   );
