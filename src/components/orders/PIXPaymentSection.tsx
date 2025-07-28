@@ -1,0 +1,188 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { QrCode, Copy, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface PIXPaymentSectionProps {
+  orderId: string;
+  createdAt: string;
+}
+
+interface PaymentDetails {
+  pix_code?: string;
+  pix_qr_code?: string;
+  pix_expiration?: string;
+}
+
+const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdAt }) => {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [isExpired, setIsExpired] = useState(false);
+
+  // Fetch payment details
+  useEffect(() => {
+    const fetchPaymentDetails = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('payment_details')
+          .select('pix_code, pix_qr_code, pix_expiration')
+          .eq('order_id', orderId)
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar detalhes de pagamento:', error);
+          return;
+        }
+
+        setPaymentDetails(data);
+      } catch (error) {
+        console.error('Erro ao carregar dados PIX:', error);
+      }
+    };
+
+    fetchPaymentDetails();
+  }, [orderId]);
+
+  // Calculate time left and update timer
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const createTime = new Date(createdAt).getTime();
+      const expirationTime = createTime + (20 * 60 * 1000); // 20 minutes
+      const now = new Date().getTime();
+      const remaining = Math.max(0, expirationTime - now);
+      
+      setTimeLeft(remaining);
+      setIsExpired(remaining === 0);
+      
+      return remaining;
+    };
+
+    // Initial calculation
+    calculateTimeLeft();
+
+    // Update every second
+    const timer = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      if (remaining === 0) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [createdAt]);
+
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast({
+      title: "Copiado!",
+      description: "Código PIX copiado para a área de transferência."
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getImageSrc = (imageData: string) => {
+    if (!imageData) return '';
+    if (imageData.startsWith('data:image/')) {
+      return imageData;
+    }
+    return `data:image/png;base64,${imageData}`;
+  };
+
+  // Don't render if expired or no payment details
+  if (isExpired || !paymentDetails) {
+    return null;
+  }
+
+  return (
+    <Card className="border-blue-200 bg-blue-50/50 backdrop-blur-sm mt-4">
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Timer */}
+          <div className="flex items-center justify-center gap-2 text-blue-800">
+            <Clock className="h-5 w-5" />
+            <span className="font-semibold">Tempo restante: {formatTime(timeLeft)}</span>
+          </div>
+
+          {/* QR Code */}
+          {paymentDetails.pix_qr_code && (
+            <div className="flex justify-center">
+              <div className="p-2 bg-white rounded-lg border border-blue-200">
+                <img 
+                  src={getImageSrc(paymentDetails.pix_qr_code)} 
+                  alt="QR Code PIX" 
+                  className="w-32 h-32 object-contain"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PIX Code */}
+          {paymentDetails.pix_code && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-blue-800">
+                Código PIX (Copia e Cola):
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={paymentDetails.pix_code} 
+                  readOnly 
+                  className="flex-1 p-2 text-xs border border-blue-300 rounded-md bg-white font-mono"
+                />
+                <Button 
+                  size="sm" 
+                  onClick={() => copyToClipboard(paymentDetails.pix_code!)} 
+                  disabled={copied}
+                  className="px-3 bg-blue-600 hover:bg-blue-700"
+                >
+                  {copied ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Instructions */}
+          <div className="bg-blue-100/50 p-3 rounded-lg">
+            <div className="flex items-center gap-2 text-blue-800 mb-2">
+              <QrCode className="w-4 h-4" />
+              <span className="font-medium text-sm">Como pagar via PIX:</span>
+            </div>
+            <ol className="text-xs text-blue-700 space-y-1">
+              <li>1. Abra o app do seu banco</li>
+              <li>2. Escaneie o QR Code ou cole o código PIX</li>
+              <li>3. Confirme o pagamento</li>
+              <li>4. Aguarde a confirmação automática</li>
+            </ol>
+          </div>
+
+          {/* Low time warning */}
+          {timeLeft < 5 * 60 * 1000 && ( // Less than 5 minutes
+            <div className="bg-amber-100 border border-amber-300 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-800">
+                <AlertCircle className="w-4 h-4" />
+                <span className="font-medium text-sm">Atenção: Pouco tempo restante!</span>
+              </div>
+              <p className="text-xs text-amber-700 mt-1">
+                Complete o pagamento antes que o PIX expire.
+              </p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PIXPaymentSection;
