@@ -3,10 +3,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { QrCode, Copy, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { UnifiedOrder } from '@/hooks/useUnifiedOrders';
 
 interface PIXPaymentSectionProps {
   order: UnifiedOrder;
+  onOrderCancelled?: () => void;
 }
 
 interface PaymentDetails {
@@ -15,16 +17,49 @@ interface PaymentDetails {
   pix_expiration?: string;
 }
 
-const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ order }) => {
+const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ order, onOrderCancelled }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isExpired, setIsExpired] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Extract PIX data from order's click2pay_response
   const pixData = order.click2pay_response?.pix;
   const pixCode = pixData?.qr_code;
   const pixQRCode = pixData?.qr_code_image?.value;
+
+  // Function to cancel expired PIX order
+  const cancelExpiredOrder = async () => {
+    if (isCancelling) return;
+    
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase.functions.invoke('cancel-expired-pix-order', {
+        body: { orderId: order.id }
+      });
+
+      if (error) {
+        console.error('Erro ao cancelar pedido PIX:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao cancelar pedido expirado",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "PIX Expirado",
+          description: "Pedido cancelado automaticamente por expiração",
+          variant: "default"
+        });
+        onOrderCancelled?.();
+      }
+    } catch (error) {
+      console.error('Erro na requisição de cancelamento:', error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   // Calculate time left and update timer
   useEffect(() => {
@@ -35,7 +70,13 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ order }) => {
       const remaining = Math.max(0, expirationTime - now);
       
       setTimeLeft(remaining);
-      setIsExpired(remaining === 0);
+      const expired = remaining === 0;
+      setIsExpired(expired);
+      
+      // Cancel order when timer reaches 0
+      if (expired && !isCancelling && order.status !== 'cancelled') {
+        cancelExpiredOrder();
+      }
       
       return remaining;
     };
@@ -45,14 +86,11 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ order }) => {
 
     // Update every second
     const timer = setInterval(() => {
-      const remaining = calculateTimeLeft();
-      if (remaining === 0) {
-        clearInterval(timer);
-      }
+      calculateTimeLeft();
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [order.created_at]);
+  }, [order.created_at, order.status, isCancelling]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);

@@ -30,6 +30,7 @@ const MyBookings = () => {
     roomOrders,
     equipmentOrders,
     isLoading,
+    refetch,
     checkPaymentStatus,
     requestRefund
   } = useUnifiedOrders(user?.id);
@@ -144,6 +145,7 @@ const MyBookings = () => {
           {isPIXPending && (
             <PIXPaymentSection 
               order={order}
+              onOrderCancelled={() => refetch()}
             />
           )}
         </CardContent>
