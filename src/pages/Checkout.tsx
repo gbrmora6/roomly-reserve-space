@@ -99,7 +99,11 @@ const Checkout = () => {
 
       console.log("Todos os itens estão disponíveis, prosseguindo com o pagamento...");
 
-      let processedPaymentData = { ...paymentData };
+      let processedPaymentData = {
+        ...paymentData,
+        nomeCompleto: paymentData.nome,
+        cpfCnpj: paymentData.cpf,
+      };
 
       // Para cartão de crédito, gerar card_hash usando cardc2p.js
       if (paymentMethod === "cartao") {
