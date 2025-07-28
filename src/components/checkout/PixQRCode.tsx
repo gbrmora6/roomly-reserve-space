@@ -128,6 +128,17 @@ const PixQRCode: React.FC<PixQRCodeProps> = ({
           <p className="text-sm text-blue-700 text-center">
             O pagamento será confirmado automaticamente após a transferência.
           </p>
+          
+          {/* Aviso de expiração */}
+          <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mt-3">
+            <div className="flex items-center space-x-2 text-amber-800">
+              <AlertCircle className="w-4 h-4" />
+              <span className="font-medium text-sm">Tempo de expiração: 20 minutos</span>
+            </div>
+            <p className="text-xs text-amber-700 mt-1">
+              Após esse período, o PIX expirará e você precisará gerar um novo pagamento.
+            </p>
+          </div>
           {reference && <p className="text-xs text-blue-600 text-center">
               Referência: {reference}
             </p>}

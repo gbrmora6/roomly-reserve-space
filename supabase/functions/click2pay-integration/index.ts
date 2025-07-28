@@ -589,7 +589,7 @@ serve(async (req) => {
         const pixData = {
           id: shortOrderId,
           totalAmount: finalTotal,
-          expiration: "86400",
+          expiration: "1200",
           returnQRCode: true,
           callbackAddress: `https://fgiidcdsvmqxdkclgety.supabase.co/functions/v1/click2pay-webhook`,
           payerInfo: customer.payerInfo
