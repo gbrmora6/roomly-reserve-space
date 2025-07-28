@@ -105,7 +105,7 @@ const MyBookings = () => {
       return "Pedido";
     };
     const canRefund = order.status === "paid" && !order.refund_status;
-    const isPIXPending = order.payment_method === "pix" && order.status === "pending";
+    const isPIXPending = order.payment_method === "pix" && (order.status === "pending" || order.status === "in_process");
     
     return <Card className="card-3d bg-card/80 backdrop-blur-sm border border-border/50 hover:border-primary/30 transition-all duration-300">
         <CardContent className="p-6">
@@ -143,8 +143,7 @@ const MyBookings = () => {
           {/* PIX Payment Section - only show for pending PIX orders */}
           {isPIXPending && (
             <PIXPaymentSection 
-              orderId={order.id} 
-              createdAt={order.created_at} 
+              order={order}
             />
           )}
         </CardContent>

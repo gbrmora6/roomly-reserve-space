@@ -3,11 +3,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { QrCode, Copy, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import type { UnifiedOrder } from '@/hooks/useUnifiedOrders';
 
 interface PIXPaymentSectionProps {
-  orderId: string;
-  createdAt: string;
+  order: UnifiedOrder;
 }
 
 interface PaymentDetails {
@@ -16,41 +15,21 @@ interface PaymentDetails {
   pix_expiration?: string;
 }
 
-const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdAt }) => {
+const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ order }) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isExpired, setIsExpired] = useState(false);
 
-  // Fetch payment details
-  useEffect(() => {
-    const fetchPaymentDetails = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('payment_details')
-          .select('pix_code, pix_qr_code, pix_expiration')
-          .eq('order_id', orderId)
-          .single();
-
-        if (error) {
-          console.error('Erro ao buscar detalhes de pagamento:', error);
-          return;
-        }
-
-        setPaymentDetails(data);
-      } catch (error) {
-        console.error('Erro ao carregar dados PIX:', error);
-      }
-    };
-
-    fetchPaymentDetails();
-  }, [orderId]);
+  // Extract PIX data from order's click2pay_response
+  const pixData = order.click2pay_response?.pix;
+  const pixCode = pixData?.qr_code;
+  const pixQRCode = pixData?.qr_code_image?.value;
 
   // Calculate time left and update timer
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const createTime = new Date(createdAt).getTime();
+      const createTime = new Date(order.created_at).getTime();
       const expirationTime = createTime + (20 * 60 * 1000); // 20 minutes
       const now = new Date().getTime();
       const remaining = Math.max(0, expirationTime - now);
@@ -73,7 +52,7 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdA
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [createdAt]);
+  }, [order.created_at]);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -100,8 +79,8 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdA
     return `data:image/png;base64,${imageData}`;
   };
 
-  // Don't render if expired or no payment details
-  if (isExpired || !paymentDetails) {
+  // Don't render if expired or no PIX data
+  if (isExpired || !pixData || !pixCode) {
     return null;
   }
 
@@ -116,11 +95,11 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdA
           </div>
 
           {/* QR Code */}
-          {paymentDetails.pix_qr_code && (
+          {pixQRCode && (
             <div className="flex justify-center">
               <div className="p-2 bg-white rounded-lg border border-blue-200">
                 <img 
-                  src={getImageSrc(paymentDetails.pix_qr_code)} 
+                  src={getImageSrc(pixQRCode)} 
                   alt="QR Code PIX" 
                   className="w-32 h-32 object-contain"
                 />
@@ -129,7 +108,7 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdA
           )}
 
           {/* PIX Code */}
-          {paymentDetails.pix_code && (
+          {pixCode && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-blue-800">
                 Código PIX (Copia e Cola):
@@ -137,13 +116,13 @@ const PIXPaymentSection: React.FC<PIXPaymentSectionProps> = ({ orderId, createdA
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  value={paymentDetails.pix_code} 
+                  value={pixCode} 
                   readOnly 
                   className="flex-1 p-2 text-xs border border-blue-300 rounded-md bg-white font-mono"
                 />
                 <Button 
                   size="sm" 
-                  onClick={() => copyToClipboard(paymentDetails.pix_code!)} 
+                  onClick={() => copyToClipboard(pixCode)} 
                   disabled={copied}
                   className="px-3 bg-blue-600 hover:bg-blue-700"
                 >

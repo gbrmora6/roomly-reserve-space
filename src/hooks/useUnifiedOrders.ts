@@ -13,6 +13,7 @@ export interface UnifiedOrder {
   refund_status?: string;
   refund_amount?: number;
   invoice_url?: string;
+  click2pay_response?: any;
   
   // Products
   order_items?: Array<{
