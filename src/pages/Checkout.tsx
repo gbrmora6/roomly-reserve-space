@@ -177,6 +177,25 @@ const Checkout = () => {
         
         data = response.data;
         error = response.error;
+      } else if (paymentMethod === "dinheiro") {
+        // Para pagamento em dinheiro (apenas admin), usar edge function específica
+        const response = await supabase.functions.invoke('admin-cash-payment', {
+          body: {
+            userId: user.id,
+            totalAmount: finalTotal,
+            paymentData: processedPaymentData,
+            couponData: hasActiveCoupon ? {
+              couponId: appliedCoupon?.couponId,
+              couponCode: appliedCoupon?.couponCode,
+              discountAmount: discountAmount,
+              originalTotal: cartTotal,
+              finalTotal: finalTotal
+            } : null
+          }
+        });
+        
+        data = response.data;
+        error = response.error;
       } else {
         // Para PIX e cartão, usar a edge function click2pay-integration
         const response = await supabase.functions.invoke('click2pay-integration', {
@@ -263,7 +282,30 @@ const Checkout = () => {
         }
 
         // Redirecionar baseado no método de pagamento e status
-        if (paymentMethod === "cartao") {
+        if (paymentMethod === "dinheiro") {
+          // Para pagamento em dinheiro, sucesso imediato
+          if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {
+            try {
+              await recordCouponUsage(data.orderId.toString(), appliedCoupon.couponId.toString(), discountAmount.toString());
+            } catch (couponError) {
+              console.error("Erro ao registrar uso do cupom:", couponError);
+            }
+          }
+          
+          clearCart();
+          toast({
+            title: "Pagamento em dinheiro confirmado!",
+            description: "O pagamento foi registrado com sucesso.",
+          });
+          navigate("/payment-success", {
+            state: {
+              paymentMethod: "dinheiro",
+              transactionId: data.transactionId,
+              amount: finalTotal,
+              orderId: data.orderId
+            }
+          });
+        } else if (paymentMethod === "cartao") {
           if (data.status === "paid" || data.status === "approved") {
             // Registrar uso do cupom se houver um aplicado
             if (hasActiveCoupon && appliedCoupon?.couponId && data.orderId) {

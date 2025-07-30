@@ -1844,8 +1844,16 @@ export type Database = {
         }
         Returns: string
       }
+      reduce_product_stock: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       remove_from_cart: {
         Args: { p_id: string }
+        Returns: boolean
+      }
+      restore_product_stock: {
+        Args: { p_order_id: string }
         Returns: boolean
       }
       update_cart: {

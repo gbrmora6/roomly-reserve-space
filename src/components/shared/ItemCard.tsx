@@ -14,6 +14,7 @@ interface ItemCardProps {
   priceLabel?: string;
   image?: string;
   status?: 'available' | 'unavailable' | 'limited' | 'active' | 'inactive';
+  stockQuantity?: number;
   location?: string;
   features?: Array<{
     icon: React.ComponentType<{
@@ -69,6 +70,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   priceLabel = "por hora",
   image,
   status,
+  stockQuantity,
   location,
   features = [],
   stats = [],
@@ -108,7 +110,21 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           </div>}
         
         {/* Status badge */}
-        {status}
+        {status && (
+          <div className="absolute top-3 right-3">
+            <Badge className={statusConfig[status]?.className}>
+              {status === 'unavailable' && stockQuantity !== undefined 
+                ? 'Fora de estoque' 
+                : statusConfig[status]?.label
+              }
+            </Badge>
+            {status === 'available' && stockQuantity !== undefined && stockQuantity < 5 && stockQuantity > 0 && (
+              <Badge variant="outline" className="mt-1 border-orange-500 text-orange-600 bg-orange-50">
+                Restam {stockQuantity}
+              </Badge>
+            )}
+          </div>
+        )}
 
         {/* Favorite button */}
         {onSecondaryAction && <Button variant="ghost" size="icon" className="absolute top-3 left-3 bg-background/80 backdrop-blur-sm hover:bg-background/90" onClick={e => {
@@ -176,9 +192,17 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
       <CardFooter className="pt-0">
         <div className="w-full space-y-3">
-          <Button onClick={onAction} variant="default" className="w-full">
+          <Button 
+            onClick={onAction} 
+            variant="default" 
+            className="w-full"
+            disabled={status === 'unavailable'}
+          >
             <Eye className="mr-2 h-4 w-4" />
-            {actionLabel}
+            {status === 'unavailable' 
+              ? (stockQuantity !== undefined ? 'Fora de estoque' : 'Indisponível')
+              : actionLabel
+            }
           </Button>
           
           {secondaryActionLabel && onSecondaryAction && <Button variant="outline" onClick={onSecondaryAction} className="w-full">

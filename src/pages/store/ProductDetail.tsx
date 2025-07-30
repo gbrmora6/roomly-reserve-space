@@ -18,11 +18,13 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, ShoppingCart, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { useToast } from "@/hooks/use-toast";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { addToCart, isAddingToCart } = useCart();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
 
@@ -51,6 +53,16 @@ const ProductDetail = () => {
     }
     
     if (!id) return;
+
+    // Check stock before adding to cart
+    if (product && product.quantity < quantity) {
+      toast({
+        variant: "destructive",
+        title: "Estoque insuficiente",
+        description: `Apenas ${product.quantity} unidades disponíveis em estoque.`
+      });
+      return;
+    }
 
     addToCart({
       itemType: 'product',

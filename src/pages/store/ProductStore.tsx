@@ -92,6 +92,7 @@ const ProductStore = () => {
     image: undefined,
     // Products don't have photos in this structure
     status: product.quantity > 0 ? 'available' as const : 'unavailable' as const,
+    stockQuantity: product.quantity,
     location: `${product.branchAddress} - Retirada na loja`
   })) || [];
   const handleItemAction = (id: string) => {

@@ -3,7 +3,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, FileText, CreditCard, Zap, Clock, Shield } from 'lucide-react';
+import { QrCode, FileText, CreditCard, Zap, Clock, Shield, Banknote } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentMethodCardsProps {
   selectedMethod: string;
@@ -11,6 +14,27 @@ interface PaymentMethodCardsProps {
 }
 
 const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCardsProps) => {
+  const { user } = useAuth();
+  
+  // Check if user is admin
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+  
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  
   const paymentMethods = [
     {
       id: 'pix',
@@ -40,6 +64,19 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
       benefits: ['Até 12x sem juros', 'Proteção antifraude', 'Aprovação rápida']
     }
   ];
+
+  // Add cash payment option for admins
+  if (isAdmin) {
+    paymentMethods.push({
+      id: 'dinheiro',
+      title: 'Pagamento em Dinheiro',
+      description: 'Apenas para administradores',
+      icon: Banknote,
+      badge: 'Admin',
+      badgeVariant: 'default' as const,
+      benefits: ['Confirmação imediata', 'Sem taxas', 'Controle manual']
+    });
+  }
 
   return (
     <RadioGroup value={selectedMethod} onValueChange={onMethodChange} className="space-y-3 sm:space-y-4">
