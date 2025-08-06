@@ -1,16 +1,19 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Room } from "@/types/room";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSelector } from "@/components/rooms/TimeSelector";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 import { useRoomReservation } from "@/hooks/useRoomReservation";
 import { useRoomSchedule } from "@/hooks/useRoomSchedule";
 import { toast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 interface ReserveRoomFormProps {
   room: Room;
@@ -30,6 +33,39 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const { availableHours, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
   const { handleReserve, loading } = useRoomReservation(room, onClose);
   const roomSchedules = useRoomSchedule(room.id);
+  
+  // Refs for auto-scroll
+  const startTimeRef = useRef<HTMLDivElement>(null);
+  const endTimeRef = useRef<HTMLDivElement>(null);
+
+  // Calculate total price
+  const totalPrice = React.useMemo(() => {
+    if (selectedStartTime && selectedEndTime && room.price_per_hour) {
+      const startMinutes = convertTimeToMinutes(selectedStartTime);
+      const endMinutes = convertTimeToMinutes(selectedEndTime);
+      const durationHours = (endMinutes - startMinutes) / 60;
+      return durationHours > 0 ? room.price_per_hour * durationHours : 0;
+    }
+    return 0;
+  }, [selectedStartTime, selectedEndTime, room.price_per_hour]);
+
+  // Auto-scroll to time selection after date is selected
+  useEffect(() => {
+    if (selectedDate && startTimeRef.current) {
+      setTimeout(() => {
+        startTimeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [selectedDate]);
+
+  // Auto-scroll to end time selection after start time is selected
+  useEffect(() => {
+    if (selectedStartTime && endTimeRef.current) {
+      setTimeout(() => {
+        endTimeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [selectedStartTime]);
 
   // Função para verificar se a sala funciona em um determinado dia da semana
   const isRoomOpenOnDay = (date: Date): boolean => {
@@ -100,100 +136,146 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-medium mb-2">Selecione a data</h3>
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => {
-            setSelectedDate(date);
-            setSelectedStartTime(null);
-            setSelectedEndTime(null);
-          }}
-          locale={ptBR}
-          className="border rounded-md p-2"
-          disabled={(date) => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Não permitir datas no passado
-            if (date < today) return true;
-            
-            // Verificar se a sala funciona neste dia da semana
-            return !isRoomOpenOnDay(date);
-          }}
-        />
-      </div>
-
-      {isLoading && (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-          <p className="text-sm text-muted-foreground mt-2">Carregando disponibilidade...</p>
-        </div>
-      )}
-
-      {selectedDate && !isLoading && (
-        <>
-          <Separator />
-          <div className="flex flex-col space-y-2">
-            <h3 className="font-medium">Horário</h3>
-            <TimeSelector
-              availableHours={availableHours}
-              blockedHours={blockedHours}
-              selectedStartTime={selectedStartTime}
-              selectedEndTime={selectedEndTime}
-              onSelectStartTime={setSelectedStartTime}
-              onSelectEndTime={setSelectedEndTime}
-            />
-          </div>
-
-          {selectedStartTime && selectedEndTime && (
-            <div className="space-y-3">
-              <Separator />
-              <div className="pt-2 space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Resumo da reserva</h3>
-                  <div className="bg-muted p-3 rounded-md">
-                    <p>
-                      <strong>Sala:</strong> {room.name}
-                    </p>
-                    <p>
-                      <strong>Data:</strong>{" "}
-                      {selectedDate &&
-                        format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
-                          locale: ptBR,
-                        })}
-                    </p>
-                    <p>
-                      <strong>Horário:</strong>{" "}
-                      {`${selectedStartTime} - ${selectedEndTime}`}
-                    </p>
-                  </div>
+    <Card className="w-full max-w-md mx-auto shadow-lg border-0">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-semibold text-center">
+          Reservar Sala
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[500px] px-6">
+          <div className="space-y-6 pb-6">
+            {/* Informações da Sala */}
+            <Card className="bg-muted/50">
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2">{room.name}</h3>
+                {room.description && (
+                  <p className="text-sm text-muted-foreground mb-2">{room.description}</p>
+                )}
+                <div className="text-sm">
+                  <span className="font-medium">Preço por hora: </span>
+                  <span className="text-primary font-semibold">
+                    {formatCurrency(room.price_per_hour || 0)}
+                  </span>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="bg-roomly-600 hover:bg-roomly-700"
-                  >
-                    {loading ? "Reservando..." : "Confirmar Reserva"}
-                  </Button>
+            {/* Seleção de Data */}
+            <div>
+              <h3 className="font-medium mb-3">Selecione a data</h3>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  setSelectedStartTime(null);
+                  setSelectedEndTime(null);
+                }}
+                locale={ptBR}
+                className="border rounded-md p-2 w-full"
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  // Não permitir datas no passado
+                  if (date < today) return true;
+                  
+                  // Verificar se a sala funciona neste dia da semana
+                  return !isRoomOpenOnDay(date);
+                }}
+              />
+            </div>
+
+            {isLoading && (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                <p className="text-sm text-muted-foreground mt-2">Carregando disponibilidade...</p>
+              </div>
+            )}
+
+            {/* Seleção de Horário */}
+            {selectedDate && !isLoading && (
+              <div ref={startTimeRef} className="space-y-3">
+                <Separator />
+                <div>
+                  <h3 className="font-medium mb-3">Selecione o horário</h3>
+                  <TimeSelector
+                    availableHours={availableHours}
+                    blockedHours={blockedHours}
+                    selectedStartTime={selectedStartTime}
+                    selectedEndTime={selectedEndTime}
+                    onSelectStartTime={setSelectedStartTime}
+                    onSelectEndTime={setSelectedEndTime}
+                  />
                 </div>
               </div>
+            )}
+
+            {/* Resumo da Reserva */}
+            {selectedStartTime && selectedEndTime && (
+              <div ref={endTimeRef} className="space-y-4">
+                <Separator />
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3">Resumo da reserva</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Sala:</span>
+                        <span className="font-medium">{room.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Data:</span>
+                        <span className="font-medium">
+                          {selectedDate &&
+                            format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
+                              locale: ptBR,
+                            })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Horário:</span>
+                        <span className="font-medium">
+                          {`${selectedStartTime} - ${selectedEndTime}`}
+                        </span>
+                      </div>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between items-center text-lg font-semibold text-primary">
+                        <span>Total:</span>
+                        <span>{formatCurrency(totalPrice)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Botões de Ação */}
+        {selectedStartTime && selectedEndTime && (
+          <div className="px-6 py-4 border-t bg-background">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="flex-1 bg-primary hover:bg-primary/90"
+              >
+                {loading ? "Adicionando..." : "Adicionar ao Carrinho"}
+              </Button>
             </div>
-          )}
-        </>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

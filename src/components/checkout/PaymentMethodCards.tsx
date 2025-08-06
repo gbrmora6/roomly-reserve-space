@@ -13,17 +13,24 @@ interface PaymentMethodCardsProps {
   onMethodChange: (method: string) => void;
 }
 
+interface PaymentSettings {
+  pix_visible: boolean;
+  boleto_visible: boolean;
+  cartao_visible: boolean;
+  dinheiro_visible: boolean;
+}
+
 const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCardsProps) => {
   const { user } = useAuth();
   
-  // Check if user is admin
+  // Check if user is admin and get payment settings
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, branch_id')
         .eq('id', user.id)
         .single();
       
@@ -32,10 +39,43 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
     },
     enabled: !!user?.id
   });
+
+  // Fetch payment settings for visibility control
+  const { data: paymentSettings } = useQuery({
+    queryKey: ['payment-settings', profile?.branch_id],
+    queryFn: async () => {
+      if (!profile?.branch_id) return null;
+      const { data, error } = await supabase
+        .from('payment_settings')
+        .select('pix_visible, boleto_visible, cartao_visible, dinheiro_visible')
+        .eq('branch_id', profile.branch_id)
+        .single();
+      
+      if (error) {
+        console.warn('Payment settings not found, using defaults');
+        return {
+          pix_visible: true,
+          boleto_visible: true,
+          cartao_visible: true,
+          dinheiro_visible: true,
+        };
+      }
+      return data;
+    },
+    enabled: !!profile?.branch_id
+  });
   
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   
-  const paymentMethods = [
+  // Default settings if not loaded yet
+  const settings: PaymentSettings = paymentSettings || {
+    pix_visible: true,
+    boleto_visible: true,
+    cartao_visible: true,
+    dinheiro_visible: true,
+  };
+  
+  const allPaymentMethods = [
     {
       id: 'pix',
       title: 'PIX',
@@ -65,9 +105,23 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
     }
   ];
 
-  // Add cash payment option for admins
-  if (isAdmin) {
-    paymentMethods.push({
+  // Filter payment methods based on visibility settings
+  const visiblePaymentMethods = allPaymentMethods.filter(method => {
+    switch (method.id) {
+      case 'pix':
+        return settings.pix_visible;
+      case 'boleto':
+        return settings.boleto_visible;
+      case 'cartao':
+        return settings.cartao_visible;
+      default:
+        return true;
+    }
+  });
+
+  // Add cash payment option for admins if visible
+  if (isAdmin && settings.dinheiro_visible) {
+    visiblePaymentMethods.push({
       id: 'dinheiro',
       title: 'Pagamento em Dinheiro',
       description: 'Apenas para administradores',
@@ -80,7 +134,7 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
 
   return (
     <RadioGroup value={selectedMethod} onValueChange={onMethodChange} className="space-y-3 sm:space-y-4">
-      {paymentMethods.map((method) => {
+      {visiblePaymentMethods.map((method) => {
         const Icon = method.icon;
         const isSelected = selectedMethod === method.id;
         

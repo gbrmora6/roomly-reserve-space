@@ -1029,40 +1029,52 @@ export type Database = {
         Row: {
           boleto_due_days: number | null
           boleto_enabled: boolean | null
+          boleto_visible: boolean | null
           branch_id: string
+          cartao_visible: boolean | null
           click2pay_api_url: string | null
           click2pay_enabled: boolean | null
           created_at: string | null
           credit_card_enabled: boolean | null
+          dinheiro_visible: boolean | null
           id: string
           pix_enabled: boolean | null
           pix_expiration_minutes: number | null
+          pix_visible: boolean | null
           updated_at: string | null
         }
         Insert: {
           boleto_due_days?: number | null
           boleto_enabled?: boolean | null
+          boleto_visible?: boolean | null
           branch_id: string
+          cartao_visible?: boolean | null
           click2pay_api_url?: string | null
           click2pay_enabled?: boolean | null
           created_at?: string | null
           credit_card_enabled?: boolean | null
+          dinheiro_visible?: boolean | null
           id?: string
           pix_enabled?: boolean | null
           pix_expiration_minutes?: number | null
+          pix_visible?: boolean | null
           updated_at?: string | null
         }
         Update: {
           boleto_due_days?: number | null
           boleto_enabled?: boolean | null
+          boleto_visible?: boolean | null
           branch_id?: string
+          cartao_visible?: boolean | null
           click2pay_api_url?: string | null
           click2pay_enabled?: boolean | null
           created_at?: string | null
           credit_card_enabled?: boolean | null
+          dinheiro_visible?: boolean | null
           id?: string
           pix_enabled?: boolean | null
           pix_expiration_minutes?: number | null
+          pix_visible?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

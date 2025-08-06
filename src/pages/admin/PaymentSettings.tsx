@@ -16,11 +16,15 @@ interface PaymentSettingsData {
   branch_id: string;
   boleto_enabled: boolean;
   boleto_due_days: number;
+  boleto_visible: boolean;
   pix_enabled: boolean;
   pix_expiration_minutes: number;
+  pix_visible: boolean;
   credit_card_enabled: boolean;
+  cartao_visible: boolean;
   click2pay_enabled: boolean;
   click2pay_api_url: string | null;
+  dinheiro_visible: boolean;
 }
 
 const PaymentSettings: React.FC = () => {
@@ -66,11 +70,15 @@ const PaymentSettings: React.FC = () => {
           branch_id: branchId,
           boleto_enabled: true,
           boleto_due_days: 3,
+          boleto_visible: true,
           pix_enabled: true,
           pix_expiration_minutes: 30,
+          pix_visible: true,
           credit_card_enabled: true,
+          cartao_visible: true,
           click2pay_enabled: false,
           click2pay_api_url: null,
+          dinheiro_visible: true,
         });
       }
     } catch (err) {
@@ -203,6 +211,18 @@ const PaymentSettings: React.FC = () => {
                 />
               </div>
               
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="boleto_visible">Exibir Boleto no checkout</Label>
+                  <p className="text-sm text-gray-500">Controla se o boleto aparece como opção de pagamento</p>
+                </div>
+                <Switch
+                  id="boleto_visible"
+                  checked={settings?.boleto_visible ?? true}
+                  onCheckedChange={(checked) => handleChange('boleto_visible', checked)}
+                />
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="boleto_due_days">Dias para Vencimento do Boleto</Label>
                 <Input
@@ -239,6 +259,18 @@ const PaymentSettings: React.FC = () => {
                 />
               </div>
               
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pix_visible">Exibir PIX no checkout</Label>
+                  <p className="text-sm text-gray-500">Controla se o PIX aparece como opção de pagamento</p>
+                </div>
+                <Switch
+                  id="pix_visible"
+                  checked={settings?.pix_visible ?? true}
+                  onCheckedChange={(checked) => handleChange('pix_visible', checked)}
+                />
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="pix_expiration_minutes">Tempo de Expiração do Pix (minutos)</Label>
                 <Input
@@ -272,6 +304,18 @@ const PaymentSettings: React.FC = () => {
                   id="credit_card_enabled"
                   checked={settings?.credit_card_enabled || false}
                   onCheckedChange={(checked) => handleChange('credit_card_enabled', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="cartao_visible">Exibir Cartão no checkout</Label>
+                  <p className="text-sm text-gray-500">Controla se o cartão aparece como opção de pagamento</p>
+                </div>
+                <Switch
+                  id="cartao_visible"
+                  checked={settings?.cartao_visible ?? true}
+                  onCheckedChange={(checked) => handleChange('cartao_visible', checked)}
                 />
               </div>
             </div>
@@ -317,6 +361,34 @@ const PaymentSettings: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            <Separator />
+
+            {/* Cash Payment Visibility Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Pagamento em Dinheiro (Admin)</h3>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="dinheiro_visible">Exibir Pagamento em Dinheiro</Label>
+                  <p className="text-sm text-gray-500">Controla se o pagamento em dinheiro aparece para administradores</p>
+                </div>
+                <Switch
+                  id="dinheiro_visible"
+                  checked={settings?.dinheiro_visible ?? true}
+                  onCheckedChange={(checked) => handleChange('dinheiro_visible', checked)}
+                />
+              </div>
+              
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-700">
+                  <strong>Nota:</strong> O pagamento em dinheiro é uma funcionalidade exclusiva para administradores e permite confirmação manual de pagamentos.
+                </p>
+              </div>
             </div>
             
             <Button 
