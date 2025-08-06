@@ -6,6 +6,7 @@ import { CreditCardPreview } from "@/components/ui/credit-card-preview";
 import { PaymentMethodErrorHandler } from "./PaymentMethodErrorHandler";
 import { PaymentData } from "@/types/payment";
 import { formatCurrency } from "@/utils/formatCurrency";
+import { useEffect } from "react";
 
 interface PaymentMethodSectionProps {
   paymentMethod: string;
@@ -24,6 +25,18 @@ export const PaymentMethodSection = ({
   finalTotal,
   error 
 }: PaymentMethodSectionProps) => {
+  
+  // Calculate maximum installments based on R$ 200 minimum per installment
+  const MIN_INSTALLMENT_VALUE = 200;
+  const maxInstallments = Math.min(12, Math.max(1, Math.floor(finalTotal / MIN_INSTALLMENT_VALUE)));
+  const installmentOptions = Array.from({ length: maxInstallments }, (_, i) => i + 1);
+  
+  // Auto-adjust installments if current selection exceeds maximum
+  useEffect(() => {
+    if (paymentData.parcelas > maxInstallments) {
+      onPaymentDataChange("parcelas", maxInstallments);
+    }
+  }, [maxInstallments, paymentData.parcelas, onPaymentDataChange]);
   return (
     <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
@@ -90,6 +103,9 @@ export const PaymentMethodSection = ({
                   <label className="text-sm font-medium text-foreground block mb-2">
                     Parcelas <span className="text-destructive">*</span>
                   </label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Parcela mínima de {formatCurrency(MIN_INSTALLMENT_VALUE)}
+                  </p>
                   <Select 
                     value={paymentData.parcelas.toString()} 
                     onValueChange={(value) => onPaymentDataChange("parcelas", parseInt(value))}
@@ -98,14 +114,22 @@ export const PaymentMethodSection = ({
                       <SelectValue placeholder="Selecione as parcelas" />
                     </SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
-                        <SelectItem key={i} value={i.toString()}>
-                          {i}x de {formatCurrency(finalTotal / i)}
-                          {i === 1 ? " à vista" : " sem juros"}
-                        </SelectItem>
-                      ))}
+                      {installmentOptions.map(i => {
+                        const installmentValue = finalTotal / i;
+                        return (
+                          <SelectItem key={i} value={i.toString()}>
+                            {i}x de {formatCurrency(installmentValue)}
+                            {i === 1 ? " à vista" : " sem juros"}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {maxInstallments < 12 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Máximo de {maxInstallments}x para este valor
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-center">

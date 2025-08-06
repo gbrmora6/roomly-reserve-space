@@ -61,7 +61,7 @@ const PaymentMethodCards = ({ selectedMethod, onMethodChange }: PaymentMethodCar
       icon: CreditCard,
       badge: 'Parcelamento',
       badgeVariant: 'outline' as const,
-      benefits: ['Até 12x sem juros', 'Proteção antifraude', 'Aprovação rápida']
+      benefits: ['Até 12x sem juros', 'Parcela mín. R$ 200', 'Aprovação rápida']
     }
   ];
 
