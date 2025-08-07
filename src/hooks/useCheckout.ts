@@ -165,6 +165,22 @@ export const useCheckout = () => {
 
     setLoading(true);
     try {
+      // Verificar disponibilidade de estoque antes do checkout
+      const { data: availabilityData, error: availabilityError } = await supabase.rpc("check_availability_before_checkout", {
+        p_user_id: user?.id
+      });
+
+      if (availabilityError) {
+        console.error("Erro ao verificar disponibilidade:", availabilityError);
+        throw new Error("Erro ao verificar disponibilidade dos itens");
+      }
+
+      // Verificar se algum item não está mais disponível
+      const unavailableItems = availabilityData.filter((item: any) => !item.is_available);
+      if (unavailableItems.length > 0) {
+        const errorMessages = unavailableItems.map((item: any) => item.error_message).join('; ');
+        throw new Error(`Alguns itens não estão mais disponíveis: ${errorMessages}`);
+      }
 
       const paymentPayload = {
         action: "create-checkout",
