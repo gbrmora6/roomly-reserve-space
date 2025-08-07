@@ -165,9 +165,6 @@ export const AdminSidebarMenu: React.FC = () => {
           <MenuLink to="/admin/payment-settings" icon={CreditCard}>
             Configurações de Pagamento
           </MenuLink>
-          <MenuLink to="/admin/expiration-settings" icon={Clock}>
-            Configurações de Expiração
-          </MenuLink>
           <MenuLink to="/admin/logs" icon={FileText}>
             Logs de Admin
           </MenuLink>

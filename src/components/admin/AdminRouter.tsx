@@ -17,7 +17,6 @@ import Products from '@/pages/admin/Products';
 import ProductSales from '@/pages/admin/ProductSales';
 import ChangeHistory from '@/pages/admin/ChangeHistory';
 import Notifications from '@/pages/admin/Notifications';
-import ExpirationSettings from '@/pages/admin/ExpirationSettings';
 import SecurityAudit from '@/pages/admin/SecurityAudit';
 import SecurityPermissions from '@/pages/admin/SecurityPermissions';
 import FinancialReports from '@/pages/admin/FinancialReports';
@@ -51,7 +50,6 @@ const AdminRouter: React.FC = () => {
       <Route path="orders" element={<Orders />} />
       <Route path="change-history" element={<ChangeHistory />} />
       <Route path="notifications" element={<Notifications />} />
-      <Route path="expiration-settings" element={<ExpirationSettings />} />
       <Route path="security-audit" element={<SecurityAudit />} />
       <Route path="security-permissions" element={<SecurityPermissions />} />
       <Route path="financial-reports" element={<FinancialReports />} />
