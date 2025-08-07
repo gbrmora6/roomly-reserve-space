@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Clock, Users, Wifi, Monitor, Coffee, Car, Eye, Heart, Star, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { cn } from "@/lib/utils";
+import { ImageCarousel } from "@/components/shared/ImageCarousel";
 interface ItemCardProps {
   id: string;
   title: string;
@@ -13,6 +14,7 @@ interface ItemCardProps {
   price?: number;
   priceLabel?: string;
   image?: string;
+  images?: string[];
   status?: 'available' | 'unavailable' | 'limited' | 'active' | 'inactive';
   stockQuantity?: number;
   location?: string;
@@ -69,6 +71,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   price,
   priceLabel = "por hora",
   image,
+  images = [],
   status,
   stockQuantity,
   location,
@@ -103,11 +106,19 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   return <Card className={cn("group overflow-hidden border-border/50 bg-card hover:border-primary/20 transition-all duration-300 hover:shadow-md", className)}>
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
-        {image ? <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-            {variant === 'room' && <Monitor className="h-16 w-16 text-muted-foreground/50" />}
-            {variant === 'equipment' && <Coffee className="h-16 w-16 text-muted-foreground/50" />}
-            {variant === 'product' && <ShoppingBag className="h-16 w-16 text-muted-foreground/50" />}
-          </div>}
+        {(() => {
+          const itemImages = images.length > 0 ? images : (image ? [image] : []);
+          
+          if (itemImages.length > 0) {
+            return <ImageCarousel images={itemImages} alt={title} className="h-full transition-transform duration-500 group-hover:scale-110" />;
+          } else {
+            return <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+              {variant === 'room' && <Monitor className="h-16 w-16 text-muted-foreground/50" />}
+              {variant === 'equipment' && <Coffee className="h-16 w-16 text-muted-foreground/50" />}
+              {variant === 'product' && <ShoppingBag className="h-16 w-16 text-muted-foreground/50" />}
+            </div>;
+          }
+        })()}
         
         {/* Status badge */}
         {status && (

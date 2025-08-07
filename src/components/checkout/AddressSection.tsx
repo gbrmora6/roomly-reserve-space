@@ -18,6 +18,11 @@ export const AddressSection = ({
           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
           <span>Endereço de faturamento</span>
         </CardTitle>
+        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800 font-medium">
+            ⚠️ Importante: Não fazemos entrega. Produtos e equipamentos devem ser retirados na filial escolhida.
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-4">

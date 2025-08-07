@@ -7,22 +7,22 @@ import { MapPin } from "lucide-react";
 import { Room } from "@/types/room";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useCompanyAddress } from "@/hooks/useCompanyAddress";
+import { ImageCarousel } from "@/components/shared/ImageCarousel";
 
 interface RoomCardProps {
   room: Room;
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
-  const firstPhoto = room.room_photos?.[0]?.url;
+  const roomImages = room.room_photos?.map(photo => photo.url) || [];
   const { formatAddress } = useCompanyAddress();
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
-      {firstPhoto && (
-        <img
-          src={firstPhoto}
+      {roomImages.length > 0 && (
+        <ImageCarousel 
+          images={roomImages}
           alt={room.name}
-          className="w-full h-48 object-cover"
         />
       )}
       <div className="flex-1 flex flex-col p-5">

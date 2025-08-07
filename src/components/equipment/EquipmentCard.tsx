@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Plus, Minus } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useCompanyAddress } from "@/hooks/useCompanyAddress";
+import { ImageCarousel } from "@/components/shared/ImageCarousel";
 
 interface Equipment {
   id: string;
@@ -17,6 +18,7 @@ interface Equipment {
   open_time?: string | null;
   close_time?: string | null;
   image_url?: string;
+  equipment_photos?: Array<{ url: string }>;
 }
 
 interface EquipmentCardProps {
@@ -39,13 +41,20 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
     }
   };
 
-  // Supondo que futuramente terá uma imagem, usar um placeholder por enquanto
-  const imageUrl = equipment.image_url || "https://placehold.co/400x300?text=Equipment";
+  // Coletar todas as imagens disponíveis
+  const equipmentImages = [];
+  if (equipment.equipment_photos?.length) {
+    equipmentImages.push(...equipment.equipment_photos.map(photo => photo.url));
+  } else if (equipment.image_url) {
+    equipmentImages.push(equipment.image_url);
+  } else {
+    equipmentImages.push("https://placehold.co/400x300?text=Equipment");
+  }
 
   return (
     <div className="bg-white rounded-xl md:rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
-      <img
-        src={imageUrl}
+      <ImageCarousel 
+        images={equipmentImages}
         alt={equipment.name}
         className="w-full h-32 sm:h-40 md:h-48 object-cover"
       />
