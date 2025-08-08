@@ -49,6 +49,8 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
     equipmentImages.push(equipment.image_url);
   }
 
+  console.log('EquipmentCard - Equipment:', equipment.name, 'Images count:', equipmentImages.length, 'Images:', equipmentImages);
+
   return (
     <div className="bg-white rounded-xl md:rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
       <div className="h-32 sm:h-40 md:h-48 w-full">

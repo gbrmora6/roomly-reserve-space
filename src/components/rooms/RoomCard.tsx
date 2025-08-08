@@ -16,6 +16,9 @@ interface RoomCardProps {
 const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
   const roomImages = room.room_photos?.map(photo => photo.url) || [];
   const { formatAddress } = useCompanyAddress();
+  
+  // Log para debug
+  console.log('RoomCard - Room:', room.name, 'Images count:', roomImages.length, 'Images:', roomImages);
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
