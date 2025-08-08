@@ -19,6 +19,7 @@ import { ShoppingBag, ShoppingCart, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { useToast } from "@/hooks/use-toast";
+import { ImageCarousel } from "@/components/shared/ImageCarousel";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +42,18 @@ const ProductDetail = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Buscar fotos do produto
+      const { data: productPhotos } = await supabase
+        .from("product_photos")
+        .select("url")
+        .eq("product_id", id)
+        .order("created_at", { ascending: true });
+      
+      return {
+        ...data,
+        product_photos: productPhotos || []
+      };
     },
     enabled: !!id,
   });
@@ -97,8 +109,18 @@ const ProductDetail = () => {
           </div>
         ) : product ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-muted rounded-lg flex items-center justify-center h-[400px]">
-              <ShoppingBag className="h-32 w-32 text-muted-foreground/30" />
+            <div className="h-[400px] rounded-lg overflow-hidden">
+              {product.product_photos && product.product_photos.length > 0 ? (
+                <ImageCarousel 
+                  images={product.product_photos.map(photo => photo.url)}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="bg-muted rounded-lg flex items-center justify-center h-full">
+                  <ShoppingBag className="h-32 w-32 text-muted-foreground/30" />
+                </div>
+              )}
             </div>
             
             <div className="space-y-6">

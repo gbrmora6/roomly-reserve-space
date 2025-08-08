@@ -55,17 +55,24 @@ const ProductStore = () => {
       } = await query;
       if (error) throw error;
 
-      // Buscar dados das filiais separadamente
+      // Buscar dados das filiais e fotos dos produtos
       if (products && products.length > 0) {
         const branchIds = [...new Set(products.map(p => p.branch_id))];
-        const {
-          data: branches
-        } = await supabase.from("branches").select("id, name, city, street, number, neighborhood").in("id", branchIds);
+        const productIds = products.map(p => p.id);
+        
+        const [
+          { data: branches },
+          { data: productPhotos }
+        ] = await Promise.all([
+          supabase.from("branches").select("id, name, city, street, number, neighborhood").in("id", branchIds),
+          supabase.from("product_photos").select("product_id, url").in("product_id", productIds)
+        ]);
 
         // Combinar dados
         return products.map(product => ({
           ...product,
-          branches: branches?.find(b => b.id === product.branch_id)
+          branches: branches?.find(b => b.id === product.branch_id),
+          product_photos: productPhotos?.filter(photo => photo.product_id === product.id) || []
         }));
       }
       return products || [];
@@ -89,8 +96,7 @@ const ProductStore = () => {
     description: product.description,
     price: product.price,
     priceLabel: "unidade",
-    image: undefined,
-    // Products don't have photos in this structure
+    images: product.product_photos?.map(photo => photo.url) || [],
     status: product.quantity > 0 ? 'available' as const : 'unavailable' as const,
     stockQuantity: product.quantity,
     location: `${product.branchAddress} - Retirada na loja`
