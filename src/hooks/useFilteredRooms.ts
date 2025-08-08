@@ -132,13 +132,6 @@ export const useFilteredRooms = ({
       }
 
       if (!rooms) return [];
-      
-      // Log para debug das imagens
-      console.log("Salas retornadas:", rooms.map(r => ({ 
-        name: r.name, 
-        photos_count: r.room_photos?.length || 0,
-        photos: r.room_photos 
-      })));
 
       // Filtro por cidade (busca filiais da cidade e filtra salas)
       let filteredRooms = rooms;

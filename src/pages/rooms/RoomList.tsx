@@ -137,7 +137,7 @@ const RoomList: React.FC = () => {
     description: room.description,
     price: room.price_per_hour,
     priceLabel: "por hora",
-    image: room.room_photos?.[0]?.url,
+    images: room.room_photos?.map(photo => photo.url) || [], // Passando todas as imagens
     status: 'available' as const,
     location: room.branches ? 
       `${room.branches.street}, ${room.branches.number} - ${room.branches.neighborhood}, ${room.branches.city}` : 

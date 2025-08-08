@@ -1,8 +1,9 @@
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ImageModalProps {
   isOpen: boolean;
@@ -33,6 +34,9 @@ export const ImageModal: React.FC<ImageModalProps> = ({
         className="max-w-4xl w-full h-[90vh] p-0 bg-black/95 border-none"
         hideCloseButton={true}
       >
+        <VisuallyHidden>
+          <DialogTitle>Visualização de Imagem</DialogTitle>
+        </VisuallyHidden>
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Botão fechar */}
           <Button

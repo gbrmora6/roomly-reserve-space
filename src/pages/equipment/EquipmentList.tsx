@@ -93,7 +93,7 @@ const EquipmentList: React.FC = () => {
     description: equipment.description,
     price: equipment.price_per_hour,
     priceLabel: "por hora",
-    image: equipment.equipment_photos?.[0]?.url,
+    images: equipment.equipment_photos?.map(photo => photo.url) || [], // Passando todas as imagens
     status: equipment.available > 0 ? 'available' as const : 'unavailable' as const,
     location: equipment.branches ? 
       `${equipment.branches.street}, ${equipment.branches.number} - ${equipment.branches.neighborhood}, ${equipment.branches.city}` : 
