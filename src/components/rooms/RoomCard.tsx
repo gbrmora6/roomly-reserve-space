@@ -19,12 +19,22 @@ const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
-      {roomImages.length > 0 && (
-        <ImageCarousel 
-          images={roomImages}
-          alt={room.name}
-        />
-      )}
+      <div className="h-48 w-full">
+        {roomImages.length > 0 ? (
+          <ImageCarousel 
+            images={roomImages}
+            alt={room.name}
+            className="h-48"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-gray-400 text-center">
+              <div className="text-2xl mb-2">🏢</div>
+              <div className="text-sm">Sem imagem</div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="flex-1 flex flex-col p-5">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

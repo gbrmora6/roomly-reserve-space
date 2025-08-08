@@ -47,17 +47,26 @@ const EquipmentCard: React.FC<EquipmentCardProps> = ({
     equipmentImages.push(...equipment.equipment_photos.map(photo => photo.url));
   } else if (equipment.image_url) {
     equipmentImages.push(equipment.image_url);
-  } else {
-    equipmentImages.push("https://placehold.co/400x300?text=Equipment");
   }
 
   return (
     <div className="bg-white rounded-xl md:rounded-2xl shadow border border-gray-100 flex flex-col h-full overflow-hidden">
-      <ImageCarousel 
-        images={equipmentImages}
-        alt={equipment.name}
-        className="w-full h-32 sm:h-40 md:h-48 object-cover"
-      />
+      <div className="h-32 sm:h-40 md:h-48 w-full">
+        {equipmentImages.length > 0 ? (
+          <ImageCarousel 
+            images={equipmentImages}
+            alt={equipment.name}
+            className="h-32 sm:h-40 md:h-48"
+          />
+        ) : (
+          <div className="w-full h-32 sm:h-40 md:h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="text-gray-400 text-center">
+              <div className="text-2xl mb-2">⚙️</div>
+              <div className="text-sm">Sem imagem</div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="flex-1 flex flex-col p-3 sm:p-4 md:p-5">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
