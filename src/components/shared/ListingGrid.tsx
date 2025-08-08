@@ -90,7 +90,12 @@ export const ListingGrid: React.FC<ListingGridProps> = ({
         </div>
         
         {/* Loading grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className={cn(
+          "grid gap-4 md:gap-6",
+          variant === 'product'
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        )}>
           {[...Array(8)].map((_, i) => (
             <ItemCard key={i} id={`loading-${i}`} title="" isLoading />
           ))}
@@ -219,7 +224,9 @@ export const ListingGrid: React.FC<ListingGridProps> = ({
       <div className={cn(
         "grid gap-4 md:gap-6",
         viewMode === 'grid' 
-          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          ? variant === 'product'
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           : "grid-cols-1"
       )}>
         {items.map((item) => (
