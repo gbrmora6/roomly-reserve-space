@@ -7,12 +7,14 @@ import { Room } from "@/types/room";
 
 export function useRoomAvailability(room: Room, selectedDate: Date | null) {
   const [availableHours, setAvailableHours] = useState<string[]>([]);
+  const [availableEndTimes, setAvailableEndTimes] = useState<string[]>([]);
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!selectedDate) {
       setAvailableHours([]);
+      setAvailableEndTimes([]);
       setBlockedHours([]);
       return;
     }
@@ -45,13 +47,16 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
             const startHour = parseInt(schedule.start_time.split(':')[0]);
             const endHour = parseInt(schedule.end_time.split(':')[0]);
             const fallbackHours = [];
-            for (let h = startHour; h < endHour; h++) {
+            // Incluir o horário de término como disponível
+            for (let h = startHour; h <= endHour; h++) {
               fallbackHours.push(`${h.toString().padStart(2, '0')}:00`);
             }
-            setAvailableHours(fallbackHours);
+            setAvailableHours(fallbackHours.slice(0, -1)); // Remover último horário dos horários de início
+            setAvailableEndTimes(fallbackHours.slice(1)); // Horários de término começam do segundo horário
             setBlockedHours([]);
           } else {
             setAvailableHours([]);
+            setAvailableEndTimes([]);
             setBlockedHours([]);
           }
           return;
@@ -62,6 +67,7 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
         if (!availabilityData || (availabilityData as any[]).length === 0) {
           console.log(`Sala ${room.name} fechada na data ${dateStr}`);
           setAvailableHours([]);
+          setAvailableEndTimes([]);
           setBlockedHours([]);
           return;
         }
@@ -69,20 +75,47 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
         // Separar horários disponíveis e bloqueados
         const available: string[] = [];
         const blocked: string[] = [];
+        const endTimes: string[] = [];
         
         (availabilityData as any[]).forEach((slot: any) => {
           if (slot.is_available) {
-            available.push(slot.hour);
+            // Verificar se é um horário de término
+            if (slot.blocked_reason === 'Horário de término') {
+              endTimes.push(slot.hour);
+            } else {
+              available.push(slot.hour);
+            }
           } else {
             blocked.push(slot.hour);
           }
         });
         
-        console.log("Horários disponíveis:", available);
-        console.log("Horários bloqueados:", blocked);
+        // Remover horários de término dos horários de início disponíveis
+        // mas mantê-los para seleção como horário de término
+        const availableForStart = available.filter(hour => !endTimes.includes(hour));
+        const allAvailableForEnd = [...available, ...endTimes];
+        
+        // Ordenar horários cronologicamente
+        const sortHours = (hours: string[]) => {
+          return hours.sort((a, b) => {
+            const hourA = parseInt(a.split(':')[0]);
+            const hourB = parseInt(b.split(':')[0]);
+            return hourA - hourB;
+          });
+        };
+        
+        const sortedAvailableForStart = sortHours(availableForStart);
+        const sortedAllAvailableForEnd = sortHours(allAvailableForEnd);
+        const sortedBlocked = sortHours(blocked);
+        
+        console.log("Horários disponíveis para início:", sortedAvailableForStart);
+        console.log("Horários disponíveis para término:", sortedAllAvailableForEnd);
+        console.log("Horários bloqueados:", sortedBlocked);
 
-        setAvailableHours(available);
-        setBlockedHours(blocked);
+        // Armazenar horários de início e término separadamente
+        setAvailableHours(sortedAvailableForStart);
+        setAvailableEndTimes(sortedAllAvailableForEnd);
+        setBlockedHours(sortedBlocked);
       } catch (error) {
         console.error("Error in fetchAvailability:", error);
       } finally {
@@ -93,5 +126,5 @@ export function useRoomAvailability(room: Room, selectedDate: Date | null) {
     fetchAvailability();
   }, [selectedDate, room]);
 
-  return { availableHours, blockedHours, isLoading };
+  return { availableHours, availableEndTimes, blockedHours, isLoading };
 }

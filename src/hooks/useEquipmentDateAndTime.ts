@@ -48,6 +48,7 @@ export function useEquipmentDateAndTime({
   const [startHour, setStartHour] = useState<string | null>(initialStartTime);
   const [endHour, setEndHour] = useState<string | null>(initialEndTime);
   const [availableHours, setAvailableHours] = useState<string[]>([]);
+  const [availableEndTimes, setAvailableEndTimes] = useState<string[]>([]);
   const [blockedHours, setBlockedHours] = useState<string[]>([]);
   const startHourRef = useRef<HTMLDivElement>(null);
   const endHourRef = useRef<HTMLDivElement>(null);
@@ -106,6 +107,14 @@ export function useEquipmentDateAndTime({
   const handleStartHourSelect = (hour: string) => {
     setStartHour(hour);
     setEndHour(null);
+    
+    // Scroll to end time section after selecting start time
+    setTimeout(() => {
+      endHourRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 100);
   };
 
   // Fetch available hours when date changes
@@ -113,6 +122,7 @@ export function useEquipmentDateAndTime({
     const fetchAvailableHours = async () => {
       if (!selectedDate) {
         setAvailableHours([]);
+        setAvailableEndTimes([]);
         setBlockedHours([]);
         return;
       }
@@ -140,6 +150,7 @@ export function useEquipmentDateAndTime({
         if (!availabilityData || availabilityData.length === 0) {
           console.log(`Equipamento ${equipment.name} fechado na data ${dateStr}`);
           setAvailableHours([]);
+          setAvailableEndTimes([]);
           setBlockedHours([]);
           return;
         }
@@ -156,14 +167,50 @@ export function useEquipmentDateAndTime({
           }
         });
         
-        console.log("Horários disponíveis:", available);
+        // Separar horários de início e término com ordenação correta
+        const startTimes = [...available].sort((a, b) => {
+          const hourA = parseInt(a.split(':')[0]);
+          const hourB = parseInt(b.split(':')[0]);
+          return hourA - hourB;
+        });
+        
+        // Gerar horários de término baseados no horário de funcionamento do equipamento
+        const allPossibleEndTimes = new Set<string>();
+        
+        // Determinar horário de fechamento (usar close_time do equipamento ou padrão 18:00)
+        const closeTime = equipment.close_time || '18:00';
+        const closeHour = parseInt(closeTime.split(':')[0]);
+        
+
+        
+        // Para cada horário disponível, gerar horários de término possíveis
+        available.forEach(availableTime => {
+          const hour = parseInt(availableTime.split(':')[0]);
+          
+          // Adicionar todos os horários possíveis de término a partir do próximo horário
+          for (let endHour = hour + 1; endHour <= closeHour; endHour++) {
+            allPossibleEndTimes.add(`${endHour.toString().padStart(2, '0')}:00`);
+          }
+        });
+        
+        // Converter para array e ordenar
+        const endTimes = Array.from(allPossibleEndTimes).sort((a, b) => {
+          const hourA = parseInt(a.split(':')[0]);
+          const hourB = parseInt(b.split(':')[0]);
+          return hourA - hourB;
+        });
+        
+        console.log("Horários de início disponíveis:", startTimes);
+        console.log("Horários de término disponíveis:", endTimes);
         console.log("Horários bloqueados:", blocked);
 
-        setAvailableHours(available);
+        setAvailableHours(startTimes);
+        setAvailableEndTimes(endTimes);
         setBlockedHours(blocked);
       } catch (error) {
         console.error("Error in fetchAvailableHours:", error);
         setAvailableHours([]);
+        setAvailableEndTimes([]);
         setBlockedHours([]);
       }
     };
@@ -177,6 +224,7 @@ export function useEquipmentDateAndTime({
     endHour,
     setEndHour,
     availableHours,
+    availableEndTimes,
     blockedHours,
     startHourRef,
     endHourRef,
