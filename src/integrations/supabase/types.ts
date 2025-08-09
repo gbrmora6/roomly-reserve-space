@@ -606,33 +606,39 @@ export type Database = {
       }
       equipment: {
         Row: {
+          advance_booking_hours: number | null
           branch_id: string
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
+          minimum_interval_minutes: number | null
           name: string
           price_per_hour: number
           quantity: number
           updated_at: string | null
         }
         Insert: {
+          advance_booking_hours?: number | null
           branch_id: string
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          minimum_interval_minutes?: number | null
           name: string
           price_per_hour: number
           quantity?: number
           updated_at?: string | null
         }
         Update: {
+          advance_booking_hours?: number | null
           branch_id?: string
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          minimum_interval_minutes?: number | null
           name?: string
           price_per_hour?: number
           quantity?: number
@@ -675,6 +681,57 @@ export type Database = {
           },
           {
             foreignKeyName: "equipment_availability_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_manual_blocks: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          created_by: string | null
+          end_time: string
+          equipment_id: string
+          id: string
+          reason: string | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          created_by?: string | null
+          end_time: string
+          equipment_id: string
+          id?: string
+          reason?: string | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_time?: string
+          equipment_id?: string
+          id?: string
+          reason?: string | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_manual_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_manual_blocks_equipment_id_fkey"
             columns: ["equipment_id"]
             isOneToOne: false
             referencedRelation: "equipment"
@@ -1285,6 +1342,57 @@ export type Database = {
           },
         ]
       }
+      room_manual_blocks: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          created_by: string | null
+          end_time: string
+          id: string
+          reason: string | null
+          room_id: string
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          created_by?: string | null
+          end_time: string
+          id?: string
+          reason?: string | null
+          room_id: string
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_time?: string
+          id?: string
+          reason?: string | null
+          room_id?: string
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_manual_blocks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_manual_blocks_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_photos: {
         Row: {
           branch_id: string
@@ -1374,6 +1482,7 @@ export type Database = {
       }
       rooms: {
         Row: {
+          advance_booking_hours: number | null
           branch_id: string
           created_at: string | null
           description: string | null
@@ -1385,11 +1494,13 @@ export type Database = {
           has_wifi: boolean | null
           id: string
           is_active: boolean | null
+          minimum_interval_minutes: number | null
           name: string
           price_per_hour: number
           updated_at: string | null
         }
         Insert: {
+          advance_booking_hours?: number | null
           branch_id: string
           created_at?: string | null
           description?: string | null
@@ -1401,11 +1512,13 @@ export type Database = {
           has_wifi?: boolean | null
           id?: string
           is_active?: boolean | null
+          minimum_interval_minutes?: number | null
           name: string
           price_per_hour: number
           updated_at?: string | null
         }
         Update: {
+          advance_booking_hours?: number | null
           branch_id?: string
           created_at?: string | null
           description?: string | null
@@ -1417,6 +1530,7 @@ export type Database = {
           has_wifi?: boolean | null
           id?: string
           is_active?: boolean | null
+          minimum_interval_minutes?: number | null
           name?: string
           price_per_hour?: number
           updated_at?: string | null

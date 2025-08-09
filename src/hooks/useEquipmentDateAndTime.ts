@@ -132,7 +132,7 @@ export function useEquipmentDateAndTime({
         
         console.log("Buscando disponibilidade para equipamento:", equipment.id, "data:", dateStr);
         
-        // Usar a função do banco que considera schedules e carrinho - igual ao de salas
+        // Usar a função atualizada do banco que considera bloqueios manuais e horários passados
         const { data: availabilityData, error } = await (supabase as any)
           .rpc("get_equipment_availability", {
             p_equipment_id: equipment.id,
@@ -180,8 +180,6 @@ export function useEquipmentDateAndTime({
         // Determinar horário de fechamento (usar close_time do equipamento ou padrão 18:00)
         const closeTime = equipment.close_time || '18:00';
         const closeHour = parseInt(closeTime.split(':')[0]);
-        
-
         
         // Para cada horário disponível, gerar horários de término possíveis
         available.forEach(availableTime => {
