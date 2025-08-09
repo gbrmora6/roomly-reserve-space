@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Room } from "@/types/room";
 import { Calendar } from "@/components/ui/calendar";
-import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { TimeSelector } from "@/components/shared/TimeSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,7 +30,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
-  const { availableHours, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
+  const { availableHours, availableEndTimes, blockedHours, isLoading } = useRoomAvailability(room, selectedDate);
   const { handleReserve, loading } = useRoomReservation(room, onClose);
   const roomSchedules = useRoomSchedule(room.id);
   
@@ -202,6 +202,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
                   <h3 className="font-medium mb-3">Selecione o horário</h3>
                   <TimeSelector
                     availableHours={availableHours}
+                    availableEndTimes={availableEndTimes}
                     blockedHours={blockedHours}
                     selectedStartTime={selectedStartTime}
                     selectedEndTime={selectedEndTime}
