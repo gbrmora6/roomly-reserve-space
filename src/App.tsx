@@ -20,7 +20,6 @@ import AdminLayout from "@/components/layout/AdminLayout";
 import AdminRouter from "@/components/admin/AdminRouter";
 import PaymentInstructionsById from "@/pages/PaymentInstructionsById";
 import PaymentError from "@/pages/PaymentError";
-import AvailabilityDebug from "@/components/debug/AvailabilityDebug";
 
 function App() {
   return (
