@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ReserveEquipmentForm } from "@/components/equipment/ReserveEquipmentForm";
 import { Database } from "@/integrations/supabase/types";
 
@@ -31,6 +31,9 @@ export const ReserveEquipmentModal: React.FC<ReserveEquipmentModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0" hideCloseButton>
+        <DialogTitle className="sr-only">
+          Reservar {selectedEquipment?.name || 'Equipamento'}
+        </DialogTitle>
         {selectedEquipment && (
           <ReserveEquipmentForm
             equipment={selectedEquipment}

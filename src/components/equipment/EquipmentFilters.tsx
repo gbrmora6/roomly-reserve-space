@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { EquipmentTimeRangeFilter } from "@/components/filters/EquipmentTimeRangeFilter";
 
 interface FiltersProps {
   filters: {
@@ -103,77 +103,13 @@ export const EquipmentFilters: React.FC<FiltersProps> = ({
           </Popover>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Horário de início
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !filters.startTime && "text-muted-foreground"
-                )}
-                disabled={!filters.date}
-              >
-                <Clock className="mr-2 h-4 w-4" />
-                {filters.startTime ? (
-                  filters.startTime
-                ) : (
-                  <span>Selecione o horário</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <div className="p-3">
-                <TimeSelector
-                  hours={hours}
-                  blockedHours={[]}
-                  selectedHour={filters.startTime || ""}
-                  onSelectHour={handleStartTimeChange}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Horário de término
-          </label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !filters.endTime && "text-muted-foreground"
-                )}
-                disabled={!filters.startTime}
-              >
-                <Clock className="mr-2 h-4 w-4" />
-                {filters.endTime ? (
-                  filters.endTime
-                ) : (
-                  <span>Selecione o horário</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <div className="p-3">
-                <TimeSelector
-                  hours={hours}
-                  blockedHours={[]}
-                  selectedHour={filters.endTime || ""}
-                  onSelectHour={handleEndTimeChange}
-                  isEndTime
-                  startHour={filters.startTime || ""}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+        <EquipmentTimeRangeFilter
+          startTime={filters.startTime}
+          endTime={filters.endTime}
+          onStartTimeChange={(time) => setFilters(prev => ({ ...prev, startTime: time }))}
+          onEndTimeChange={(time) => setFilters(prev => ({ ...prev, endTime: time }))}
+          availableHours={hours}
+        />
 
         <div className="flex items-end gap-2">
           <Button

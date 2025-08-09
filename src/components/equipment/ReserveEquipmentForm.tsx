@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DialogFooter } from "@/components/ui/dialog";
-import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { TimeSelector } from "@/components/shared/TimeSelector";
+import { useTimeSelection } from "@/hooks/useTimeSelection";
 import { EquipmentDateSelector } from "./EquipmentDateSelector";
 import { EquipmentQuantitySelector } from "./EquipmentQuantitySelector";
 import { EquipmentBookingSummary } from "./EquipmentBookingSummary";
@@ -43,6 +44,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
     state: { selectedDate, startHour, endHour, quantity, bookingTotal, isSubmitting },
     refs: { startHourRef, endHourRef },
     availableHours,
+    availableEndTimes,
     blockedHours,
     handlers: { 
       handleDateSelect, 
@@ -86,7 +88,6 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
           {selectedDate && (
             <div className="space-y-4">
               <div ref={startHourRef} className="bg-card rounded-lg p-4 shadow-sm">
-                <h3 className="text-lg font-medium mb-3">Horário de início</h3>
                 {!availableHours.length ? (
                   <div className="text-center py-4">
                     <p className="text-red-500 font-medium">
@@ -95,27 +96,20 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                   </div>
                 ) : (
                   <TimeSelector
-                    hours={availableHours}
+                    availableHours={availableHours}
                     blockedHours={blockedHours}
-                    selectedHour={startHour}
-                    onSelectHour={handleStartHourSelect}
+                    selectedStartTime={startHour}
+                    selectedEndTime={endHour}
+                    onSelectStartTime={handleStartHourSelect}
+                    onSelectEndTime={setEndHour}
+                    requireConsecutive={true}
+                    mode="both"
+                    title="Selecione os horários"
                   />
                 )}
               </div>
 
-              {startHour && (
-                <div ref={endHourRef} className="bg-card rounded-lg p-4 shadow-sm">
-                  <h3 className="text-lg font-medium mb-3">Horário de término</h3>
-                  <TimeSelector
-                    hours={availableHours}
-                    blockedHours={blockedHours}
-                    selectedHour={endHour}
-                    onSelectHour={setEndHour}
-                    isEndTime
-                    startHour={startHour}
-                  />
-                </div>
-              )}
+
 
               {endHour && (
                 <EquipmentQuantitySelector
