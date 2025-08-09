@@ -10,7 +10,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { TimeSelector } from "@/components/rooms/TimeSelector";
+import { TimeSelector } from "@/components/shared/TimeSelector";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
