@@ -18,30 +18,52 @@
     
     <!-- Click2Pay Card Library -->
     <script>
-      (function() {
-        // Configurar biblioteca Click2Pay com a chave pública
-        window.C2P_PUBLIC_KEY = "pk_test_46ac-a07e-4b16";
-        
-        // Simular a função C2PgenerateHash para desenvolvimento
-        window.C2PgenerateHash = async function(cardDetails) {
-          // Em produção, esta seria a biblioteca real da Click2Pay
-          // Por agora, retornamos um hash simulado
-          const mockHash = btoa(JSON.stringify({
-            number: cardDetails.number.slice(-4),
-            name: cardDetails.name,
-            timestamp: Date.now()
-          }));
-          return `c2p_${mockHash}`;
-        };
-      })();
+      window.C2P_PUBLIC_KEY = "E156FE2A-264D-4D8B-8B29-372630879849";
     </script>
-    <script type="module" crossorigin src="/assets/index-CI5lO6Yf.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CO09CyBF.css">
+    <script src="https://api.click2pay.com.br/c2p/integrations/public/cardc2p.js"></script>
+    <script>
+      window.C2PgenerateHash = async function(cardDetails) {
+        return new Promise((resolve, reject) => {
+          try {
+            const card = new CardHash(window.C2P_PUBLIC_KEY);
+            
+            const cardData = {
+              number: cardDetails.number,
+              expires: cardDetails.expiry,
+              cvv: cardDetails.cvc,
+              holder: cardDetails.name
+            };
+            
+            // Validar dados antes de gerar hash
+            const isValid = card.isValidInfo(cardData, function(error) {
+              reject(new Error(`Dados do cartão inválidos: ${error}`));
+            });
+            
+            if (!isValid) {
+              reject(new Error('Dados do cartão inválidos'));
+              return;
+            }
+            
+            card.getCardHash(cardData, function(hash) {
+              resolve(hash);
+            }, function(error) {
+              reject(new Error(`Erro ao gerar hash: ${error}`));
+            });
+          } catch (error) {
+            reject(new Error(`Erro na biblioteca: ${error.message}`));
+          }
+        });
+      };
+    </script>
+    <script type="module" crossorigin src="/assets/index-CR9jDWlj.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CI2WwvWP.css">
   </head>
 
   <body>
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    
+   
   </body>
 </html>
