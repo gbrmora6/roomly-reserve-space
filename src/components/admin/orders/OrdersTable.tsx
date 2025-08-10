@@ -19,6 +19,7 @@ import { Eye } from "lucide-react";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CancelCashButton } from "@/components/admin/CancelCashButton";
 
 interface Order {
   id: string;
@@ -174,6 +175,10 @@ export const OrdersTable: React.FC = () => {
   };
 
   const handleOrderRefundSuccess = () => {
+    refetch();
+  };
+
+  const handleOrderCancelSuccess = () => {
     refetch();
   };
 
@@ -347,6 +352,16 @@ export const OrdersTable: React.FC = () => {
                           paymentMethod={order.payment_method}
                           status={order.status}
                           onRefundSuccess={handleOrderRefundSuccess}
+                          size="sm"
+                        />
+                      )}
+                      {/* Botão de cancelar para pedidos em dinheiro pagos */}
+                      {order.status === "paid" && (order.payment_method || "").toLowerCase() === "dinheiro" && (
+                        <CancelCashButton
+                          orderId={order.id}
+                          paymentMethod={order.payment_method}
+                          status={order.status}
+                          onCancelSuccess={handleOrderCancelSuccess}
                           size="sm"
                         />
                       )}

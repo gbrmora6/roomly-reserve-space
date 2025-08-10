@@ -32,11 +32,13 @@ const EquipmentFormNew: React.FC = () => {
   const isEditing = !!id;
   const { user } = useAuth();
   
-  const [equipment, setEquipment] = useState<Partial<Equipment>>({
+  const [equipment, setEquipment] = useState({
     name: "",
     description: "",
     quantity: 1,
     price_per_hour: 0,
+    minimum_interval_minutes: 60,
+    advance_booking_hours: 24,
   });
   
   const [photos, setPhotos] = useState<EquipmentPhoto[]>([]);
@@ -139,6 +141,8 @@ const EquipmentFormNew: React.FC = () => {
             description: equipment.description,
             quantity: equipment.quantity,
             price_per_hour: equipment.price_per_hour,
+            minimum_interval_minutes: equipment.minimum_interval_minutes || 60,
+            advance_booking_hours: equipment.advance_booking_hours || 24,
             branch_id: branchId,
             is_active: true,
           })
@@ -155,6 +159,8 @@ const EquipmentFormNew: React.FC = () => {
             description: equipment.description,
             quantity: equipment.quantity,
             price_per_hour: equipment.price_per_hour,
+            minimum_interval_minutes: equipment.minimum_interval_minutes || 60,
+            advance_booking_hours: equipment.advance_booking_hours || 24,
           })
           .eq("id", id);
         errorEquipment = error;
@@ -307,6 +313,35 @@ const EquipmentFormNew: React.FC = () => {
                   step="0.01"
                   min="0"
                   value={equipment.price_per_hour || 0}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimum_interval_minutes">Intervalo Mínimo (minutos)</Label>
+                <Input
+                  id="minimum_interval_minutes"
+                  name="minimum_interval_minutes"
+                  type="number"
+                  min="15"
+                  step="15"
+                  value={equipment.minimum_interval_minutes || 60}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="advance_booking_hours">Antecedência Mínima (horas)</Label>
+                <Input
+                  id="advance_booking_hours"
+                  name="advance_booking_hours"
+                  type="number"
+                  min="1"
+                  value={equipment.advance_booking_hours || 24}
                   onChange={handleChange}
                   required
                 />

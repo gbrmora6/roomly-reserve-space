@@ -58,6 +58,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         const isAdmin = 
           user?.user_metadata?.is_admin === true || 
           user?.user_metadata?.role === "admin" ||
+          user?.user_metadata?.role === "super_admin" ||
           user?.email === "admin@example.com" ||
           user?.email === "cpd@sapiens-psi.com.br";
         

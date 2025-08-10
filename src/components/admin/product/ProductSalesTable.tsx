@@ -172,6 +172,7 @@ export function ProductSalesTable({
                           </Button>
                         )}
                         
+                        {/* Botão de cancelamento genérico (a lógica de cancelamento cuida do fluxo de dinheiro) */}
                         {isSuperAdmin && order.status !== 'cancelled' && (
                           <Button
                             size="sm"

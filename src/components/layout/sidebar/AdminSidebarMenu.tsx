@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { NotificationIndicator, useNotifications } from "./AdminSidebarNotifications";
 import { useAuth } from "@/contexts/AuthContext";
+import { ShieldPlus } from "lucide-react";
 
 export const AdminSidebarMenu: React.FC = () => {
   const location = useLocation();
@@ -39,6 +40,7 @@ export const AdminSidebarMenu: React.FC = () => {
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const isSuperAdmin = user?.user_metadata?.is_super_admin === true ||
+    user?.user_metadata?.role === "super_admin" ||
     user?.email === "admin@example.com" ||
     user?.email === "cpd@sapiens-psi.com.br";
 
@@ -137,6 +139,11 @@ export const AdminSidebarMenu: React.FC = () => {
           <MenuLink to="/admin/users" icon={UserPlus}>
             Usuários Admin
           </MenuLink>
+          {isSuperAdmin && (
+            <MenuLink to="/admin/create-admin-users" icon={ShieldPlus}>
+              Criar Usuários Admin
+            </MenuLink>
+          )}
         </SidebarMenu>
       </SidebarGroup>
 

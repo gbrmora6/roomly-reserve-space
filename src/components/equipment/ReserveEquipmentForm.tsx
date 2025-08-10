@@ -23,6 +23,7 @@ interface Equipment {
   open_time?: string;
   close_time?: string;
   open_days?: WeekdayEnum[];
+  minimum_interval_minutes?: number;
 }
 
 interface ReserveEquipmentFormProps {
@@ -105,6 +106,7 @@ export const ReserveEquipmentForm: React.FC<ReserveEquipmentFormProps> = ({
                     requireConsecutive={true}
                     mode="both"
                     title="Selecione os horários"
+                    minimumIntervalMinutes={equipment.minimum_interval_minutes || 60}
                   />
                 )}
               </div>

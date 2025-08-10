@@ -16,6 +16,8 @@ interface EquipmentFormData {
   open_time: string;
   close_time: string;
   open_days: string[];
+  minimum_interval_minutes?: number;
+  advance_booking_hours?: number;
 }
 
 interface EquipmentFormProps {
@@ -33,7 +35,9 @@ export function EquipmentForm({ initialData, onSubmit, isSubmitting }: Equipment
       price_per_hour: 0,
       open_time: "09:00",
       close_time: "18:00",
-      open_days: ["monday", "tuesday", "wednesday", "thursday", "friday"]
+      open_days: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      minimum_interval_minutes: 60,
+      advance_booking_hours: 24
     }
   });
 
@@ -159,6 +163,47 @@ export function EquipmentForm({ initialData, onSubmit, isSubmitting }: Equipment
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="minimum_interval_minutes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Intervalo Mínimo (minutos)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="15" 
+                    step="15"
+                    {...field} 
+                    onChange={e => field.onChange(parseInt(e.target.value) || 60)}
+                    required 
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="advance_booking_hours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Antecedência Mínima (horas)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="1"
+                    {...field} 
+                    onChange={e => field.onChange(parseInt(e.target.value) || 24)}
+                    required 
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Salvando..." : "Salvar Equipamento"}
