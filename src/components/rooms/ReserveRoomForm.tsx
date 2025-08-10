@@ -208,6 +208,7 @@ const ReserveRoomForm: React.FC<ReserveRoomFormProps> = ({ room, onClose }) => {
                     selectedEndTime={selectedEndTime}
                     onSelectStartTime={setSelectedStartTime}
                     onSelectEndTime={setSelectedEndTime}
+                    minimumIntervalMinutes={room.minimum_interval_minutes || 60}
                   />
                 </div>
               </div>

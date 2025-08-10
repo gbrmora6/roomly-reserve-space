@@ -26,6 +26,8 @@ export interface TimeSelectorProps {
   className?: string;
   // Se deve mostrar horários consecutivos apenas (para equipamentos)
   requireConsecutive?: boolean;
+  // Intervalo mínimo em minutos (padrão: 60 minutos)
+  minimumIntervalMinutes?: number;
 }
 
 // Interface legacy para compatibilidade com código existente
@@ -57,20 +59,38 @@ export const calculateConsecutiveEndTimes = (
   availableHours: string[],
   startTime: string,
   blockedHours: string[] = [],
-  maxEndHour: number = 24
+  maxEndHour: number = 24,
+  minimumIntervalMinutes: number = 60
 ): string[] => {
-  const startHourNum = parseInt(startTime.split(':')[0]);
+  // Normaliza uma string de hora para o formato HH:00
+  const normalize = (time: string) => {
+    const hourNum = parseInt(time.split(':')[0]);
+    return `${hourNum.toString().padStart(2, '0')}:00`;
+  };
+
+  // Normaliza listas de horários para evitar mismatch entre '8:00' e '08:00'
+  const normalizedAvailable = new Set(availableHours.map(normalize));
+  const normalizedBlocked = new Set(blockedHours.map(normalize));
+  const normalizedStart = normalize(startTime);
+  const startHourNum = parseInt(normalizedStart.split(':')[0]);
   const availableEndTimes: string[] = [];
   
-  // Verifica cada possível horário de término a partir da hora seguinte ao início
-  for (let endHourNum = startHourNum + 1; endHourNum <= maxEndHour; endHourNum++) {
+  // Calcular o mínimo de horas baseado no intervalo mínimo
+  const minimumHours = Math.ceil(minimumIntervalMinutes / 60);
+  const minEndHour = startHourNum + minimumHours;
+  
+  // Verifica cada possível horário de término a partir do mínimo necessário
+  for (let endHourNum = minEndHour; endHourNum <= maxEndHour; endHourNum++) {
     const endTimeStr = `${endHourNum.toString().padStart(2, '0')}:00`;
     
     // Verifica se todas as horas entre início e fim estão disponíveis
     let allConsecutiveAvailable = true;
     for (let checkHour = startHourNum; checkHour < endHourNum; checkHour++) {
       const checkTimeStr = `${checkHour.toString().padStart(2, '0')}:00`;
-      if (!availableHours.includes(checkTimeStr) || blockedHours.includes(checkTimeStr)) {
+      const isAvailable = normalizedAvailable.has(checkTimeStr);
+      const isBlocked = normalizedBlocked.has(checkTimeStr);
+      
+      if (!isAvailable || isBlocked) {
         allConsecutiveAvailable = false;
         break;
       }
@@ -85,6 +105,22 @@ export const calculateConsecutiveEndTimes = (
   }
   
   return availableEndTimes;
+};
+
+// Função para calcular horários de término respeitando intervalo mínimo para salas
+export const calculateMinimumIntervalEndTimes = (
+  availableEndTimes: string[],
+  startTime: string,
+  minimumIntervalMinutes: number = 60
+): string[] => {
+  const startHourNum = parseInt(startTime.split(':')[0]);
+  const minimumHours = Math.ceil(minimumIntervalMinutes / 60);
+  const minEndHour = startHourNum + minimumHours;
+  
+  return availableEndTimes.filter(endTime => {
+    const endHourNum = parseInt(endTime.split(':')[0]);
+    return endHourNum >= minEndHour;
+  });
 };
 
 export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps> = (props) => {
@@ -170,7 +206,8 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
     mode = 'both',
     title,
     className,
-    requireConsecutive = false
+    requireConsecutive = false,
+    minimumIntervalMinutes = 60
   } = props;
   
   if (!availableHours || !Array.isArray(availableHours)) {
@@ -184,16 +221,23 @@ export const TimeSelector: React.FC<TimeSelectorProps | LegacyTimeSelectorProps>
     let endTimes: string[] = [];
     
     if (requireConsecutive) {
-      // Para equipamentos: calcular horários consecutivos
-      endTimes = calculateConsecutiveEndTimes(availableHours, selectedStartTime, blockedHours);
+      // Para equipamentos: calcular horários consecutivos respeitando intervalo mínimo
+      endTimes = calculateConsecutiveEndTimes(
+        availableHours, 
+        selectedStartTime, 
+        blockedHours, 
+        24, 
+        minimumIntervalMinutes
+      );
     } else {
-      // Para salas: usar availableEndTimes fornecidos
+      // Para salas: usar availableEndTimes fornecidos e aplicar intervalo mínimo
       if (availableEndTimes && Array.isArray(availableEndTimes)) {
-        const startHourNum = parseInt(selectedStartTime.split(':')[0]);
-        endTimes = availableEndTimes.filter(hour => {
-          const hourNum = parseInt(hour.split(':')[0]);
-          return hourNum > startHourNum && !blockedHours.includes(hour);
-        });
+        const filteredByMinimum = calculateMinimumIntervalEndTimes(
+          availableEndTimes,
+          selectedStartTime,
+          minimumIntervalMinutes
+        );
+        endTimes = filteredByMinimum.filter(hour => !blockedHours.includes(hour));
       }
     }
     
