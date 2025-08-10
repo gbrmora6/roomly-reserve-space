@@ -172,18 +172,7 @@ export function ProductSalesTable({
                           </Button>
                         )}
                         
-                        {/* Botão de cancelamento genérico (a lógica de cancelamento cuida do fluxo de dinheiro) */}
-                        {isSuperAdmin && order.status !== 'cancelled' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onCancelOrder(order.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Cancelar pedido
-                          </Button>
-                        )}
+                        {/* Cancelamento removido desta página conforme regra: disponível apenas em Pedidos Completos */}
                         
                       </div>
                     </TableCell>
