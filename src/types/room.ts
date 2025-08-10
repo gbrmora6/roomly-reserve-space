@@ -31,4 +31,9 @@ export interface Room {
   open_time?: string | null;
   close_time?: string | null;
   open_days?: number[] | null;
+  // Added optional scheduling/config fields present in DB but missing in types
+  minimum_interval_minutes?: number | null;
+  advance_booking_hours?: number | null;
+  branch_id?: string | null;
+  is_active?: boolean | null;
 }

@@ -28,11 +28,7 @@ const RoomDetail = () => {
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
 
-  // Use room availability hook
-  const { availableHours, availableEndTimes, blockedHours } = useRoomAvailability(
-    room || null,
-    selectedDate
-  );
+  // room availability will be initialized after room data is loaded
 
   const { data: room, isLoading } = useQuery({
     queryKey: ["room-detail", id],
@@ -126,8 +122,11 @@ const RoomDetail = () => {
       </MainLayout>
     );
   }
-
-
+  // Use room availability hook after data is loaded
+  const { availableHours, availableEndTimes, blockedHours } = useRoomAvailability(
+    room || null,
+    selectedDate
+  );
 
   return (
     <MainLayout>

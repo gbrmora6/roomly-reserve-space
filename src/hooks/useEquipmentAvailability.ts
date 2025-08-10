@@ -145,12 +145,8 @@ export function useEquipmentAvailability(selectedDate: Date | null, requestedQua
       }
     };
 
-    if (startTime && endTime) {
-      fetchEquipment();
-    } else {
-      setLoading(false);
-    }
-  }, [startTime, endTime]);
+    fetchEquipmentAvailability();
+  }, [selectedDate, requestedQuantity]);
 
   return {
     availableEquipment,

@@ -11,7 +11,7 @@ export function useEquipmentSelection(
   bookingId: string | null
 ) {
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, number>>({});
-  const { availableEquipment, loading, blockedHours } = useEquipmentAvailability(startTime, endTime);
+  const { availableEquipment, loading, blockedHours } = useEquipmentAvailability(startTime);
   const { toast } = useToast();
   
   useEffect(() => {
