@@ -9,7 +9,7 @@ import { Room } from "@/types/room";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ListingGrid } from "@/components/shared/ListingGrid";
-import { CityFilter } from "@/components/shared/CityFilter";
+import { FilterBar } from "@/components/shared/FilterBar";
 import { DateFilter } from "@/components/filters/DateFilter";
 import { TimeRangeFilter } from "@/components/filters/TimeRangeFilter";
 import { useFilteredRooms } from "@/hooks/useFilteredRooms";
@@ -45,9 +45,13 @@ const RoomList: React.FC = () => {
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState<string>("all");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [startTime, setStartTime] = useState<string>("all");
-  const [endTime, setEndTime] = useState<string>("all");
+  // Estados antigos substituídos por um objeto de filtros unificado
+  const [filters, setFilters] = useState({
+    date: null as Date | null,
+    startTime: null as string | null,
+    endTime: null as string | null,
+    city: null as string | null,
+  });
   const [showCityAlert, setShowCityAlert] = useState(true);
   const [showCityModal, setShowCityModal] = useState(false);
 
@@ -98,9 +102,9 @@ const RoomList: React.FC = () => {
   const { data: rooms, isLoading, error } = useFilteredRooms({
     searchTerm,
     selectedCity,
-    selectedDate,
-    startTime,
-    endTime,
+    selectedDate: filters.date || undefined,
+    startTime: filters.startTime || "all",
+    endTime: filters.endTime || "all",
   });
 
   // Handler para reservar sala
@@ -159,51 +163,30 @@ const RoomList: React.FC = () => {
           />
         )}
         
-        <FilterContainer>
-          <SearchBar
-            placeholder="Buscar salas por nome ou descrição..."
-            value={searchTerm}
-            onChange={setSearchTerm}
-          />
-          
-          <FilterGrid>
-            <FilterField label="Cidade">
-              <CityFilter
-                selectedCity={selectedCity}
-                onCityChange={setSelectedCity}
-                placeholder="Todas as cidades"
-              />
-            </FilterField>
-            
-            <FilterField label="Data">
-              <DateFilter
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-              />
-            </FilterField>
-            
-            <FilterField label="Horário">
-              <TimeRangeFilter
-                startTime={startTime}
-                endTime={endTime}
-                onStartTimeChange={setStartTime}
-                onEndTimeChange={setEndTime}
-              />
-            </FilterField>
-          </FilterGrid>
-          
-          <FilterActions
-            onClear={() => {
-              setSearchTerm("");
-              setSelectedCity("all");
-              setSelectedDate(undefined);
-              setStartTime("all");
-              setEndTime("all");
-            }}
-            hasActiveFilters={!!(searchTerm || selectedCity !== "all" || selectedDate || startTime !== "all" || endTime !== "all")}
-            activeFilterCount={[searchTerm, selectedCity !== "all", selectedDate, startTime !== "all", endTime !== "all"].filter(Boolean).length}
-          />
-        </FilterContainer>
+        {/* Barra de Filtros Padronizada */}
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={{ ...filters, city: selectedCity !== 'all' ? selectedCity : null }}
+          onFiltersChange={(newFilters) => {
+            setFilters(newFilters);
+            if (newFilters.city !== selectedCity) {
+              setSelectedCity(newFilters.city || "all");
+            }
+          }}
+          onFilter={() => {
+            // Mantemos um handler, caso seja necessário acionar algo específico
+            console.log("Aplicando filtros (salas):", filters);
+          }}
+          onClear={() => {
+            setSearchTerm("");
+            setSelectedCity("all");
+            setFilters({ date: null, startTime: null, endTime: null, city: null });
+          }}
+          showDateTimeFilters
+          showLocationFilter
+          placeholder="Buscar salas por nome ou descrição..."
+        />
 
         <ListingGrid
           items={roomsForGrid}

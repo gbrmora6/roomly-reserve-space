@@ -29,6 +29,10 @@ interface Client {
 
 const isValidCRP = (crp: string) => /^[0-9]{7,9}$/.test(crp);
 
+// Prefer env var, fallback to project URL used by Supabase client if not set
+const SUPABASE_URL = (import.meta as any)?.env?.VITE_SUPABASE_URL || "https://fgiidcdsvmqxdkclgety.supabase.co";
+const API_BASE = `${SUPABASE_URL}/functions/v1/admin-clients`;
+
 const Clients: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,62 +41,72 @@ const Clients: React.FC = () => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        console.log("Fetching client profiles...");
-        // Busca TODOS os perfis com role de client, independente da branch
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id,first_name,last_name,email,phone,crp,specialty,cpf,cnpj,cep,street,house_number,neighborhood,city,state,role,created_at,branch_id')
-          .eq('role', 'client');
+        console.log("Fetching client profiles via Edge Function...");
+        console.log("API_BASE URL:", API_BASE);
         
-        if (profilesError) {
-          console.error("Error fetching profiles:", profilesError);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os perfis dos clientes.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log("Session data:", sessionData);
+        
+        const token = sessionData.session?.access_token;
+        if (!token) {
+          console.error("No access token found in session");
+          throw new Error("Sessão inválida. Faça login novamente.");
         }
         
-        console.log(`Fetched ${profiles?.length || 0} client profiles`);
+        console.log("Invoking Edge Function with token:", token.substring(0, 20) + "...");
+
+        // Use supabase.functions.invoke to guarantee the correct project URL and auth context
+        const { data, error } = await supabase.functions.invoke('admin-clients', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
         
-        // Processar os perfis que foram retornados com sucesso
-        const clientsData = profiles ? profiles.map(profile => {
-          return {
-            id: profile.id,
-            first_name: profile.first_name || '',
-            last_name: profile.last_name || '',
-            email: profile.email || '',
-            phone: profile.phone || '',
-            crp: profile.crp || '',
-            cpf: profile.cpf,
-            cnpj: profile.cnpj,
-            specialty: profile.specialty,
-            cep: profile.cep,
-            street: profile.street,
-            house_number: profile.house_number,
-            neighborhood: profile.neighborhood,
-            city: profile.city,
-            state: profile.state,
-            role: profile.role,
-            created_at: profile.created_at
-          };
-        }) : [];
-        
+        if (error) {
+          console.error("Edge Function error:", error);
+          throw new Error(error.message || 'Falha ao buscar clientes');
+        }
+
+        console.log("Edge Function response data:", data);
+
+        const profiles = (data as any)?.clients as any[];
+        if (!profiles) {
+          console.warn('Nenhum dado de clientes retornado da função.');
+        }
+
+        const clientsData = profiles ? profiles.map((profile) => ({
+          id: profile.id,
+          first_name: profile.first_name || '',
+          last_name: profile.last_name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          crp: profile.crp || '',
+          cpf: profile.cpf ?? null,
+          cnpj: profile.cnpj ?? null,
+          specialty: profile.specialty ?? null,
+          cep: profile.cep ?? null,
+          street: profile.street ?? null,
+          house_number: profile.house_number ?? null,
+          neighborhood: profile.neighborhood ?? null,
+          city: profile.city ?? null,
+          state: profile.state ?? null,
+          role: profile.role ?? null,
+          created_at: profile.created_at,
+        })) : [];
         setClients(clientsData);
       } catch (error) {
         console.error("Error in fetchClients:", error);
         toast({
           title: "Erro",
-          description: "Ocorreu um erro ao buscar os dados dos clientes.",
+          description: `Ocorreu um erro ao buscar os dados dos clientes: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
           variant: "destructive",
         });
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchClients();
   }, [toast]);
 

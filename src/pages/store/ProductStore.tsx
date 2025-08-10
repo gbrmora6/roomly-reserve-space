@@ -136,13 +136,29 @@ const ProductStore = () => {
         
         {isCityRequired && showCityAlert && <CityRequiredAlert pageName="produtos" onDismiss={() => setShowCityAlert(false)} />}
 
-        <FilterBar searchTerm={searchTerm} onSearchChange={setSearchTerm} filters={{
-        city: selectedCity
-      }} onFiltersChange={newFilters => {
-        if (newFilters.city !== selectedCity) {
-          setSelectedCity(newFilters.city || "all");
-        }
-      }} showLocationFilter placeholder="Buscar produtos..." />
+        {/* Barra de Filtros Padronizada */}
+        <FilterBar 
+          searchTerm={searchTerm} 
+          onSearchChange={setSearchTerm} 
+          filters={{
+            city: selectedCity
+          }} 
+          onFiltersChange={(newFilters) => {
+            if (newFilters.city !== selectedCity) {
+              setSelectedCity(newFilters.city || "all");
+            }
+          }}
+          onFilter={() => {
+            // Mantemos um handler, caso seja necessário acionar algo específico
+            console.log("Aplicando filtros (produtos):", { city: selectedCity });
+          }}
+          onClear={() => {
+            setSearchTerm("");
+            setSelectedCity("all");
+          }}
+          showLocationFilter 
+          placeholder="Buscar produtos por nome ou descrição..." 
+        />
 
         <ListingGrid items={productsForGrid} isLoading={isLoading} error={error} onItemAction={handleItemAction} actionLabel="Ver Detalhes" emptyTitle="Nenhum produto encontrado" emptyDescription={searchTerm ? "Tente uma busca diferente" : "Estamos adicionando novos produtos em breve"} emptyIcon={ShoppingBag} variant="product" sortBy={sortBy} sortOrder={sortOrder} onSortChange={handleSortChange} resultCount={productsWithBranches?.length} />
 

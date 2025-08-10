@@ -38,7 +38,7 @@ const RoomFormNew: React.FC = () => {
   const isEditing = !!id;
   const { user } = useAuth();
   
-  const [room, setRoom] = useState<Partial<Room>>({
+  const [room, setRoom] = useState({
     name: "",
     description: "",
     has_wifi: false,
@@ -48,6 +48,8 @@ const RoomFormNew: React.FC = () => {
     has_tv: false,
     has_private_bathroom: false,
     price_per_hour: 0,
+    minimum_interval_minutes: 60,
+    advance_booking_hours: 24,
   });
   
   const [photos, setPhotos] = useState<RoomPhoto[]>([]);
@@ -159,6 +161,8 @@ const RoomFormNew: React.FC = () => {
             has_tv: room.has_tv,
             has_private_bathroom: room.has_private_bathroom,
             price_per_hour: room.price_per_hour,
+            minimum_interval_minutes: room.minimum_interval_minutes || 60,
+            advance_booking_hours: room.advance_booking_hours || 24,
             branch_id: branchId,
             is_active: true,
           })
@@ -180,6 +184,8 @@ const RoomFormNew: React.FC = () => {
             has_tv: room.has_tv,
             has_private_bathroom: room.has_private_bathroom,
             price_per_hour: room.price_per_hour,
+            minimum_interval_minutes: room.minimum_interval_minutes || 60,
+            advance_booking_hours: room.advance_booking_hours || 24,
           })
           .eq("id", id);
         errorRoom = error;
@@ -388,6 +394,35 @@ const RoomFormNew: React.FC = () => {
                 onChange={handleChange}
                 required
               />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimum_interval_minutes">Intervalo Mínimo (minutos)</Label>
+                <Input
+                  id="minimum_interval_minutes"
+                  name="minimum_interval_minutes"
+                  type="number"
+                  min="15"
+                  step="15"
+                  value={room.minimum_interval_minutes || 60}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="advance_booking_hours">Antecedência Mínima (horas)</Label>
+                <Input
+                  id="advance_booking_hours"
+                  name="advance_booking_hours"
+                  type="number"
+                  min="1"
+                  value={room.advance_booking_hours || 24}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
           </div>
 

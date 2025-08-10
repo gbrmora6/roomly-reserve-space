@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { Separator } from "@/components/ui/separator";
+import { useRoomAvailability } from "@/hooks/useRoomAvailability";
 
 const RoomDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +27,12 @@ const RoomDetail = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null);
   const [selectedEndTime, setSelectedEndTime] = useState<string | null>(null);
+
+  // Use room availability hook
+  const { availableHours, availableEndTimes, blockedHours } = useRoomAvailability(
+    room || null,
+    selectedDate
+  );
 
   const { data: room, isLoading } = useQuery({
     queryKey: ["room-detail", id],
@@ -120,8 +127,7 @@ const RoomDetail = () => {
     );
   }
 
-  const availableHours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
-  const blockedHours: string[] = [];
+
 
   return (
     <MainLayout>
@@ -258,11 +264,13 @@ const RoomDetail = () => {
                       </h3>
                       <TimeSelector
                         availableHours={availableHours}
+                        availableEndTimes={availableEndTimes}
                         blockedHours={blockedHours}
                         selectedStartTime={selectedStartTime}
                         selectedEndTime={selectedEndTime}
                         onSelectStartTime={setSelectedStartTime}
                         onSelectEndTime={setSelectedEndTime}
+                        minimumIntervalMinutes={room?.minimum_interval_minutes || 60}
                       />
                     </div>
                   </>

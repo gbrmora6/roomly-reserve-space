@@ -303,6 +303,8 @@ const EquipmentDetail = () => {
                         selectedEndTime={selectedEndTime}
                         onSelectStartTime={setSelectedStartTime}
                         onSelectEndTime={setSelectedEndTime}
+                        requireConsecutive={true}
+                        minimumIntervalMinutes={equipment?.minimum_interval_minutes || 60}
                       />
                     </div>
                   </>

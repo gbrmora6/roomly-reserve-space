@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+// import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -14,16 +14,9 @@ import { Separator } from '@/components/ui/separator';
 interface PaymentSettingsData {
   id?: string;
   branch_id: string;
-  boleto_enabled: boolean;
-  boleto_due_days: number;
   boleto_visible: boolean;
-  pix_enabled: boolean;
-  pix_expiration_minutes: number;
   pix_visible: boolean;
-  credit_card_enabled: boolean;
   cartao_visible: boolean;
-  click2pay_enabled: boolean;
-  click2pay_api_url: string | null;
   dinheiro_visible: boolean;
 }
 
@@ -68,16 +61,9 @@ const PaymentSettings: React.FC = () => {
         // Create default settings if none exist
         setSettings({
           branch_id: branchId,
-          boleto_enabled: true,
-          boleto_due_days: 3,
           boleto_visible: true,
-          pix_enabled: true,
-          pix_expiration_minutes: 30,
           pix_visible: true,
-          credit_card_enabled: true,
           cartao_visible: true,
-          click2pay_enabled: false,
-          click2pay_api_url: null,
           dinheiro_visible: true,
         });
       }
@@ -201,18 +187,6 @@ const PaymentSettings: React.FC = () => {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="boleto_enabled">Habilitar Boleto</Label>
-                  <p className="text-sm text-gray-500">Permitir pagamentos via boleto bancário</p>
-                </div>
-                <Switch
-                  id="boleto_enabled"
-                  checked={settings?.boleto_enabled || false}
-                  onCheckedChange={(checked) => handleChange('boleto_enabled', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
                   <Label htmlFor="boleto_visible">Exibir Boleto no checkout</Label>
                   <p className="text-sm text-gray-500">Controla se o boleto aparece como opção de pagamento</p>
                 </div>
@@ -220,20 +194,6 @@ const PaymentSettings: React.FC = () => {
                   id="boleto_visible"
                   checked={settings?.boleto_visible ?? true}
                   onCheckedChange={(checked) => handleChange('boleto_visible', checked)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="boleto_due_days">Dias para Vencimento do Boleto</Label>
-                <Input
-                  id="boleto_due_days"
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={settings?.boleto_due_days || 3}
-                  onChange={(e) => handleChange('boleto_due_days', parseInt(e.target.value))}
-                  placeholder="Dias para vencimento"
-                  disabled={!settings?.boleto_enabled}
                 />
               </div>
             </div>
@@ -249,18 +209,6 @@ const PaymentSettings: React.FC = () => {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="pix_enabled">Habilitar Pix</Label>
-                  <p className="text-sm text-gray-500">Permitir pagamentos via Pix</p>
-                </div>
-                <Switch
-                  id="pix_enabled"
-                  checked={settings?.pix_enabled || false}
-                  onCheckedChange={(checked) => handleChange('pix_enabled', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
                   <Label htmlFor="pix_visible">Exibir PIX no checkout</Label>
                   <p className="text-sm text-gray-500">Controla se o PIX aparece como opção de pagamento</p>
                 </div>
@@ -268,20 +216,6 @@ const PaymentSettings: React.FC = () => {
                   id="pix_visible"
                   checked={settings?.pix_visible ?? true}
                   onCheckedChange={(checked) => handleChange('pix_visible', checked)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="pix_expiration_minutes">Tempo de Expiração do Pix (minutos)</Label>
-                <Input
-                  id="pix_expiration_minutes"
-                  type="number"
-                  min="5"
-                  max="1440"
-                  value={settings?.pix_expiration_minutes || 30}
-                  onChange={(e) => handleChange('pix_expiration_minutes', parseInt(e.target.value))}
-                  placeholder="Minutos para expiração"
-                  disabled={!settings?.pix_enabled}
                 />
               </div>
             </div>
@@ -297,18 +231,6 @@ const PaymentSettings: React.FC = () => {
               
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="credit_card_enabled">Habilitar Cartão de Crédito</Label>
-                  <p className="text-sm text-gray-500">Permitir pagamentos via cartão de crédito</p>
-                </div>
-                <Switch
-                  id="credit_card_enabled"
-                  checked={settings?.credit_card_enabled || false}
-                  onCheckedChange={(checked) => handleChange('credit_card_enabled', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
                   <Label htmlFor="cartao_visible">Exibir Cartão no checkout</Label>
                   <p className="text-sm text-gray-500">Controla se o cartão aparece como opção de pagamento</p>
                 </div>
@@ -318,49 +240,6 @@ const PaymentSettings: React.FC = () => {
                   onCheckedChange={(checked) => handleChange('cartao_visible', checked)}
                 />
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Click2Pay Integration Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Integração Click2Pay</h3>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="click2pay_enabled">Habilitar Click2Pay</Label>
-                  <p className="text-sm text-gray-500">Ativar integração com o gateway Click2Pay</p>
-                </div>
-                <Switch
-                  id="click2pay_enabled"
-                  checked={settings?.click2pay_enabled || false}
-                  onCheckedChange={(checked) => handleChange('click2pay_enabled', checked)}
-                />
-              </div>
-              
-              {settings?.click2pay_enabled && (
-                <div className="space-y-4 pl-4 border-l-2 border-purple-200">
-                  <div className="space-y-2">
-                    <Label htmlFor="click2pay_api_url">URL da API Click2Pay</Label>
-                    <Input
-                      id="click2pay_api_url"
-                      type="url"
-                      value={settings?.click2pay_api_url || ''}
-                      onChange={(e) => handleChange('click2pay_api_url', e.target.value)}
-                      placeholder="https://api.click2pay.com.br"
-                    />
-                  </div>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-700">
-                      <strong>Nota:</strong> As credenciais de acesso (usuário e senha) são configuradas diretamente nos secrets do Supabase por questões de segurança.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <Separator />

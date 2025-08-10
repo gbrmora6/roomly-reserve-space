@@ -78,6 +78,7 @@ const EquipmentList: React.FC = () => {
       endTime: null,
       city: null,
     });
+    setSelectedCity("all");
   };
 
   // Filtrar equipamentos por termo de busca
@@ -118,7 +119,7 @@ const EquipmentList: React.FC = () => {
         <FilterBar
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
-          filters={{ ...filters, city: selectedCity }}
+          filters={{ ...filters, city: selectedCity !== 'all' ? selectedCity : null }}
           onFiltersChange={(newFilters) => {
             setFilters(newFilters);
             if (newFilters.city !== selectedCity) {
@@ -129,7 +130,7 @@ const EquipmentList: React.FC = () => {
           onClear={handleClearFilters}
           showDateTimeFilters
           showLocationFilter
-          placeholder="Buscar equipamentos..."
+          placeholder="Buscar equipamentos por nome ou descrição..."
         />
 
         <ListingGrid
@@ -156,8 +157,6 @@ const EquipmentList: React.FC = () => {
           emptyDescription="Ajuste os filtros ou tente novamente mais tarde"
           emptyIcon={Search}
           variant="equipment"
-          showFiltersMessage={!filters.date && !filters.startTime && !filters.endTime}
-          filtersMessage="Selecione uma data e horário para verificar a disponibilidade dos equipamentos"
           resultCount={filteredEquipments?.length}
         />
 
