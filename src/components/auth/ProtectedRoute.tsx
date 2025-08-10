@@ -6,7 +6,7 @@ import { devLog, errorLog } from "@/utils/logger";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "client";
+  requiredRole?: "admin" | "client" | "super_admin";
   requireAdmin?: boolean;
 }
 
@@ -32,10 +32,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
 
       try {
-        await refreshUserClaims();
-        const isAdmin = user.user_metadata?.role === "admin";
+        const role = user.user_metadata?.role;
+        const isAdmin = role === "admin" || role === "super_admin";
         const effectiveRequiredRole = requireAdmin ? "admin" : requiredRole;
-        if (effectiveRequiredRole && user.user_metadata?.role !== effectiveRequiredRole) {
+        if (effectiveRequiredRole && role !== effectiveRequiredRole) {
           setIsAuthorized(false);
           setAuthChecked(true);
           return;

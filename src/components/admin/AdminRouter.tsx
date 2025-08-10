@@ -27,6 +27,7 @@ import Coupons from '@/pages/admin/Coupons';
 import Inventory from '@/pages/admin/Inventory';
 import Orders from '@/pages/admin/Orders';
 import CreateAdminUsers from '@/pages/admin/CreateAdminUsers';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 const AdminRouter: React.FC = () => {
   return (
@@ -59,7 +60,7 @@ const AdminRouter: React.FC = () => {
       <Route path="admins" element={<Admins />} />
       <Route path="coupons" element={<Coupons />} />
       <Route path="inventory" element={<Inventory />} />
-      <Route path="create-admin-users" element={<CreateAdminUsers />} />
+      <Route path="create-admin-users" element={<ProtectedRoute requiredRole="super_admin"><CreateAdminUsers /></ProtectedRoute>} />
     </Routes>
   );
 };
