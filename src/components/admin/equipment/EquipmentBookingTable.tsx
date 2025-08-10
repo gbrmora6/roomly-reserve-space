@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { parseStoredDateTime } from "@/utils/timezone";
 type BookingStatus = "in_process" | "paid" | "partial_refunded" | "pre_authorized" | "recused" | "pending" | "confirmed";
 interface EquipmentBooking {
   id: string;
@@ -124,9 +123,9 @@ export const EquipmentBookingTable: React.FC<EquipmentBookingTableProps> = ({
                   </TableCell>
                   <TableCell className="py-3 px-4 text-sm">
                     <div>
-                      <div>{format(parseStoredDateTime(booking.start_time), "dd/MM/yyyy")}</div>
+                      <div>{format(new Date(booking.start_time), "dd/MM/yyyy")}</div>
                       <div className="text-muted-foreground">
-                        {format(parseStoredDateTime(booking.start_time), "HH:mm")} - {format(parseStoredDateTime(booking.end_time), "HH:mm")}
+                        {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
                       </div>
                     </div>
                   </TableCell>

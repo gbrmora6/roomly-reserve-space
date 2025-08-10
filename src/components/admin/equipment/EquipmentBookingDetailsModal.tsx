@@ -2,7 +2,6 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { parseStoredDateTime } from "@/utils/timezone";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 
@@ -61,7 +60,7 @@ export const EquipmentBookingDetailsModal: React.FC<EquipmentBookingDetailsModal
             <div>
               <h3 className="font-semibold mb-2">Informações do Cliente</h3>
               <p><strong>Nome:</strong> {getCustomerName(booking.user)}</p>
-              <p><strong>Data da Reserva:</strong> {format(parseStoredDateTime(booking.created_at), "dd/MM/yyyy HH:mm")}</p>
+              <p><strong>Data da Reserva:</strong> {format(new Date(booking.created_at), "dd/MM/yyyy HH:mm")}</p>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Detalhes da Reserva</h3>
@@ -72,9 +71,9 @@ export const EquipmentBookingDetailsModal: React.FC<EquipmentBookingDetailsModal
           
           <div>
             <h3 className="font-semibold mb-2">Horário</h3>
-            <p><strong>Data:</strong> {format(parseStoredDateTime(booking.start_time), "dd/MM/yyyy")}</p>
-            <p><strong>Início:</strong> {format(parseStoredDateTime(booking.start_time), "HH:mm")}</p>
-            <p><strong>Fim:</strong> {format(parseStoredDateTime(booking.end_time), "HH:mm")}</p>
+            <p><strong>Data:</strong> {format(new Date(booking.start_time), "dd/MM/yyyy")}</p>
+            <p><strong>Início:</strong> {format(new Date(booking.start_time), "HH:mm")}</p>
+            <p><strong>Fim:</strong> {format(new Date(booking.end_time), "HH:mm")}</p>
           </div>
           
           <div>

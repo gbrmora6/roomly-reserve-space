@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,6 @@ import { formatCurrency } from "@/utils/formatCurrency";
 import { UnifiedOrder } from "@/hooks/useUnifiedOrders";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { parseStoredDateTime } from "@/utils/timezone";
-import { supabase } from "@/integrations/supabase/client";
 
 interface UnifiedOrderDetailsModalProps {
   order: UnifiedOrder | null;
@@ -57,52 +55,28 @@ export const UnifiedOrderDetailsModal: React.FC<UnifiedOrderDetailsModalProps> =
   if (!order) return null;
 
   const formatDate = (dateString: string) => {
-    return format(parseStoredDateTime(dateString), "dd/MM/yyyy", { locale: ptBR });
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
   };
 
   const formatDateTime = (dateString: string) => {
-    return format(parseStoredDateTime(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
 
   const formatTimeRange = (start: string, end: string) => {
-    const startTime = format(parseStoredDateTime(start), "HH:mm");
-    const endTime = format(parseStoredDateTime(end), "HH:mm");
+    const startTime = format(new Date(start), "HH:mm");
+    const endTime = format(new Date(end), "HH:mm");
     return `${startTime} - ${endTime}`;
   };
 
-  // Componente interno para buscar e exibir o endereço da filial
-  const BranchAddress: React.FC<{ orderBranchId: string }> = ({ orderBranchId }) => {
-    const [address, setAddress] = useState<{ name?: string; street?: string; number?: string; neighborhood?: string; city?: string; state?: string; zip_code?: string } | null>(null);
-
-    useEffect(() => {
-      let isMounted = true;
-      const fetchBranch = async () => {
-        const { data } = await supabase
-          .from('branches')
-          .select('name, street, number, neighborhood, city, state, zip_code')
-          .eq('id', orderBranchId)
-          .maybeSingle();
-        if (isMounted) setAddress(data || null);
-      };
-      fetchBranch();
-      return () => { isMounted = false; };
-    }, [orderBranchId]);
-
-    if (!address) return <div className="text-sm text-muted-foreground">Carregando endereço...</div>;
-
-    const line1 = [address.street, address.number].filter(Boolean).join(', ');
-    const line2 = [address.neighborhood, address.city, address.state].filter(Boolean).join(' - ');
-    const zip = address.zip_code ? `CEP: ${address.zip_code}` : '';
-
-    return (
-      <div className="space-y-1 text-sm">
-        <div className="font-medium">{address.name}</div>
-        {line1 && <div>{line1}</div>}
-        {line2 && <div>{line2}</div>}
-        {zip && <div className="text-muted-foreground">{zip}</div>}
-      </div>
-    );
-  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Detalhes do Pedido #{order.id.slice(-8)}</span>
+            {getStatusBadge(order.status, order.refund_status)}
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="space-y-6">
           {/* Informações Gerais */}
@@ -142,21 +116,6 @@ export const UnifiedOrderDetailsModal: React.FC<UnifiedOrderDetailsModalProps> =
               )}
             </CardContent>
           </Card>
-
-          {/* Endereço da Filial */}
-          {order.branch_id && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Endereço da Filial
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BranchAddress orderBranchId={order.branch_id} />
-              </CardContent>
-            </Card>
-          )}
 
           {/* Produtos */}
           {order.order_items && order.order_items.length > 0 && (

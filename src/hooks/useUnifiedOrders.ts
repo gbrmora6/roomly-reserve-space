@@ -10,7 +10,6 @@ export interface UnifiedOrder {
   payment_method?: string;
   created_at: string;
   updated_at: string;
-  branch_id: string;
   refund_status?: string;
   refund_amount?: number;
   invoice_url?: string;

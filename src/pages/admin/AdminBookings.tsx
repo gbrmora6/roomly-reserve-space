@@ -18,7 +18,6 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { InvoiceUpload } from "@/components/admin/InvoiceUpload";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
-import { parseStoredDateTime } from "@/utils/timezone";
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 interface BookingWithDetails {
   id: string;
@@ -186,8 +185,8 @@ const AdminBookings = () => {
     }
     try {
       const exportData = bookings.map(booking => {
-        const startDate = parseStoredDateTime(booking.start_time);
-        const endDate = parseStoredDateTime(booking.end_time);
+        const startDate = new Date(booking.start_time);
+        const endDate = new Date(booking.end_time);
         return {
           "ID": booking.id,
           "Cliente": booking.user ? `${booking.user.first_name || ""} ${booking.user.last_name || ""}`.trim() : "-",
@@ -315,9 +314,9 @@ const AdminBookings = () => {
                           </TableCell>
                           <TableCell className="py-3 px-4 text-sm">
                             <div>
-                              <div>{format(parseStoredDateTime(booking.start_time), "dd/MM/yyyy")}</div>
+                              <div>{format(new Date(booking.start_time), "dd/MM/yyyy")}</div>
                               <div className="text-muted-foreground">
-                                {format(parseStoredDateTime(booking.start_time), "HH:mm")} - {format(parseStoredDateTime(booking.end_time), "HH:mm")}
+                                {format(new Date(booking.start_time), "HH:mm")} - {format(new Date(booking.end_time), "HH:mm")}
                               </div>
                             </div>
                           </TableCell>
@@ -362,7 +361,7 @@ const AdminBookings = () => {
                 <div>
                   <h3 className="font-semibold mb-2">Informações do Cliente</h3>
                   <p><strong>Nome:</strong> {selectedBooking.user ? `${selectedBooking.user.first_name || ""} ${selectedBooking.user.last_name || ""}`.trim() : selectedBooking.user_id}</p>
-                  <p><strong>Data da Reserva:</strong> {format(parseStoredDateTime(selectedBooking.created_at), "dd/MM/yyyy HH:mm")}</p>
+                  <p><strong>Data da Reserva:</strong> {format(new Date(selectedBooking.created_at), "dd/MM/yyyy HH:mm")}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Detalhes da Reserva</h3>
@@ -373,9 +372,9 @@ const AdminBookings = () => {
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Horário</h3>
-                <p><strong>Data:</strong> {format(parseStoredDateTime(selectedBooking.start_time), "dd/MM/yyyy")}</p>
-                <p><strong>Início:</strong> {format(parseStoredDateTime(selectedBooking.start_time), "HH:mm")}</p>
-                <p><strong>Fim:</strong> {format(parseStoredDateTime(selectedBooking.end_time), "HH:mm")}</p>
+                <p><strong>Data:</strong> {format(new Date(selectedBooking.start_time), "dd/MM/yyyy")}</p>
+                <p><strong>Início:</strong> {format(new Date(selectedBooking.start_time), "HH:mm")}</p>
+                <p><strong>Fim:</strong> {format(new Date(selectedBooking.end_time), "HH:mm")}</p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Nota Fiscal</h3>
