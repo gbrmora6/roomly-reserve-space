@@ -24,3 +24,12 @@ verify_jwt = false
 
 [functions.simulate-payment-confirmed]
 verify_jwt = false
+
+[functions.cancel-cash-order]
+verify_jwt = false
+
+[functions.admin-user-management]
+verify_jwt = false
+
+[functions.admin-clients]
+verify_jwt = true
