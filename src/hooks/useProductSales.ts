@@ -12,6 +12,7 @@ interface ProductOrder {
   user_id: string;
   total_amount: number;
   status: 'pending' | 'billed' | 'paid' | 'cancelled';
+  payment_method?: string;
   created_at: string;
   updated_at: string;
   profiles: {
@@ -206,15 +207,35 @@ export function useProductSales() {
 
   const handleCancelOrder = async (orderId: string) => {
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', orderId);
+      // Check if this is a cash order first
+      const order = ordersQuery.data?.find(o => o.id === orderId);
+      
+      if (order?.payment_method?.toLowerCase() === 'dinheiro' && order?.status === 'paid') {
+        // Use the edge function for cash orders
+        const { data, error } = await supabase.functions.invoke('cancel-cash-order', {
+          body: { orderId, reason: 'Cancelado pelo administrador' }
+        });
+        
+        if (error) throw error;
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Erro ao cancelar pedido em dinheiro');
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ['product-orders'] });
+        toast.success(data.message || 'Pedido em dinheiro cancelado com sucesso!');
+      } else {
+        // Use direct database update for other order types
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', orderId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['product-orders'] });
-      toast.success('Pedido cancelado com sucesso!');
+        queryClient.invalidateQueries({ queryKey: ['product-orders'] });
+        toast.success('Pedido cancelado com sucesso!');
+      }
     } catch (error) {
       console.error('Erro ao cancelar pedido:', error);
       toast.error('Erro ao cancelar pedido');

@@ -161,9 +161,9 @@ export const useFilteredEquipment = ({
         endTimeIsAll: endTime === "all"
       });
 
-      // Se não há data selecionada OU ambos os horários são "all", retorna todos os equipamentos
-      if (!selectedDate || (startTime === "all" && endTime === "all")) {
-        console.log("Retornando todos os equipamentos - sem filtros de data/horário");
+      // Se não há data selecionada, retorna todos os equipamentos
+      if (!selectedDate) {
+        console.log("Retornando todos os equipamentos - sem filtro de data");
         return equipmentWithBranches;
       }
 
@@ -236,7 +236,9 @@ export const useFilteredEquipment = ({
               }
             }
           } else {
-            // Se não há filtro de horário, verifica apenas se o equipamento funciona no dia
+            // Se não há filtro de horário específico, precisamos garantir duas coisas:
+            // 1) O equipamento funciona no dia selecionado
+            // 2) Existe pelo menos um horário disponível neste dia (não está 100% ocupado)
             const { data: schedules, error } = await supabase
               .from("equipment_schedules")
               .select("id")
@@ -251,10 +253,30 @@ export const useFilteredEquipment = ({
             const hasScheduleForDay = schedules && schedules.length > 0;
             console.log(`Equipamento ${equip.name} - funciona em ${weekday}:`, hasScheduleForDay);
 
-            if (hasScheduleForDay) {
-              availableEquipment.push(equip);
-            } else {
+            if (!hasScheduleForDay) {
               console.log(`Equipamento ${equip.name} não funciona em ${weekday}`);
+              continue;
+            }
+
+            // Verifica disponibilidade geral do dia usando a função RPC de disponibilidade
+            const dateStr = format(selectedDate, "yyyy-MM-dd");
+            const { data: availability, error: availabilityError } = await supabase
+              .rpc("get_equipment_availability", {
+                p_equipment_id: equip.id,
+                p_date: dateStr,
+                p_requested_quantity: 1
+              });
+
+            if (availabilityError) {
+              console.error("Erro ao verificar disponibilidade do equipamento:", availabilityError);
+              continue;
+            }
+
+            const hasAnyAvailableSlot = Array.isArray(availability) && availability.some((slot: any) => slot.is_available);
+            console.log(`Equipamento ${equip.name} - possui algum horário disponível no dia?`, hasAnyAvailableSlot);
+
+            if (hasAnyAvailableSlot) {
+              availableEquipment.push(equip);
             }
           }
         } catch (error) {
